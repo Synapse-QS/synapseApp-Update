@@ -205,11 +205,24 @@ class SettingsRepositoryImpl private constructor(
 
 
     private fun getDirectorySize(directory: File): Long {
-        return if (directory.exists()) {
-            directory.walkBottomUp().filter { it.isFile }.sumOf { it.length() }
-        } else {
-            0L
+        if (!directory.exists()) return 0L
+        var size = 0L
+        val stack = java.util.ArrayDeque<File>()
+        stack.push(directory)
+        while (stack.isNotEmpty()) {
+            val dir = stack.pop()
+            val files = dir.listFiles()
+            if (files != null) {
+                for (file in files) {
+                    if (file.isFile) {
+                        size += file.length()
+                    } else if (file.isDirectory) {
+                        stack.push(file)
+                    }
+                }
+            }
         }
+        return size
     }
 
     private val storageCalculator by lazy { 
