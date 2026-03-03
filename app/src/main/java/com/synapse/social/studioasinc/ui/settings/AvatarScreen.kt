@@ -12,16 +12,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import com.synapse.social.studioasinc.R
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AvatarScreen(
+    viewModel: AvatarViewModel,
     onBackClick: () -> Unit
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val context = LocalContext.current
     var showRemoveDialog by remember { mutableStateOf(false) }
+    val isRemoving by viewModel.isRemoving.collectAsState()
 
     val photoPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
@@ -47,12 +50,29 @@ fun AvatarScreen(
             title = { Text("Remove Profile Photo") },
             text = { Text("Are you sure you want to remove your profile photo?") },
             confirmButton = {
-                TextButton(onClick = {
-                    showRemoveDialog = false
-                    Toast.makeText(context, "Profile photo removed", Toast.LENGTH_SHORT).show()
-                    // TODO: Remove via ViewModel
-                }) {
-                    Text("Remove")
+                TextButton(
+                    onClick = {
+                        viewModel.removeProfilePhoto(
+                            onSuccess = {
+                                showRemoveDialog = false
+                                Toast.makeText(context, "Profile photo removed", Toast.LENGTH_SHORT).show()
+                            },
+                            onError = { error ->
+                                showRemoveDialog = false
+                                Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                            }
+                        )
+                    },
+                    enabled = !isRemoving
+                ) {
+                    if (isRemoving) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text("Remove")
+                    }
                 }
             },
             dismissButton = {
