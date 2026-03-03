@@ -16,7 +16,6 @@ Next-Gen Social Network Client - Native UI, Kotlin Multiplatform, and Supabase P
 - [Architecture](#architecture)
 - [Project Structure](#project-structure)
 - [Installation & Setup](#installation--setup)
-- [Usage Examples](#usage-examples)
 - [API Documentation](#api-documentation)
 - [Configuration Guide](#configuration-guide)
 - [Testing](#testing)
@@ -134,31 +133,6 @@ Synapse/
    - Open the project in Android Studio.
    - Wait for Gradle sync to finish.
    - Run the `:app` configuration on your emulator or device.
-
----
-
-## Usage Examples
-
-### Executing a UseCase (Shared)
-```kotlin
-// Example: Signing in a user
-val signInUseCase = get<SignInUseCase>() // Obtained via Koin
-val result = signInUseCase(email = "user@example.com", password = "securePassword")
-
-result.onSuccess { session ->
-    println("Logged in successfully!")
-}.onFailure { error ->
-    println("Login failed: ${error.message}")
-}
-```
-
-### Dependency Injection (Shared)
-```kotlin
-val storageModule = module {
-    single<StorageRepository> { StorageRepositoryImpl(get(), get()) }
-    single { UploadMediaUseCase(get(), get(), get()) }
-}
-```
 
 ---
 
