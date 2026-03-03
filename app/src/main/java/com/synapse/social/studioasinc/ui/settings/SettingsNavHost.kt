@@ -284,7 +284,8 @@ fun SettingsNavHost(
                 viewModel = viewModel,
                 onBackClick = {
                     navController.popBackStack()
-                }
+                },
+                viewModel = viewModel
             )
         }
 
