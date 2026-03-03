@@ -21,7 +21,6 @@ import com.synapse.social.studioasinc.ui.settings.PrivacySettings
 import com.synapse.social.studioasinc.ui.settings.ProfileVisibility
 import com.synapse.social.studioasinc.ui.settings.ThemeMode
 import com.synapse.social.studioasinc.domain.model.ChatThemePreset
-import com.synapse.social.studioasinc.domain.model.ChatWallpaper
 import com.synapse.social.studioasinc.domain.model.WallpaperType
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
