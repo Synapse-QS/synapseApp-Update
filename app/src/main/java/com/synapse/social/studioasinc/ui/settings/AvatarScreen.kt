@@ -17,6 +17,7 @@ import com.synapse.social.studioasinc.R
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AvatarScreen(
+    viewModel: AvatarViewModel,
     onBackClick: () -> Unit
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
@@ -49,8 +50,9 @@ fun AvatarScreen(
             confirmButton = {
                 TextButton(onClick = {
                     showRemoveDialog = false
-                    Toast.makeText(context, "Profile photo removed", Toast.LENGTH_SHORT).show()
-                    // TODO: Remove via ViewModel
+                    viewModel.removeProfilePhoto(onSuccess = {
+                        Toast.makeText(context, "Profile photo removed", Toast.LENGTH_SHORT).show()
+                    })
                 }) {
                     Text("Remove")
                 }
