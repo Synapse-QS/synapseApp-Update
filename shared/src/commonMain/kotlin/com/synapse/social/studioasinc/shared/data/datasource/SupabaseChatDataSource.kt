@@ -182,17 +182,24 @@ class SupabaseChatDataSource(private val client: SupabaseClientLib = SupabaseCli
                 }
             }.decodeList<MessageDto>()
 
+            val updatesByNewReadBy = mutableMapOf<String, MutableList<String>>()
+
             messages.forEach { msg ->
                 msg.id?.let { messageId ->
-                    val readByList = msg.readBy?.split(",")?.toMutableList() ?: mutableListOf()
+                    val readByList = msg.readBy?.split(",")?.filter { it.isNotBlank() }?.toMutableList() ?: mutableListOf()
                     if (!readByList.contains(currentUserId)) {
                         readByList.add(currentUserId)
-                        client.postgrest.from("messages").update({
-                            set("read_by", readByList.joinToString(","))
-                        }) {
-                            filter { eq("id", messageId) }
-                        }
+                        val newReadBy = readByList.joinToString(",")
+                        updatesByNewReadBy.getOrPut(newReadBy) { mutableListOf() }.add(messageId)
                     }
+                }
+            }
+
+            updatesByNewReadBy.forEach { (newReadBy, messageIds) ->
+                client.postgrest.from("messages").update({
+                    set("read_by", newReadBy)
+                }) {
+                    filter { isIn("id", messageIds) }
                 }
             }
         } catch (e: Exception) {
