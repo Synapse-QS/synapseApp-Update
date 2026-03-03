@@ -186,10 +186,20 @@ fun SettingsNavHost(
 
         composable(route = SettingsDestination.ROUTE_BUSINESS_PLATFORM) {
             val viewModel: BusinessPlatformViewModel = hiltViewModel()
+            val currentContext = LocalContext.current
             BusinessPlatformScreen(
                 viewModel = viewModel,
                 onBackClick = {
                     navController.popBackStack()
+                },
+                onNavigateToScheduledPosts = {
+                    android.widget.Toast.makeText(currentContext, "Scheduled Posts coming soon", android.widget.Toast.LENGTH_SHORT).show()
+                },
+                onNavigateToContentCalendar = {
+                    android.widget.Toast.makeText(currentContext, "Content Calendar coming soon", android.widget.Toast.LENGTH_SHORT).show()
+                },
+                onNavigateToBrandPartnerships = {
+                    android.widget.Toast.makeText(currentContext, "Brand Partnerships coming soon", android.widget.Toast.LENGTH_SHORT).show()
                 }
             )
         }
