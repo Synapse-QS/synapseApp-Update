@@ -200,17 +200,19 @@ class ChatMessagingRepository @Inject constructor(
                     filter { eq("user_id", currentUserId) }
                 }.decodeList<ChatParticipantDto>()
 
-            for (chat in myChats) {
-                val otherInChat = client.from("chat_participants")
-                    .select(columns = Columns.list("user_id")) {
+            val chatIds = myChats.map { it.chatId }
+
+            if (chatIds.isNotEmpty()) {
+                val commonChat = client.from("chat_participants")
+                    .select(columns = Columns.list("chat_id")) {
                         filter {
-                            eq("chat_id", chat.chatId)
+                            isIn("chat_id", chatIds)
                             eq("user_id", otherUserId)
                         }
-                    }.decodeList<ChatParticipantDto>()
+                    }.decodeList<ChatParticipantDto>().firstOrNull()
 
-                if (otherInChat.isNotEmpty()) {
-                    return@withContext Result.success(chat.chatId)
+                if (commonChat != null) {
+                    return@withContext Result.success(commonChat.chatId)
                 }
             }
 
