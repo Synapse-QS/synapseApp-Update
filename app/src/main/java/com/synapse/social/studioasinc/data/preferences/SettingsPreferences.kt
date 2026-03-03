@@ -2,6 +2,8 @@ package com.synapse.social.studioasinc.data.preferences
 
 import android.content.Context
 import android.content.SharedPreferences
+import androidx.security.crypto.EncryptedSharedPreferences
+import androidx.security.crypto.MasterKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -14,7 +16,17 @@ import javax.inject.Singleton
 class SettingsPreferences @Inject constructor(
     context: Context
 ) {
-    private val prefs: SharedPreferences = context.getSharedPreferences("synapse_settings", Context.MODE_PRIVATE)
+    private val masterKey = MasterKey.Builder(context)
+        .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
+        .build()
+
+    private val prefs: SharedPreferences = EncryptedSharedPreferences.create(
+        context,
+        "synapse_settings",
+        masterKey,
+        EncryptedSharedPreferences.PrefKeyEncryptionScheme.AES256_SIV,
+        EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
+    )
 
 
     private val _securityNotificationsEnabled = MutableStateFlow(prefs.getBoolean("security_notifications", true))
