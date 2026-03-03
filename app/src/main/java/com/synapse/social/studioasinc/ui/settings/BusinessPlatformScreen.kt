@@ -33,7 +33,10 @@ import com.synapse.social.studioasinc.shared.domain.model.business.VerificationS
 @Composable
 fun BusinessPlatformScreen(
     viewModel: BusinessPlatformViewModel,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onNavigateToScheduledPosts: () -> Unit = {},
+    onNavigateToContentCalendar: () -> Unit = {},
+    onNavigateToBrandPartnerships: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -115,7 +118,11 @@ fun BusinessPlatformScreen(
 
 
                     item {
-                        ProfessionalToolsSection()
+                        ProfessionalToolsSection(
+                            onNavigateToScheduledPosts = onNavigateToScheduledPosts,
+                            onNavigateToContentCalendar = onNavigateToContentCalendar,
+                            onNavigateToBrandPartnerships = onNavigateToBrandPartnerships
+                        )
                     }
 
 
@@ -351,14 +358,18 @@ fun MonetizationSection(
 }
 
 @Composable
-fun ProfessionalToolsSection() {
+fun ProfessionalToolsSection(
+    onNavigateToScheduledPosts: () -> Unit = {},
+    onNavigateToContentCalendar: () -> Unit = {},
+    onNavigateToBrandPartnerships: () -> Unit = {}
+) {
     SettingsSection(title = "Professional Tools") {
         Column {
             SettingsNavigationItem(
                 title = "Scheduled Posts",
                 subtitle = "Manage upcoming content",
                 imageVector = Icons.Default.Schedule,
-                onClick = { /* TODO: Implement Scheduled Posts navigation */ },
+                onClick = onNavigateToScheduledPosts,
                 position = SettingsItemPosition.Top
             )
             SettingsDivider()
@@ -366,7 +377,7 @@ fun ProfessionalToolsSection() {
                 title = "Content Calendar",
                 subtitle = "Plan your strategy",
                 imageVector = Icons.Default.CalendarToday,
-                onClick = { /* TODO: Implement Content Calendar navigation */ },
+                onClick = onNavigateToContentCalendar,
                 position = SettingsItemPosition.Middle
             )
             SettingsDivider()
@@ -374,7 +385,7 @@ fun ProfessionalToolsSection() {
                 title = "Brand Partnerships",
                 subtitle = "Manage collaborations",
                 imageVector = Icons.Default.Work,
-                onClick = { /* TODO: Implement Brand Partnerships navigation */ },
+                onClick = onNavigateToBrandPartnerships,
                 position = SettingsItemPosition.Bottom
             )
         }
