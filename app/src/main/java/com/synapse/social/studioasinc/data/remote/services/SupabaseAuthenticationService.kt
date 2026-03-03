@@ -173,6 +173,7 @@ class AuthErrorHandler {
             }
         }
     }
+
 }
 
 
@@ -328,18 +329,12 @@ class SupabaseAuthenticationService : com.synapse.social.studioasinc.data.remote
                 logAuthenticationStep("Starting sign up", email)
 
 
-                if (!SupabaseClient.isConfigured()) {
-                    logAuthenticationStep("Sign up failed - Supabase not configured", email, false)
+                if (!checkSupabaseConfigured("Sign up", email)) {
                     return@withContext Result.failure(Exception("Supabase not configured. Please set up your credentials."))
                 }
 
 
-                try {
-                    client.auth.signOut()
-                    debugLog("Cleared existing session before sign up")
-                } catch (e: Exception) {
-                    debugLog("No existing session to clear", e)
-                }
+                clearExistingSession("sign up")
 
 
                 logAuthenticationStep("Attempting Supabase sign up", email)
@@ -413,19 +408,7 @@ class SupabaseAuthenticationService : com.synapse.social.studioasinc.data.remote
                     message = message
                 ))
             } catch (e: Exception) {
-                logAuthenticationStep("Sign up failed with exception", email, false)
-                debugLog("Sign up failed", e)
-
-
-                try {
-                    client.auth.signOut()
-                } catch (signOutError: Exception) {
-                    debugLog("Failed to clear session after error", signOutError)
-                }
-
-                val authError = AuthErrorHandler.handleAuthError(e)
-                val errorMessage = AuthErrorHandler.getErrorMessage(authError)
-                Result.failure(Exception(errorMessage))
+                handleAuthException(e, "Sign up", email)
             }
         }
     }
@@ -438,18 +421,12 @@ class SupabaseAuthenticationService : com.synapse.social.studioasinc.data.remote
                 logAuthenticationStep("Starting sign in", email)
 
 
-                if (!SupabaseClient.isConfigured()) {
-                    logAuthenticationStep("Sign in failed - Supabase not configured", email, false)
+                if (!checkSupabaseConfigured("Sign in", email)) {
                     return@withContext Result.failure(Exception("Supabase not configured. Please set up your credentials."))
                 }
 
 
-                try {
-                    client.auth.signOut()
-                    debugLog("Cleared existing session before sign in")
-                } catch (e: Exception) {
-                    debugLog("No existing session to clear", e)
-                }
+                clearExistingSession("sign in")
 
 
                 logAuthenticationStep("Attempting Supabase sign in", email)
@@ -516,19 +493,7 @@ class SupabaseAuthenticationService : com.synapse.social.studioasinc.data.remote
                     Result.failure(Exception("Authentication failed - invalid credentials"))
                 }
             } catch (e: Exception) {
-                logAuthenticationStep("Sign in failed with exception", email, false)
-                debugLog("Sign in failed", e)
-
-
-                try {
-                    client.auth.signOut()
-                } catch (signOutError: Exception) {
-                    debugLog("Failed to clear session after error", signOutError)
-                }
-
-                val authError = AuthErrorHandler.handleAuthError(e)
-                val errorMessage = AuthErrorHandler.getErrorMessage(authError)
-                Result.failure(Exception(errorMessage))
+                handleAuthException(e, "Sign in", email)
             }
         }
     }
@@ -709,6 +674,38 @@ class SupabaseAuthenticationService : com.synapse.social.studioasinc.data.remote
                 Result.failure(e)
             }
         }
+    }
+
+    private fun checkSupabaseConfigured(stepType: String, email: String): Boolean {
+        if (!SupabaseClient.isConfigured()) {
+            logAuthenticationStep("$stepType failed - Supabase not configured", email, false)
+            return false
+        }
+        return true
+    }
+
+    private suspend fun clearExistingSession(stepType: String) {
+        try {
+            client.auth.signOut()
+            debugLog("Cleared existing session before $stepType")
+        } catch (e: Exception) {
+            debugLog("No existing session to clear", e)
+        }
+    }
+
+    private suspend fun <T> handleAuthException(e: Exception, stepType: String, email: String): Result<T> {
+        logAuthenticationStep("$stepType failed with exception", email, false)
+        debugLog("$stepType failed", e)
+
+        try {
+            client.auth.signOut()
+        } catch (signOutError: Exception) {
+            debugLog("Failed to clear session after error", signOutError)
+        }
+
+        val authError = AuthErrorHandler.handleAuthError(e)
+        val errorMessage = AuthErrorHandler.getErrorMessage(authError)
+        return Result.failure(Exception(errorMessage))
     }
 }
 
