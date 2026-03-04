@@ -9,8 +9,9 @@ import androidx.paging.map
 import com.synapse.social.studioasinc.shared.domain.repository.AuthRepository
 import com.synapse.social.studioasinc.domain.model.Post
 import com.synapse.social.studioasinc.domain.model.ReactionType
+import com.synapse.social.studioasinc.domain.model.FeedItem
 import com.synapse.social.studioasinc.domain.usecase.post.BookmarkPostUseCase
-import com.synapse.social.studioasinc.domain.usecase.post.GetPostsPagedUseCase
+import com.synapse.social.studioasinc.domain.usecase.post.GetFeedPagedUseCase
 import com.synapse.social.studioasinc.domain.usecase.post.ReactToPostUseCase
 import com.synapse.social.studioasinc.domain.usecase.post.RevokeVoteUseCase
 import com.synapse.social.studioasinc.domain.usecase.post.VotePollUseCase
@@ -45,7 +46,7 @@ data class FeedUiState(
 
 @HiltViewModel
 class FeedViewModel @Inject constructor(
-    private val getPostsPagedUseCase: GetPostsPagedUseCase,
+    private val getFeedPagedUseCase: GetFeedPagedUseCase,
     private val authRepository: AuthRepository,
     private val getAppearanceSettingsUseCase: GetAppearanceSettingsUseCase,
     private val reactToPostUseCase: ReactToPostUseCase,
@@ -66,12 +67,18 @@ class FeedViewModel @Inject constructor(
     private val refreshTrigger = MutableStateFlow(0)
 
     @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
-    val posts: Flow<PagingData<Post>> = refreshTrigger.flatMapLatest {
-        getPostsPagedUseCase()
+    val posts: Flow<PagingData<FeedItem>> = refreshTrigger.flatMapLatest {
+        getFeedPagedUseCase()
     }.cachedIn(viewModelScope)
     .combine(_modifiedPosts) { pagingData, modifications ->
-        pagingData.map { post ->
-            modifications[post.id] ?: post
+        pagingData.map { feedItem ->
+            when (feedItem) {
+                is FeedItem.PostItem -> {
+                    val modifiedPost = modifications[feedItem.id]
+                    if (modifiedPost != null) FeedItem.PostItem(modifiedPost) else feedItem
+                }
+                is FeedItem.CommentItem -> feedItem
+            }
         }
     }
 

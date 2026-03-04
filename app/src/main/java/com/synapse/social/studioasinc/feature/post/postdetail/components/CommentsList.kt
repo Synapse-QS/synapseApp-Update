@@ -80,7 +80,6 @@ fun CommentsList(
                 CommentItem(
                     comment = comment,
                     replies = repliesState[comment.id] ?: emptyList(),
-                    repliesState = repliesState,
                     isRepliesLoading = replyLoadingState.contains(comment.id),
                     loadingIds = commentActionsLoading,
                     onReplyClick = onReplyClick,

@@ -101,6 +101,9 @@ data class PostSelectDto(
     @SerialName("location_place_id") val locationPlaceId: String? = null,
     @SerialName("youtube_url") val youtubeUrl: String? = null,
     @SerialName("metadata") val metadata: PostMetadata? = null,
+    @SerialName("quoted_post") val quotedPost: PostSelectDto? = null,
+    @SerialName("quoted_post_id") val quotedPostId: String? = null,
+    @SerialName("is_quote") val isQuote: Boolean = false,
 
 
     @SerialName("users") val user: UserSummaryDto? = null,
@@ -167,6 +170,8 @@ fun Post.toUpdateDto(): PostInsertDto {
         commentsCount = this.commentsCount,
         viewsCount = this.viewsCount,
         resharesCount = this.resharesCount,
+        quotedPostId = this.quotedPostId,
+        isQuote = this.isQuote,
         mediaItems = this.mediaItems,
         hasPoll = this.hasPoll,
         pollQuestion = this.pollQuestion,
@@ -221,7 +226,10 @@ fun PostSelectDto.toDomain(constructMediaUrl: (String) -> String, constructAvata
         locationLongitude = this.locationLongitude,
         locationPlaceId = this.locationPlaceId,
         youtubeUrl = this.youtubeUrl,
-        metadata = this.metadata
+        metadata = this.metadata,
+        quotedPostId = this.quotedPostId,
+        isQuote = this.isQuote,
+        quotedPost = this.quotedPost?.toDomain(constructMediaUrl, constructAvatarUrl)
     )
 
 

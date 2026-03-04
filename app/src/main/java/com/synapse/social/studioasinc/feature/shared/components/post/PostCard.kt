@@ -18,6 +18,16 @@ import androidx.compose.ui.unit.dp
 import com.synapse.social.studioasinc.domain.model.Post
 import com.synapse.social.studioasinc.domain.model.User
 import com.synapse.social.studioasinc.domain.model.ReactionType
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Repeat
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.font.FontWeight
 import com.synapse.social.studioasinc.ui.settings.PostViewStyle
 
 
@@ -39,7 +49,8 @@ data class PostCardState(
     val pollOptions: List<PollOption>? = null,
     val userPollVote: Int? = null,
     val formattedTimestamp: String = "",
-    val isExpanded: Boolean = false
+    val isExpanded: Boolean = false,
+    val repostedBy: String? = null
 )
 
 @Composable
@@ -67,6 +78,28 @@ fun PostCard(
             .background(MaterialTheme.colorScheme.background)
             .clickable(onClick = onPostClick)
     ) {
+        if (state.repostedBy != null) {
+            Row(
+                modifier = Modifier
+                    .padding(start = 48.dp, top = 8.dp, bottom = 4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = androidx.compose.material.icons.Icons.Outlined.Repeat,
+                    contentDescription = null,
+                    modifier = Modifier.size(16.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    text = "${state.repostedBy} reposted",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        }
+ 
         PostHeader(
             user = state.user,
             timestamp = state.formattedTimestamp,
@@ -85,8 +118,10 @@ fun PostCard(
                 isVideo = state.isVideo,
                 pollQuestion = state.pollQuestion,
                 pollOptions = state.pollOptions,
+                userPollVote = state.userPollVote,
                 onMediaClick = onMediaClick,
                 onPollVote = onPollVote,
+                quotedPost = state.post.quotedPost,
                 isExpanded = state.isExpanded
             )
         }

@@ -42,7 +42,6 @@ import com.synapse.social.studioasinc.R
 fun CommentItem(
     comment: CommentWithUser,
     replies: List<CommentWithUser> = emptyList(),
-    repliesState: Map<String, List<CommentWithUser>> = emptyMap(),
     depth: Int = 0,
     isRepliesLoading: Boolean = false,
     loadingIds: Set<String> = emptySet(),
@@ -58,7 +57,7 @@ fun CommentItem(
     showThreadLine: Boolean = false
 ) {
     val isLoading = loadingIds.contains(comment.id)
-    val directReplies = replies.ifEmpty { repliesState[comment.id] ?: emptyList() }
+    val directReplies = replies
     val isReply = depth > 0 || comment.parentCommentId != null
 
     Column(
@@ -213,10 +212,9 @@ fun CommentItem(
             directReplies.forEachIndexed { index, reply ->
                 CommentItem(
                     comment = reply,
-                    replies = emptyList(),
-                    repliesState = emptyMap(),
+                    replies = emptyList(), // Recursive depth should probably not show deeper replies for now
                     depth = depth + 1,
-                    isRepliesLoading = false,
+                    isRepliesLoading = isRepliesLoading,
                     loadingIds = loadingIds,
                     onReplyClick = onReplyClick,
                     onLikeClick = onLikeClick,

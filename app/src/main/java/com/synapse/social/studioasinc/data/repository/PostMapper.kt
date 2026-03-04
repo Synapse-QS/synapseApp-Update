@@ -61,7 +61,9 @@ object PostMapper {
             avatarUrl = post.avatarUrl,
             isVerified = post.isVerified,
             userPollVote = post.userPollVote,
-            metadata = post.metadata?.let { toSharedPostMetadata(it) }
+            metadata = post.metadata?.let { toSharedPostMetadata(it) },
+            quotedPostId = post.quotedPostId,
+            isQuote = post.isQuote
         )
     }
 
@@ -114,7 +116,9 @@ object PostMapper {
             avatarUrl = entity.avatarUrl,
             isVerified = entity.isVerified,
             userPollVote = entity.userPollVote,
-            metadata = entity.metadata?.let { toAppPostMetadata(it) }
+            metadata = entity.metadata?.let { toAppPostMetadata(it) },
+            quotedPostId = entity.quotedPostId,
+            isQuote = entity.isQuote
         )
     }
 

@@ -111,7 +111,9 @@ class SqlDelightPostDao(
             avatarUrl = dbPost.avatarUrl,
             isVerified = dbPost.isVerified,
             userPollVote = dbPost.userPollVote,
-            metadata = dbPost.metadata
+            metadata = dbPost.metadata,
+            quotedPostId = dbPost.quotedPostId,
+            isQuote = dbPost.isQuote
         )
     }
 
@@ -162,7 +164,9 @@ class SqlDelightPostDao(
             avatarUrl = entity.avatarUrl,
             isVerified = entity.isVerified,
             userPollVote = entity.userPollVote,
-            metadata = entity.metadata
+            metadata = entity.metadata,
+            quotedPostId = entity.quotedPostId,
+            isQuote = entity.isQuote
         )
     }
 }

@@ -180,6 +180,9 @@ fun PostInteractionBar(
                             onClick = {
                                 onRepostClick()
                                 showRepostMenu = false
+                            },
+                            leadingIcon = {
+                                Icon(Icons.Outlined.Repeat, contentDescription = null)
                             }
                         )
                         androidx.compose.material3.DropdownMenuItem(
@@ -187,6 +190,9 @@ fun PostInteractionBar(
                             onClick = {
                                 onQuoteClick()
                                 showRepostMenu = false
+                            },
+                            leadingIcon = {
+                                Icon(androidx.compose.material.icons.Icons.AutoMirrored.Outlined.Comment, contentDescription = null)
                             }
                         )
                     }

@@ -226,17 +226,15 @@ fun SearchScreen(
                                     if (uiState.posts.isEmpty()) {
                                         item { EmptyState("No posts found") }
                                     } else {
-                                        items(uiState.posts, key = { it.id }) { searchPost ->
-                                            val post = remember(searchPost) { searchPost.toPost() }
-
+                                        items(uiState.posts, key = { it.id }) { post ->
                                             val actions = remember(viewModel) {
                                                 PostActions(
                                                     onLike = viewModel::likePost,
-                                                    onComment = { post -> onNavigateToPost(post.id) },
+                                                    onComment = { p -> onNavigateToPost(p.id) },
                                                     onShare = viewModel::sharePost,
                                                     onRepost = { },
                                                     onBookmark = viewModel::bookmarkPost,
-                                                    onOptionClick = { post -> selectedPost = post },
+                                                    onOptionClick = { p -> selectedPost = p },
                                                     onPollVote = viewModel::votePoll,
                                                     onUserClick = { userId -> onNavigateToProfile(userId) },
                                                     onMediaClick = { _ -> onNavigateToPost(post.id) },
@@ -355,18 +353,3 @@ fun EmptyState(message: String) {
 }
 
 
-private fun SearchPost.toPost(): Post {
-    return Post(
-        id = this.id,
-        authorUid = this.authorId,
-        postText = this.content,
-        publishDate = this.createdAt,
-        timestamp = 0L,
-        likesCount = this.likesCount,
-        commentsCount = this.commentsCount,
-        resharesCount = this.boostCount,
-        username = this.authorHandle,
-        avatarUrl = this.authorAvatar,
-        mediaItems = null
-    )
-}

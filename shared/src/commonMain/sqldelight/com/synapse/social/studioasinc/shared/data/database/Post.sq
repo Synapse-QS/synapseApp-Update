@@ -54,7 +54,9 @@ CREATE TABLE Post (
     avatarUrl TEXT,
     isVerified INTEGER AS Boolean NOT NULL DEFAULT 0,
     userPollVote INTEGER AS Int,
-    metadata TEXT AS PostMetadata
+    metadata TEXT AS PostMetadata,
+    quotedPostId TEXT,
+    isQuote INTEGER AS Boolean NOT NULL DEFAULT 0
 );
 
 insertPost:
@@ -65,7 +67,8 @@ INSERT OR REPLACE INTO Post(
     mediaItems, isEncrypted, nonce, encryptionKeyId, encryptedContent, isDeleted, isEdited, editedAt, deletedAt,
     hasPoll, pollQuestion, pollOptions, pollEndTime, pollAllowMultiple,
     hasLocation, locationName, locationAddress, locationLatitude, locationLongitude, locationPlaceId,
-    youtubeUrl, reactions, userReaction, username, displayName, avatarUrl, isVerified, userPollVote, metadata
+    youtubeUrl, reactions, userReaction, username, displayName, avatarUrl, isVerified, userPollVote, metadata,
+    quotedPostId, isQuote
 ) VALUES ?;
 
 selectAll:

@@ -44,7 +44,7 @@ data class SearchUiState(
     val isLoading: Boolean = false,
     val selectedTab: SearchTab = SearchTab.FOR_YOU,
     val error: String? = null,
-    val posts: List<SearchPost> = emptyList(),
+    val posts: List<com.synapse.social.studioasinc.domain.model.Post> = emptyList(),
     val hashtags: List<SearchHashtag> = emptyList(),
     val news: List<SearchNews> = emptyList(),
     val accounts: List<SearchAccount> = emptyList(),
@@ -68,6 +68,8 @@ class SearchViewModel @Inject constructor(
     private val pollRepository: com.synapse.social.studioasinc.data.repository.PollRepository,
     private val profileActionRepository: com.synapse.social.studioasinc.data.repository.ProfileActionRepository
 ) : ViewModel() {
+
+    private val reactionRepository = com.synapse.social.studioasinc.data.repository.ReactionRepository()
 
     private val _uiState = MutableStateFlow(SearchUiState())
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
@@ -165,7 +167,7 @@ class SearchViewModel @Inject constructor(
                 SearchTab.FOR_YOU, SearchTab.PEOPLE -> _uiState.update { it.copy(accounts = cached as List<SearchAccount>, isLoading = false) }
                 SearchTab.TRENDING, SearchTab.LISTS -> _uiState.update { it.copy(hashtags = cached as List<SearchHashtag>, isLoading = false) }
                 SearchTab.NEWS, SearchTab.SPORTS, SearchTab.ENTERTAINMENT -> _uiState.update { it.copy(news = cached as List<SearchNews>, isLoading = false) }
-                SearchTab.TOP, SearchTab.LATEST, SearchTab.MEDIA -> _uiState.update { it.copy(posts = cached as List<SearchPost>, isLoading = false) }
+                SearchTab.TOP, SearchTab.LATEST, SearchTab.MEDIA -> _uiState.update { it.copy(posts = cached as List<com.synapse.social.studioasinc.domain.model.Post>, isLoading = false) }
             }
             return
         }
@@ -244,11 +246,31 @@ class SearchViewModel @Inject constructor(
                     SearchTab.TOP, SearchTab.LATEST, SearchTab.MEDIA -> {
                         val result = searchPostsUseCase(query)
                         result.onSuccess { data ->
+                            val posts = data.map { searchPost ->
+                                com.synapse.social.studioasinc.domain.model.Post(
+                                    id = searchPost.id,
+                                    authorUid = searchPost.authorId,
+                                    postText = searchPost.content,
+                                    publishDate = searchPost.createdAt,
+                                    timestamp = 0L, // Will be parsed if needed, but 0 is safe for now
+                                    likesCount = searchPost.likesCount,
+                                    commentsCount = searchPost.commentsCount,
+                                    resharesCount = searchPost.boostCount,
+                                    username = searchPost.authorHandle,
+                                    avatarUrl = searchPost.authorAvatar?.let { avatarPath ->
+                                        com.synapse.social.studioasinc.shared.core.network.SupabaseClient.constructStorageUrl(com.synapse.social.studioasinc.shared.core.network.SupabaseClient.BUCKET_USER_AVATARS, avatarPath)
+                                    }
+                                )
+                            }
+                            
+                            val enrichedPosts = reactionRepository.populatePostReactions(posts)
+                            val fullyEnrichedPosts = populatePostPolls(enrichedPosts)
+
                             val filtered = when (currentTab) {
-                                SearchTab.TOP -> data.sortedByDescending { it.likesCount + it.commentsCount + it.boostCount }
-                                SearchTab.LATEST -> data.sortedByDescending { it.createdAt }
-                                SearchTab.MEDIA -> data
-                                else -> data
+                                SearchTab.TOP -> fullyEnrichedPosts.sortedByDescending { it.likesCount + it.commentsCount + it.resharesCount }
+                                SearchTab.LATEST -> fullyEnrichedPosts.sortedByDescending { it.publishDate }
+                                SearchTab.MEDIA -> fullyEnrichedPosts
+                                else -> fullyEnrichedPosts
                             }
                             _uiState.update { 
                                 it.copy(
@@ -373,5 +395,37 @@ class SearchViewModel @Inject constructor(
 
     fun areCommentsDisabled(post: com.synapse.social.studioasinc.domain.model.Post): Boolean {
         return post.postDisableComments == "true"
+    }
+
+    private suspend fun populatePostPolls(posts: List<com.synapse.social.studioasinc.domain.model.Post>): List<com.synapse.social.studioasinc.domain.model.Post> {
+        val pollPosts = posts.filter { it.hasPoll == true }
+        if (pollPosts.isEmpty()) return posts
+
+        val postIds = pollPosts.map { it.id }
+
+        val userVotesResult = pollRepository.getBatchUserVotes(postIds)
+        val userVotes = userVotesResult.getOrNull() ?: emptyMap()
+
+        val pollCountsResult = pollRepository.getBatchPollVotes(postIds)
+        val pollCounts = pollCountsResult.getOrNull() ?: emptyMap()
+
+        return posts.map { post ->
+            if (post.hasPoll == true) {
+                val userVote = userVotes[post.id]
+                val counts = pollCounts[post.id] ?: emptyMap()
+
+                val updatedOptions = post.pollOptions?.mapIndexed { index, option ->
+                    option.copy(votes = counts[index] ?: 0)
+                }
+
+                val updatedPost = post.copy(
+                    pollOptions = updatedOptions
+                )
+                updatedPost.userPollVote = userVote
+                updatedPost
+            } else {
+                post
+            }
+        }
     }
 }

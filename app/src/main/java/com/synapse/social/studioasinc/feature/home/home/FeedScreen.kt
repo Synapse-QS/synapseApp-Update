@@ -29,6 +29,7 @@ import androidx.paging.LoadState
 import androidx.paging.compose.collectAsLazyPagingItems
 import androidx.paging.compose.itemContentType
 import androidx.paging.compose.itemKey
+import com.synapse.social.studioasinc.domain.model.FeedItem
 import com.synapse.social.studioasinc.domain.model.Post
 import com.synapse.social.studioasinc.domain.model.StoryWithUser
 import com.synapse.social.studioasinc.feature.home.home.FeedViewModel
@@ -158,15 +159,31 @@ fun FeedScreen(
                 items(
                     count = posts.itemCount,
                     key = posts.itemKey { it.id },
-                    contentType = posts.itemContentType { "post" }
+                    contentType = posts.itemContentType { it.itemType }
                 ) { index ->
-                    val post = posts[index]
-                    if (post != null) {
-                        SharedPostItem(
-                            post = post,
-                            postViewStyle = uiState.postViewStyle,
-                            actions = actions
-                        )
+                    val feedItem = posts[index]
+                    if (feedItem != null) {
+                        when (feedItem) {
+                            is FeedItem.PostItem -> {
+                                SharedPostItem(
+                                    post = feedItem.post,
+                                    postViewStyle = uiState.postViewStyle,
+                                    actions = actions
+                                )
+                            }
+                            is FeedItem.CommentItem -> {
+                                com.synapse.social.studioasinc.feature.shared.components.post.FeedCommentItem(
+                                    commentItem = feedItem,
+                                    onCommentClick = { postId, commentId ->
+                                        currentOnCommentClick(postId)
+                                    },
+                                    onUserClick = currentOnUserClick,
+                                    onLikeClick = { commentId ->
+                                        // Optional: Handle comment liking in future
+                                    }
+                                )
+                            }
+                        }
                     }
                 }
 

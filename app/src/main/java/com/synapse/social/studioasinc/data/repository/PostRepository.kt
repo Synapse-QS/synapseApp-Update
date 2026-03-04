@@ -58,6 +58,16 @@ class PostRepository constructor(
         ).flow
     }
 
+    fun getFeedPaged(): Flow<PagingData<com.synapse.social.studioasinc.domain.model.FeedItem>> {
+        return Pager(
+            config = PagingConfig(
+                pageSize = 20,
+                enablePlaceholders = false
+            ),
+            pagingSourceFactory = { com.synapse.social.studioasinc.data.paging.FeedPagingSource(client) }
+        ).flow
+    }
+
     // Cache for user profiles to avoid repeated network calls
     private val profileCache = ConcurrentHashMap<String, CacheEntry<ProfileData>>()
 
@@ -288,7 +298,8 @@ class PostRepository constructor(
                     columns = Columns.raw("""
                         *,
                         users!posts_author_uid_fkey(uid, username, display_name, avatar, verify),
-                        latest_comments:comments(id, content, user_id, created_at, users(username))
+                        latest_comments:comments(id, content, user_id, created_at, users(username)),
+                        quoted_post:posts!posts_quoted_post_id_fkey(*, users!posts_author_uid_fkey(uid, username, display_name, avatar, verify))
                     """.trimIndent())
                 ) {
                     range(offset.toLong(), (offset + pageSize - 1).toLong())
@@ -369,7 +380,8 @@ class PostRepository constructor(
                     columns = Columns.raw("""
                         *,
                         users!posts_author_uid_fkey(uid, username, display_name, avatar, verify),
-                        latest_comments:comments(id, content, user_id, created_at, users(username))
+                        latest_comments:comments(id, content, user_id, created_at, users(username)),
+                        quoted_post:posts!posts_quoted_post_id_fkey(*, users!posts_author_uid_fkey(uid, username, display_name, avatar, verify))
                     """.trimIndent())
                 ) {
                     filter { eq("author_uid", userId) }

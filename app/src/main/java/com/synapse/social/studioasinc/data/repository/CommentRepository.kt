@@ -63,6 +63,9 @@ class CommentRepository constructor(
                 .select(columns = Columns.raw("*, users(uid, username, display_name, avatar, bio, verify, status, account_type, followers_count, following_count, posts_count, banned)")) {
                     filter {
                         eq("post_id", postId)
+                        filterNot("is_deleted", io.github.jan.supabase.postgrest.query.filter.FilterOperator.EQ, true)
+                        // Only fetch top-level comments
+                        filter("parent_comment_id", io.github.jan.supabase.postgrest.query.filter.FilterOperator.IS, "null")
                     }
                     order("created_at", Order.DESCENDING)
                     range(offset.toLong(), (offset + limit - 1).toLong())

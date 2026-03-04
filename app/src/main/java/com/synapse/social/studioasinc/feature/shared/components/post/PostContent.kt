@@ -1,6 +1,26 @@
 package com.synapse.social.studioasinc.feature.shared.components.post
+ 
+import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.text.font.FontWeight
+import coil.compose.AsyncImage
+import com.synapse.social.studioasinc.domain.model.Post
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -28,9 +48,11 @@ fun PostContent(
     postViewStyle: PostViewStyle = PostViewStyle.SWIPE,
     isVideo: Boolean,
     pollQuestion: String?,
-    pollOptions: List<PollOption>?,
-    onMediaClick: (Int) -> Unit,
+    pollOptions: List<PollOption>? = null,
+    userPollVote: Int? = null,
+    onMediaClick: (Int) -> Unit = {},
     onPollVote: (String) -> Unit,
+    quotedPost: Post? = null,
     isExpanded: Boolean = false,
     modifier: Modifier = Modifier
 ) {
@@ -79,6 +101,92 @@ fun PostContent(
                 totalVotes = pollOptions.sumOf { it.voteCount },
                 onVote = onPollVote
             )
+        }
+ 
+        if (quotedPost != null) {
+            Spacer(modifier = Modifier.height(8.dp))
+            QuotedPostCard(
+                post = quotedPost,
+                onPostClick = { /* Handled by parent or specific click */ }
+            )
+        }
+    }
+}
+ 
+@Composable
+fun QuotedPostCard(
+    post: Post,
+    onPostClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .border(
+                width = 0.5.dp,
+                color = MaterialTheme.colorScheme.outlineVariant,
+                shape = RoundedCornerShape(12.dp)
+            )
+            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+            .clickable(onClick = onPostClick)
+            .padding(12.dp)
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            AsyncImage(
+                model = post.avatarUrl,
+                contentDescription = null,
+                modifier = Modifier
+                    .size(20.dp)
+                    .clip(CircleShape),
+                contentScale = ContentScale.Crop
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            Text(
+                text = post.displayName ?: post.username ?: "Unknown",
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            if (post.isVerified) {
+                Spacer(modifier = Modifier.width(4.dp))
+                // Add verification icon if available, or just skip for now
+            }
+            Spacer(modifier = Modifier.width(4.dp))
+            Text(
+                text = "@${post.username}",
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+ 
+        if (!post.postText.isNullOrBlank()) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = post.postText!!,
+                style = MaterialTheme.typography.bodyMedium,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+ 
+        if (!post.mediaItems.isNullOrEmpty()) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(150.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(Color.Gray.copy(alpha = 0.2f))
+            ) {
+                AsyncImage(
+                    model = post.mediaItems!!.first().url,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxWidth(),
+                    contentScale = ContentScale.Crop
+                )
+            }
         }
     }
 }

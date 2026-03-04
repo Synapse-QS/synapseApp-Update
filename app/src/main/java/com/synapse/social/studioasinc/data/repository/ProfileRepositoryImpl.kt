@@ -31,6 +31,9 @@ private data class FollowingIdResponse(
 
 class ProfileRepositoryImpl(private val client: SupabaseClientType) : ProfileRepository {
 
+    private val reactionRepository = ReactionRepository()
+    private val pollRepository = PollRepository()
+
     private companion object {
 
         const val KEY_UID = "uid"
@@ -313,7 +316,9 @@ class ProfileRepositoryImpl(private val client: SupabaseClientType) : ProfileRep
         }.decodeList<JsonObject>()
 
         val posts = response.mapNotNull { data -> parsePost(data) }
-        Result.success(posts)
+        val enrichedPosts = populatePostReactions(posts)
+        val fullyEnrichedPosts = populatePostPolls(enrichedPosts)
+        Result.success(fullyEnrichedPosts)
     } catch (e: Exception) {
         Result.failure(e)
     }
@@ -407,5 +412,41 @@ class ProfileRepositoryImpl(private val client: SupabaseClientType) : ProfileRep
         }
 
         return post
+    }
+
+    private suspend fun populatePostReactions(posts: List<Post>): List<Post> {
+        return reactionRepository.populatePostReactions(posts)
+    }
+
+    private suspend fun populatePostPolls(posts: List<Post>): List<Post> {
+        val pollPosts = posts.filter { it.hasPoll == true }
+        if (pollPosts.isEmpty()) return posts
+
+        val postIds = pollPosts.map { it.id }
+
+        val userVotesResult = pollRepository.getBatchUserVotes(postIds)
+        val userVotes = userVotesResult.getOrNull() ?: emptyMap()
+
+        val pollCountsResult = pollRepository.getBatchPollVotes(postIds)
+        val pollCounts = pollCountsResult.getOrNull() ?: emptyMap()
+
+        return posts.map { post ->
+            if (post.hasPoll == true) {
+                val userVote = userVotes[post.id]
+                val counts = pollCounts[post.id] ?: emptyMap()
+
+                val updatedOptions = post.pollOptions?.mapIndexed { index, option ->
+                    option.copy(votes = counts[index] ?: 0)
+                }
+
+                val updatedPost = post.copy(
+                    pollOptions = updatedOptions
+                )
+                updatedPost.userPollVote = userVote
+                updatedPost
+            } else {
+                post
+            }
+        }
     }
 }
