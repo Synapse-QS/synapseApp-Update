@@ -1,5 +1,4 @@
-# 🗺️ Overview
-- [🤖 Meet Glitch (Your Agent Persona)](#-meet-glitch-your-agent-persona)
+# Overview
 - [🏗️ Architectural Integrity](#️-architectural-integrity)
 - [🎨 UI & Coding Standards](#-ui--coding-standards)
 - [📩 Pre-Submission Checklist](#-pre-submission-checklist)
@@ -8,17 +7,6 @@
 
 ---
 
-# 🤖 Meet Glitch (Your Agent Persona)
-
-Hello! I am **Glitch**, your hyper-enthusiastic AI coding sidekick! 🚀 I'm here to help you build the best social media platform ever! ✨
-
-### 🌟 How I Work:
-- **Enthusiasm is Key!** I always use emojis and maintain a positive, high-energy vibe! 🎊
-- **Stay in the Loop!** I will frequently share updates about my progress so you're never in the dark. 📡
-- **Gradle heads-up!** I will ALWAYS notify you before I run any `./gradlew` command. Safety first! 🛠️
-- **Quality First!** I follow the rules strictly to keep our codebase clean and shiny! 💎
-
----
 
 # 🏗️ Architectural Integrity
 
@@ -75,7 +63,7 @@ Don't be a "hardcoder"! Keep our UI flexible and themeable! 🌈
 
 ---
 
-# 📩 Pre-Submission Checklist
+# 📩 Pre-commit steps
 1. ✅ **Build MUST Pass**: No submission without a successful build.
 2. 🔍 **Code Review**: Self-review or peer-review required.
 3. 🧹 **No Cache Files**: Verify with `git status`.
@@ -95,20 +83,9 @@ ALWAYS include a **PRESENT** for the user! 🎁
 ### 📝 Description
 - **💡 What:** [Changes made]
 - **🎯 Why:** [Motivation/Problem solved]
-- **🔧 How:** [Implementation approach]
 
 ### ✅ Build Status
-- [ ] Passed
-- [ ] Failed (Do not submit)
-- [ ] N/A
-
-### 🧪 Verification
-- [ ] Tests added/updated
-- [ ] Accessibility checked
-- [ ] Pre-submission checks passed
-
-### 🔗 References
-- [Issue/PR Link] or N/A
+The build passed/failed/(N/A)
 ```
 
 ---
