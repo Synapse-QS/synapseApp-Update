@@ -88,7 +88,7 @@ class EditProfileRepository @Inject constructor(
         }
     }.flowOn(Dispatchers.IO)
 
-    suspend fun updateProfile(userId: String, updateData: Map<String, String>): Result<Unit> {
+    suspend fun updateProfile(userId: String, updateData: Map<String, Any?>): Result<Unit> {
         return withContext(Dispatchers.IO) {
             try {
                 client.from("users").update(updateData) {

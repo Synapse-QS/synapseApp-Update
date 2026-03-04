@@ -46,21 +46,28 @@ class StoryViewerViewModel @Inject constructor(
     fun loadStories(userId: String) {
         _uiState.update { it.copy(isLoading = true) }
         viewModelScope.launch {
-
+            android.util.Log.d("StoryViewerViewModel", "Loading stories for user: $userId")
+            
+            // Fetch user and stories in parallel
             val userResult = userRepository.getUserById(userId)
-            val user = userResult.getOrNull()
-
-            if (user == null) {
-                _uiState.update { it.copy(isLoading = false, error = "User not found") }
-                return@launch
-            }
-
-
             val storiesResult = storyRepository.getUserStories(userId)
-            storiesResult.onSuccess { stories ->
-                if (stories.isEmpty()) {
+
+            val user = userResult.getOrNull()
+            val stories = storiesResult.getOrNull() ?: emptyList()
+
+            android.util.Log.d("StoryViewerViewModel", "User fetched: ${user != null}, Stories count: ${stories.size}")
+
+            when {
+                user == null -> {
+                    android.util.Log.e("StoryViewerViewModel", "User not found for userId: $userId")
+                    _uiState.update { it.copy(isLoading = false, error = "User not found") }
+                }
+                stories.isEmpty() -> {
+                    android.util.Log.w("StoryViewerViewModel", "No stories found for userId: $userId")
                     _uiState.update { it.copy(isLoading = false, error = "No stories found", user = user) }
-                } else {
+                }
+                else -> {
+                    android.util.Log.d("StoryViewerViewModel", "Successfully loaded ${stories.size} stories for user: ${user.displayName ?: user.username}")
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -76,8 +83,6 @@ class StoryViewerViewModel @Inject constructor(
                     }
                     markAsSeen(firstStory.id)
                 }
-            }.onFailure { e ->
-                _uiState.update { it.copy(isLoading = false, error = e.message) }
             }
         }
     }

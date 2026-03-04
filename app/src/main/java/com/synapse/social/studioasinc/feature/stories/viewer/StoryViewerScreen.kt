@@ -264,15 +264,28 @@ fun StoryUserHeader(
         verticalAlignment = Alignment.CenterVertically
     ) {
 
-        AsyncImage(
-            model = user?.avatar,
-            contentDescription = null,
+        Box(
             modifier = Modifier
                 .size(32.dp)
                 .clip(CircleShape)
-                .background(Color.Gray),
-            contentScale = ContentScale.Crop
-        )
+                .background(MaterialTheme.colorScheme.surfaceVariant),
+            contentAlignment = Alignment.Center
+        ) {
+            if (user?.avatar != null) {
+                AsyncImage(
+                    model = user.avatar,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop
+                )
+            } else {
+                Text(
+                    text = (user?.displayName ?: user?.username ?: "?").take(1).uppercase(),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.width(8.dp))
 

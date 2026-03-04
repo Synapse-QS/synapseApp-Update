@@ -237,7 +237,7 @@ class StoryRepositoryImpl @Inject constructor(
         val now = Instant.now().toString()
 
         val stories = client.from(TABLE_STORIES)
-            .select {
+            .select(columns = Columns.raw("*")) {
                 filter {
                     eq("user_id", userId)
                     gt("expires_at", now)

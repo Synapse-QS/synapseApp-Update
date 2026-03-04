@@ -158,16 +158,17 @@ fun QuotedPostCard(
     onPostClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val shape = RoundedCornerShape(MaterialTheme.shapes.medium.topStart)
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(Spacing.Medium))
+            .clip(shape)
             .border(
-                width = 0.5.dp,
+                width = 1.dp,
                 color = MaterialTheme.colorScheme.outlineVariant,
-                shape = RoundedCornerShape(Spacing.Medium)
+                shape = shape
             )
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
             .clickable(onClick = onPostClick)
             .padding(Spacing.Medium)
     ) {
@@ -216,8 +217,8 @@ fun QuotedPostCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(150.dp)
-                    .clip(RoundedCornerShape(Spacing.Small))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.2f))
+                    .clip(MaterialTheme.shapes.small)
+                    .background(MaterialTheme.colorScheme.surfaceContainerHighest)
             ) {
                 AsyncImage(
                     model = post.mediaItems!!.first().url,

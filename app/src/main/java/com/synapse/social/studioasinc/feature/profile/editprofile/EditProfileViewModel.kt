@@ -479,7 +479,7 @@ class EditProfileViewModel @Inject constructor(
             }
 
             try {
-                val updateData = mutableMapOf<String, String>()
+                val updateData = mutableMapOf<String, Any?>()
 
                 updateData["username"] = state.username
                 updateData["display_name"] = state.nickname

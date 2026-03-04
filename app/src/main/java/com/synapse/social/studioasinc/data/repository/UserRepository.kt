@@ -65,7 +65,10 @@ class UserRepository @Inject constructor(
 
     suspend fun getUserById(userId: String): Result<User?> {
         return try {
+            // First try to get from cache
             var user = userDao.getUserById(userId)?.let { UserMapper.toModel(it) }
+            
+            // If not in cache or cache is stale, fetch from Supabase
             if (user == null) {
                 val userProfile = client.from(SharedSupabaseClient.TABLE_USERS)
                     .select() {
@@ -82,13 +85,18 @@ class UserRepository @Inject constructor(
                         displayName = it.displayName,
                         email = it.email,
                         avatar = it.avatar,
-                        verify = it.verify
+                        verify = it.verify,
+                        bio = it.bio,
+                        followersCount = it.followersCount ?: 0,
+                        followingCount = it.followingCount ?: 0,
+                        postsCount = it.postsCount ?: 0
                     )
                     userDao.insertUser(UserMapper.toUserEntity(user!!))
                 }
             }
             Result.success(user)
         } catch (e: Exception) {
+            android.util.Log.e("UserRepository", "Failed to fetch user by ID: $userId", e)
             return SupabaseErrorHandler.toResult(e, "UserRepository", "Failed to fetch user by ID: $userId")
         }
     }
