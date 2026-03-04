@@ -3,8 +3,6 @@ package com.synapse.social.studioasinc.data.repository
 import com.synapse.social.studioasinc.shared.data.local.database.UserDao
 import com.synapse.social.studioasinc.domain.model.User
 import com.synapse.social.studioasinc.domain.model.UserProfile
-import com.synapse.social.studioasinc.domain.model.AccountInfo
-import com.synapse.social.studioasinc.domain.model.SubscriptionType
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.auth.auth
@@ -194,75 +192,6 @@ class UserRepository @Inject constructor(
 
     suspend fun isUsernameAvailable(username: String): Result<Boolean> {
         return checkUsernameAvailability(username)
-    }
-
-    suspend fun getAccountInfo(userId: String): Result<AccountInfo> {
-        return try {
-            val authUser = client.auth.currentUserOrNull()
-
-            if (authUser == null) {
-                return Result.failure(Exception("User not logged in"))
-            }
-
-            val profileResult = client.from(SharedSupabaseClient.TABLE_USERS).select {
-                filter {
-                    eq("uid", userId)
-                }
-            }.decodeSingleOrNull<UserProfileDto>()
-
-            if (profileResult == null) {
-                return Result.failure(Exception("Profile not found"))
-            }
-
-            val postsCount = client.from("posts").select(columns = Columns.list("id")) {
-                count(Count.EXACT)
-                filter { eq("author_uid", userId) }
-            }.countOrNull() ?: 0
-
-            val followersCount = client.from("follows").select(columns = Columns.list("id")) {
-                count(Count.EXACT)
-                filter { eq("following_id", userId) }
-            }.countOrNull() ?: 0
-
-            val followingCount = client.from("follows").select(columns = Columns.list("id")) {
-                count(Count.EXACT)
-                filter { eq("follower_id", userId) }
-            }.countOrNull() ?: 0
-
-            val storiesCount = client.from("stories").select(columns = Columns.list("id")) {
-                count(Count.EXACT)
-                filter { eq("user_id", userId) }
-            }.countOrNull() ?: 0
-
-            val reelsCount = client.from("reels").select(columns = Columns.list("id")) {
-                count(Count.EXACT)
-                filter { eq("creator_id", userId) }
-            }.countOrNull() ?: 0
-
-            val accountInfo = AccountInfo(
-                userId = userId,
-                username = profileResult.username ?: "N/A",
-                displayName = profileResult.displayName ?: "N/A",
-                email = profileResult.email ?: authUser.email ?: "N/A",
-                phoneNumber = authUser.phone,
-                bio = profileResult.bio,
-                accountType = if (profileResult.accountPremium == true) SubscriptionType.PLUS else SubscriptionType.FREE,
-                isVerified = profileResult.verify == true,
-                createdAt = profileResult.createdAt,
-                lastLoginAt = authUser.lastSignInAt?.let { kotlinx.datetime.Instant.fromEpochMilliseconds(it.toEpochMilliseconds()) },
-                postsCount = postsCount.toInt(),
-                followersCount = followersCount.toInt(),
-                followingCount = followingCount.toInt(),
-                storiesCount = storiesCount.toInt(),
-                reelsCount = reelsCount.toInt(),
-                region = profileResult.region ?: "Unknown",
-                language = "English"
-            )
-
-            Result.success(accountInfo)
-        } catch (e: Exception) {
-            SupabaseErrorHandler.toResult(e, "UserRepository", "Failed to fetch account info")
-        }
     }
 
     @Serializable

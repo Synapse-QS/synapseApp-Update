@@ -53,6 +53,7 @@ fun PostInteractionBar(
     viewsCount: Int = 0,
     isBookmarked: Boolean,
     hideLikeCount: Boolean = false,
+    isComment: Boolean = false,
     onLikeClick: () -> Unit,
     onCommentClick: () -> Unit,
     onShareClick: () -> Unit,
@@ -148,57 +149,60 @@ fun PostInteractionBar(
 
                 Spacer(modifier = Modifier.width(16.dp))
 
-                Box {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier
-                            .clickable { showRepostMenu = true }
-                            .padding(horizontal = 8.dp, vertical = 4.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.Repeat,
-                            contentDescription = "Repost",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        if (repostCount > 0) {
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                text = formatCount(repostCount),
-                                style = MaterialTheme.typography.labelMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                // Hide repost button for comments
+                if (!isComment) {
+                    Box {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier
+                                .clickable { showRepostMenu = true }
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Outlined.Repeat,
+                                contentDescription = "Repost",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            if (repostCount > 0) {
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = formatCount(repostCount),
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        
+                        androidx.compose.material3.DropdownMenu(
+                            expanded = showRepostMenu,
+                            onDismissRequest = { showRepostMenu = false }
+                        ) {
+                            androidx.compose.material3.DropdownMenuItem(
+                                text = { Text("Reshare") },
+                                onClick = {
+                                    onRepostClick()
+                                    showRepostMenu = false
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Outlined.Repeat, contentDescription = null)
+                                }
+                            )
+                            androidx.compose.material3.DropdownMenuItem(
+                                text = { Text("Quote") },
+                                onClick = {
+                                    onQuoteClick()
+                                    showRepostMenu = false
+                                },
+                                leadingIcon = {
+                                    Icon(androidx.compose.material.icons.Icons.AutoMirrored.Outlined.Comment, contentDescription = null)
+                                }
                             )
                         }
                     }
-                    
-                    androidx.compose.material3.DropdownMenu(
-                        expanded = showRepostMenu,
-                        onDismissRequest = { showRepostMenu = false }
-                    ) {
-                        androidx.compose.material3.DropdownMenuItem(
-                            text = { Text("Reshare") },
-                            onClick = {
-                                onRepostClick()
-                                showRepostMenu = false
-                            },
-                            leadingIcon = {
-                                Icon(Icons.Outlined.Repeat, contentDescription = null)
-                            }
-                        )
-                        androidx.compose.material3.DropdownMenuItem(
-                            text = { Text("Quote") },
-                            onClick = {
-                                onQuoteClick()
-                                showRepostMenu = false
-                            },
-                            leadingIcon = {
-                                Icon(androidx.compose.material.icons.Icons.AutoMirrored.Outlined.Comment, contentDescription = null)
-                            }
-                        )
-                    }
-                }
 
-                Spacer(modifier = Modifier.width(16.dp))
+                    Spacer(modifier = Modifier.width(16.dp))
+                }
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically,

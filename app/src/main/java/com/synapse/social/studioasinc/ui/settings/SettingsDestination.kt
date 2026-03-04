@@ -74,10 +74,6 @@ sealed class SettingsDestination(val route: String) {
 
 
 
-    object AccountInfo : SettingsDestination(ROUTE_ACCOUNT_INFO)
-
-
-
     object ManageStorage : SettingsDestination(ROUTE_MANAGE_STORAGE)
 
 
@@ -111,7 +107,6 @@ sealed class SettingsDestination(val route: String) {
         const val ROUTE_SEARCH = "settings_search"
         const val ROUTE_API_KEY = "settings_api_key"
         const val ROUTE_REQUEST_ACCOUNT_INFO = "settings_request_account_info"
-        const val ROUTE_ACCOUNT_INFO = "settings_account_info"
         const val ROUTE_MANAGE_STORAGE = "settings_storage_manage"
         const val ROUTE_NETWORK_USAGE = "settings_network_usage"
         const val ROUTE_BUSINESS_PLATFORM = "settings_business_platform"
@@ -137,7 +132,6 @@ sealed class SettingsDestination(val route: String) {
             Accessibility,
             ApiKey,
             RequestAccountInfo,
-            AccountInfo,
             ManageStorage,
             NetworkUsage,
             BusinessPlatform,
@@ -164,7 +158,6 @@ sealed class SettingsDestination(val route: String) {
             ROUTE_ACCESSIBILITY -> Accessibility
             ROUTE_API_KEY -> ApiKey
             ROUTE_REQUEST_ACCOUNT_INFO -> RequestAccountInfo
-            ROUTE_ACCOUNT_INFO -> AccountInfo
             ROUTE_MANAGE_STORAGE -> ManageStorage
             ROUTE_NETWORK_USAGE -> NetworkUsage
             ROUTE_BUSINESS_PLATFORM -> BusinessPlatform

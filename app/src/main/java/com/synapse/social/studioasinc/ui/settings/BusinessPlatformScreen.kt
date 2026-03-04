@@ -26,6 +26,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.synapse.social.studioasinc.R
+import com.synapse.social.studioasinc.feature.shared.theme.Spacing
 import com.synapse.social.studioasinc.shared.domain.model.business.AccountType
 import com.synapse.social.studioasinc.shared.domain.model.business.AnalyticsData
 import com.synapse.social.studioasinc.shared.domain.model.business.RevenueData
@@ -68,7 +69,7 @@ fun BusinessPlatformScreen(
         snackbarHost = {
             if (error != null) {
                 Snackbar(
-                    modifier = Modifier.padding(16.dp),
+                    modifier = Modifier.padding(Spacing.Medium),
                     action = {
                         TextButton(onClick = { viewModel.clearError() }) {
                             Text("Dismiss")
@@ -94,9 +95,8 @@ fun BusinessPlatformScreen(
                     .nestedScroll(scrollBehavior.nestedScrollConnection)
                     .padding(paddingValues)
                     .padding(horizontal = SettingsSpacing.screenPadding),
-                verticalArrangement = Arrangement.spacedBy(24.dp)
+                verticalArrangement = Arrangement.spacedBy(Spacing.Large)
             ) {
-
                 item {
                     AccountTypeSection(
                         state = state,
@@ -105,11 +105,9 @@ fun BusinessPlatformScreen(
                 }
 
                 if (state.isBusinessAccount) {
-
                     item {
                         AnalyticsDashboardSection(state.analytics)
                     }
-
 
                     item {
                         MonetizationSection(
@@ -118,7 +116,6 @@ fun BusinessPlatformScreen(
                         )
                     }
 
-
                     item {
                         ProfessionalToolsSection(
                             onNavigateToBrandPartnerships = onNavigateToBrandPartnerships,
@@ -126,7 +123,6 @@ fun BusinessPlatformScreen(
                             onNavigateToContentCalendar = onNavigateToContentCalendar
                         )
                     }
-
 
                     item {
                         VerificationSection(
@@ -137,7 +133,7 @@ fun BusinessPlatformScreen(
                 }
 
                 item {
-                    Spacer(modifier = Modifier.height(24.dp))
+                    Spacer(modifier = Modifier.height(Spacing.Large))
                 }
             }
         }
@@ -150,10 +146,12 @@ fun AccountTypeSection(
     onSwitchToBusiness: () -> Unit
 ) {
     SettingsSection(title = "Account Type") {
-        Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(Spacing.Medium)) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth().padding(horizontal = SettingsSpacing.itemHorizontalPadding)
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = SettingsSpacing.itemHorizontalPadding)
             ) {
                 Icon(
                     imageVector = when (state.accountType) {
@@ -163,10 +161,10 @@ fun AccountTypeSection(
                     },
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.size(24.dp)
+                    modifier = Modifier.size(SettingsSpacing.iconSize)
                 )
-                Spacer(modifier = Modifier.width(16.dp))
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Spacer(modifier = Modifier.width(SettingsSpacing.iconTextSpacing))
+                Column(verticalArrangement = Arrangement.spacedBy(Spacing.Small)) {
                     Text(
                         text = state.accountType.name.lowercase().replaceFirstChar { it.uppercase() } + " Account",
                         style = MaterialTheme.typography.titleMedium
@@ -184,7 +182,9 @@ fun AccountTypeSection(
             if (!state.isBusinessAccount) {
                 Button(
                     onClick = onSwitchToBusiness,
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = SettingsSpacing.itemHorizontalPadding)
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = SettingsSpacing.itemHorizontalPadding)
                 ) {
                     Text("Switch to Business Account")
                 }
@@ -199,13 +199,12 @@ fun AnalyticsDashboardSection(analytics: AnalyticsData?) {
 
     SettingsSection(title = "Analytics Dashboard") {
         Column(
-            verticalArrangement = Arrangement.spacedBy(16.dp),
+            verticalArrangement = Arrangement.spacedBy(Spacing.Medium),
             modifier = Modifier.padding(horizontal = SettingsSpacing.itemHorizontalPadding)
         ) {
-
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(Spacing.Medium)
             ) {
                 AnalyticsCard(
                     title = "Profile Views",
@@ -219,34 +218,29 @@ fun AnalyticsDashboardSection(analytics: AnalyticsData?) {
                 )
             }
 
-
-
-
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
                     containerColor = SettingsColors.cardBackgroundElevated
                 )
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
+                Column(modifier = Modifier.padding(Spacing.Medium)) {
                     Text(
                         text = "Follower Growth",
                         style = MaterialTheme.typography.titleSmall,
-                        modifier = Modifier.padding(bottom = 16.dp)
+                        modifier = Modifier.padding(bottom = Spacing.Medium)
                     )
-
-
-
 
                     Text(
                         text = "Chart visualization coming soon",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(vertical = 32.dp)
+                        modifier = Modifier.padding(vertical = Spacing.ExtraLarge)
                     )
+                }
             }
-            }
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+
+            Column(verticalArrangement = Arrangement.spacedBy(Spacing.Small)) {
                 Text(
                     text = "Top Performing Content",
                     style = MaterialTheme.typography.titleSmall,
@@ -254,7 +248,9 @@ fun AnalyticsDashboardSection(analytics: AnalyticsData?) {
                 )
                 analytics.topPosts.forEachIndexed { index, post ->
                     Row(
-                        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = Spacing.Medium),
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         Text(
@@ -289,7 +285,7 @@ fun AnalyticsCard(
         )
     ) {
         Column(
-            modifier = Modifier.padding(16.dp),
+            modifier = Modifier.padding(Spacing.Medium),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
@@ -324,11 +320,16 @@ fun MonetizationSection(
             if (state.monetizationEnabled && state.revenue != null) {
                 SettingsDivider()
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = SettingsSpacing.itemHorizontalPadding, vertical = SettingsSpacing.itemVerticalPadding),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            horizontal = SettingsSpacing.itemHorizontalPadding,
+                            vertical = SettingsSpacing.itemVerticalPadding
+                        ),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(Spacing.Small)) {
                         Text(
                             text = "Total Earnings",
                             style = MaterialTheme.typography.bodyMedium
@@ -342,7 +343,7 @@ fun MonetizationSection(
                     Icon(
                         imageVector = Icons.Default.AttachMoney,
                         contentDescription = null,
-                        modifier = Modifier.size(48.dp),
+                        modifier = Modifier.size(Spacing.Huge),
                         tint = MaterialTheme.colorScheme.tertiary
                     )
                 }

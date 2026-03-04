@@ -26,7 +26,6 @@ fun AccountSettingsScreen(
     onEditProfile: () -> Unit,
     onLogout: () -> Unit,
     onNavigateToRequestAccountInfo: () -> Unit = {},
-    onNavigateToAccountInfo: () -> Unit = {},
     onNavigateToBusinessPlatform: () -> Unit = {},
     onNavigateToChangeNumber: () -> Unit = {}
 ) {
@@ -123,13 +122,6 @@ fun AccountSettingsScreen(
                         subtitle = "Update your phone number",
                         icon = R.drawable.ic_phone,
                         onClick = onNavigateToChangeNumber
-                    )
-                    SettingsDivider()
-                    SettingsNavigationItem(
-                        title = "Account Info",
-                        subtitle = "View your account details",
-                        icon = R.drawable.ic_info,
-                        onClick = onNavigateToAccountInfo
                     )
                     SettingsDivider()
                     SettingsNavigationItem(

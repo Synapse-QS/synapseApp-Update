@@ -37,6 +37,7 @@ fun PostHeader(
     taggedPeople: List<User> = emptyList(),
     feeling: FeelingActivity? = null,
     locationName: String? = null,
+    avatarSize: androidx.compose.ui.unit.Dp = 40.dp,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -49,7 +50,7 @@ fun PostHeader(
             imageUrl = user.avatar,
             contentDescription = "Avatar of ${user.username}",
             onClick = onUserClick,
-            size = 40.dp
+            size = avatarSize
         )
         Spacer(modifier = Modifier.width(12.dp))
         Column(

@@ -238,6 +238,7 @@
     <string name="profile_cover_history_empty_subtitle">There is no cover photo you have previously uploaded! Every time you change your cover photo it is added here.</string>
     <string name="no_followed">This user does not follow anyone</string>
     <string name="show_replies">Show Replies</string>
+    <string name="show_more_replies">Show more replies</string>
     <string name="hide_replies">Hide Replies</string>
     <string name="see_more">See more</string>
     <string name="show_less">Show less</string>

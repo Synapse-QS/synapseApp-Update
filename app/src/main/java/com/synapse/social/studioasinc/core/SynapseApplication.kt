@@ -13,6 +13,7 @@ import com.synapse.social.studioasinc.feature.shared.theme.ThemeManager
 import com.synapse.social.studioasinc.shared.domain.repository.NotificationRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import javax.inject.Inject
@@ -26,6 +27,8 @@ class SynapseApplication : Application() {
     override fun onCreate() {
         super.onCreate()
 
+        // Apply saved language before anything else
+        applySavedLanguage()
 
         initializeOneSignal()
 
@@ -79,6 +82,31 @@ class SynapseApplication : Application() {
                 }
             } catch (e: Exception) {
                 android.util.Log.e("SynapseApplication", "Failed to restore OneSignal session", e)
+            }
+        }
+    }
+
+    private fun applySavedLanguage() {
+        val settingsRepository = SettingsRepositoryImpl.getInstance(this)
+        CoroutineScope(Dispatchers.Main).launch {
+            try {
+                val languageCode = settingsRepository.language.first()
+                if (languageCode.isNotEmpty() && languageCode != "en") {
+                    val locale = if (languageCode.contains("-")) {
+                        val parts = languageCode.split("-")
+                        java.util.Locale.Builder().setLanguage(parts[0]).setRegion(parts[1]).build()
+                    } else {
+                        java.util.Locale.Builder().setLanguage(languageCode).build()
+                    }
+                    
+                    androidx.appcompat.app.AppCompatDelegate.setApplicationLocales(
+                        androidx.core.os.LocaleListCompat.create(locale)
+                    )
+                    
+                    android.util.Log.d("SynapseApplication", "Applied saved language: $languageCode")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("SynapseApplication", "Failed to apply saved language", e)
             }
         }
     }

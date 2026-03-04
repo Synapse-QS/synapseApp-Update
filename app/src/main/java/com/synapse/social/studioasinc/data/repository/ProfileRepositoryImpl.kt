@@ -107,8 +107,15 @@ class ProfileRepositoryImpl(private val client: SupabaseClientType) : ProfileRep
     private fun JsonObject.getString(key: String, default: String = ""): String =
         this[key]?.jsonPrimitive?.contentOrNull ?: default
 
-    private fun JsonObject.getNullableString(key: String): String? =
-        this[key]?.jsonPrimitive?.contentOrNull
+    private fun JsonObject.getNullableString(key: String): String? {
+        val element = this[key]
+        return when {
+            element == null || element is JsonNull -> null
+            element is JsonPrimitive -> element.contentOrNull
+            element is JsonArray -> null // Handle arrays gracefully
+            else -> null
+        }
+    }
 
     private fun JsonObject.getBoolean(key: String, default: Boolean = false): Boolean =
         this[key]?.jsonPrimitive?.booleanOrNull ?: default
@@ -157,7 +164,9 @@ class ProfileRepositoryImpl(private val client: SupabaseClientType) : ProfileRep
             discordTag = data.getNullableString(KEY_DISCORD_TAG),
             githubProfile = data.getNullableString(KEY_GITHUB_PROFILE),
             personalWebsite = data.getNullableString(KEY_PERSONAL_WEBSITE),
-            publicEmail = data.getNullableString(KEY_PUBLIC_EMAIL)
+            publicEmail = data.getNullableString(KEY_PUBLIC_EMAIL),
+            linkedAccounts = emptyList(),
+            privacySettings = emptyMap()
         )
     }
 

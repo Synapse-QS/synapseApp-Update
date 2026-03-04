@@ -31,16 +31,6 @@ kotlin {
         }
     }
 
-    wasmJs {
-        moduleName = "shared"
-        browser {
-            commonWebpackConfig {
-                outputFileName = "shared.js"
-            }
-        }
-        binaries.executable()
-    }
-
     sourceSets {
         all {
             languageSettings.apply {

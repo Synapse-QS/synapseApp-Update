@@ -66,9 +66,6 @@ fun SettingsNavHost(
                 onNavigateToRequestAccountInfo = {
                     navController.navigate(SettingsDestination.ROUTE_REQUEST_ACCOUNT_INFO)
                 },
-                onNavigateToAccountInfo = {
-                    navController.navigate(SettingsDestination.ROUTE_ACCOUNT_INFO)
-                },
                 onNavigateToBusinessPlatform = {
                     navController.navigate(SettingsDestination.ROUTE_BUSINESS_PLATFORM)
                 },
@@ -84,16 +81,6 @@ fun SettingsNavHost(
             RequestAccountInfoScreen(
                 viewModel = viewModel,
                 onNavigateBack = {
-                    navController.popBackStack()
-                }
-            )
-        }
-
-        composable(route = SettingsDestination.ROUTE_ACCOUNT_INFO) {
-            val viewModel: AccountInfoViewModel = hiltViewModel()
-            AccountInfoScreen(
-                viewModel = viewModel,
-                onBackClick = {
                     navController.popBackStack()
                 }
             )

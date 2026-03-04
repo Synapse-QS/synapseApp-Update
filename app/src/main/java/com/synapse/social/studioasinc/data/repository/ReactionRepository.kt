@@ -146,7 +146,7 @@ class ReactionRepository @Inject constructor(
                 try {
                     val summaryList = client.postgrest.rpc(
                         "get_posts_reactions_summary",
-                        buildJsonObject { put("post_ids", buildJsonArray { add(JsonPrimitive(targetId)) }) }
+                        buildJsonObject { put("post_ids", buildJsonArray { add(targetId) }) }
                     ).decodeList<PostReactionSummary>()
 
                     val summary = summaryList.firstOrNull()?.reactionCounts?.entries
@@ -161,7 +161,7 @@ class ReactionRepository @Inject constructor(
                 try {
                     val summaryList = client.postgrest.rpc(
                         "get_comments_reactions_summary",
-                        buildJsonObject { put("comment_ids", buildJsonArray { add(JsonPrimitive(targetId)) }) }
+                        buildJsonObject { put("comment_ids", buildJsonArray { add(targetId) }) }
                     ).decodeList<CommentReactionSummary>()
 
                     val summary = summaryList.firstOrNull()?.reactionCounts?.entries
@@ -297,7 +297,7 @@ class ReactionRepository @Inject constructor(
                                     "get_posts_reactions_summary",
                                     buildJsonObject { 
                                         put("post_ids", buildJsonArray { 
-                                            chunkIds.forEach { add(JsonPrimitive(it)) }
+                                            chunkIds.forEach { add(it) }
                                         }) 
                                     }
                                  ).decodeList<PostReactionSummary>()
@@ -389,7 +389,7 @@ class ReactionRepository @Inject constructor(
                                     "get_comments_reactions_summary",
                                     buildJsonObject { 
                                         put("comment_ids", buildJsonArray { 
-                                            chunkIds.forEach { add(JsonPrimitive(it)) }
+                                            chunkIds.forEach { add(it) }
                                         }) 
                                     }
                                  ).decodeList<CommentReactionSummary>()

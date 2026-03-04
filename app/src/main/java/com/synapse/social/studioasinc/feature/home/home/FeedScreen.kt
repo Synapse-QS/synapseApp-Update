@@ -37,6 +37,8 @@ import com.synapse.social.studioasinc.feature.shared.components.post.PostActions
 import com.synapse.social.studioasinc.feature.shared.components.post.PostActionsFactory
 import com.synapse.social.studioasinc.feature.shared.components.post.SharedPostItem
 import com.synapse.social.studioasinc.feature.shared.components.post.PostOptionsBottomSheet
+import com.synapse.social.studioasinc.feature.shared.components.post.PostCard
+import com.synapse.social.studioasinc.feature.shared.components.post.PostUiMapper
 import com.synapse.social.studioasinc.ui.components.ExpressivePullToRefreshIndicator
 import com.synapse.social.studioasinc.feature.stories.tray.StoryTray
 import com.synapse.social.studioasinc.feature.stories.tray.StoryTrayViewModel
@@ -172,14 +174,56 @@ fun FeedScreen(
                                 )
                             }
                             is FeedItem.CommentItem -> {
-                                com.synapse.social.studioasinc.feature.shared.components.post.FeedCommentItem(
-                                    commentItem = feedItem,
-                                    onCommentClick = { postId, commentId ->
-                                        currentOnCommentClick(postId)
-                                    },
-                                    onUserClick = currentOnUserClick,
-                                    onLikeClick = { commentId ->
+                                // Map FeedItem.CommentItem to PostCardState
+                                val commentState = PostUiMapper.toPostCardState(feedItem)
+                                
+                                PostCard(
+                                    state = commentState,
+                                    postViewStyle = uiState.postViewStyle,
+                                    onLikeClick = {
                                         // Optional: Handle comment liking in future
+                                    },
+                                    onCommentClick = {
+                                        // Navigate to parent post to show comment
+                                        feedItem.parentPostId?.let { postId ->
+                                            currentOnCommentClick(postId)
+                                        }
+                                    },
+                                    onShareClick = {
+                                        // Optional: Handle comment sharing in future
+                                    },
+                                    onRepostClick = {
+                                        // Not applicable for comments
+                                    },
+                                    onBookmarkClick = {
+                                        // Not applicable for comments
+                                    },
+                                    onUserClick = {
+                                        currentOnUserClick(feedItem.userId)
+                                    },
+                                    onPostClick = {
+                                        // Navigate to parent post to show comment
+                                        feedItem.parentPostId?.let { postId ->
+                                            currentOnCommentClick(postId)
+                                        }
+                                    },
+                                    onMediaClick = { index ->
+                                        // Not applicable for comments
+                                    },
+                                    onOptionsClick = {
+                                        // Optional: Handle comment options in future
+                                    },
+                                    onPollVote = { _ ->
+                                        // Not applicable for comments
+                                    },
+                                    onReactionSelected = null,
+                                    onParentAuthorClick = {
+                                        // Navigate to parent author if available
+                                        feedItem.parentAuthorUsername?.let { username ->
+                                            // Note: We need userId, not username for navigation
+                                            // This is a limitation - we may need to enhance FeedItem.CommentItem
+                                            // For now, clicking parent author will do nothing
+                                        }
                                     }
                                 )
                             }

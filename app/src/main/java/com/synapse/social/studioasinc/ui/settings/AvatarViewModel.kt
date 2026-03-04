@@ -16,6 +16,7 @@ class AvatarViewModel @Inject constructor(
 ) : ViewModel() {
 
     data class UiState(
+        val currentAvatarUrl: String? = null,
         val isUploading: Boolean = false,
         val error: String? = null,
         val successMessage: String? = null
@@ -26,6 +27,32 @@ class AvatarViewModel @Inject constructor(
 
     private val _isRemoving = MutableStateFlow(false)
     val isRemoving: StateFlow<Boolean> = _isRemoving.asStateFlow()
+
+    init {
+        loadCurrentAvatar()
+    }
+
+    private fun loadCurrentAvatar() {
+        viewModelScope.launch {
+            try {
+                val userId = editProfileRepository.getCurrentUserId()
+                if (userId != null) {
+                    editProfileRepository.getUserProfile(userId).collect { result ->
+                        result.fold(
+                            onSuccess = { profile ->
+                                _uiState.value = _uiState.value.copy(
+                                    currentAvatarUrl = profile.avatar
+                                )
+                            },
+                            onFailure = { }
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                // Silently fail
+            }
+        }
+    }
 
     fun clearMessages() {
         _uiState.value = _uiState.value.copy(error = null, successMessage = null)

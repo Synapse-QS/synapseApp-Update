@@ -157,18 +157,20 @@ class LanguageRegionViewModel(
                 )
                 _availableLanguages.value = languages
 
+                // Observe language changes continuously
+                launch {
+                    settingsRepository.language.collect { savedCode ->
+                        val selected = languages.find { it.code == savedCode }
+                        if (selected != null) {
+                            _currentLanguage.value = selected.nativeName
+                        } else {
 
-                settingsRepository.language.collect { savedCode ->
-                    val selected = languages.find { it.code == savedCode }
-                    if (selected != null) {
-                        _currentLanguage.value = selected.nativeName
-                    } else {
-
-                        val systemLocale = Locale.getDefault()
-                        val systemCode = systemLocale.language
-                        val match = languages.find { it.code.startsWith(systemCode) }
-                        if (match != null) {
-                            _currentLanguage.value = match.nativeName
+                            val systemLocale = Locale.getDefault()
+                            val systemCode = systemLocale.language
+                            val match = languages.find { it.code.startsWith(systemCode) }
+                            if (match != null) {
+                                _currentLanguage.value = match.nativeName
+                            }
                         }
                     }
                 }
@@ -188,10 +190,10 @@ class LanguageRegionViewModel(
             _isLoading.value = true
             _error.value = null
             try {
-
+                // Save language preference
                 settingsRepository.setLanguage(languageOption.code)
 
-
+                // Build locale
                 val locale = if (languageOption.code.contains("-")) {
                     val parts = languageOption.code.split("-")
                     Locale.Builder().setLanguage(parts[0]).setRegion(parts[1]).build()
@@ -199,6 +201,7 @@ class LanguageRegionViewModel(
                     Locale.Builder().setLanguage(languageOption.code).build()
                 }
 
+                // Apply locale - this will trigger activity recreation automatically
                 AppCompatDelegate.setApplicationLocales(
                     LocaleListCompat.create(locale)
                 )
