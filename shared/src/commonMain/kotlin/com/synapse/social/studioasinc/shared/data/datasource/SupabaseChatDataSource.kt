@@ -138,17 +138,18 @@ class SupabaseChatDataSource(private val client: SupabaseClientLib = SupabaseCli
 
             if (myChats.isNotEmpty()) {
                 val myChatIds = myChats.map { it.chatId }
-                val sharedChats = client.postgrest.from("chat_participants")
+
+                val otherInChat = client.postgrest.from("chat_participants")
                     .select(columns = Columns.list("chat_id")) {
                         filter {
                             isIn("chat_id", myChatIds)
                             eq("user_id", otherUserId)
                         }
-                    }.decodeList<ChatParticipantDto>().firstOrNull()
+                        limit(1)
+                    }.decodeList<ChatParticipantDto>()
 
-                if (sharedChats != null) {
-                    return@withContext sharedChats.chatId
-                }
+                val existingChatId = otherInChat.firstOrNull()?.chatId
+                if (existingChatId != null) return@withContext existingChatId
             }
 
             val chatId = "${currentUserId}_${otherUserId}"
@@ -185,24 +186,17 @@ class SupabaseChatDataSource(private val client: SupabaseClientLib = SupabaseCli
                 }
             }.decodeList<MessageDto>()
 
-            val updatesByNewReadBy = mutableMapOf<String, MutableList<String>>()
-
             messages.forEach { msg ->
                 msg.id?.let { messageId ->
-                    val readByList = msg.readBy?.split(",")?.filter { it.isNotBlank() }?.toMutableList() ?: mutableListOf()
+                    val readByList = msg.readBy?.split(",")?.toMutableList() ?: mutableListOf()
                     if (!readByList.contains(currentUserId)) {
                         readByList.add(currentUserId)
-                        val newReadBy = readByList.joinToString(",")
-                        updatesByNewReadBy.getOrPut(newReadBy) { mutableListOf() }.add(messageId)
+                        client.postgrest.from("messages").update({
+                            set("read_by", readByList.joinToString(","))
+                        }) {
+                            filter { eq("id", messageId) }
+                        }
                     }
-                }
-            }
-
-            updatesByNewReadBy.forEach { (newReadBy, messageIds) ->
-                client.postgrest.from("messages").update({
-                    set("read_by", newReadBy)
-                }) {
-                    filter { isIn("id", messageIds) }
                 }
             }
         } catch (e: Exception) {

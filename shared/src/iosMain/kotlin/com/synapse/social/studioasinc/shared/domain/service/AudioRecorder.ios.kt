@@ -1,135 +1,57 @@
 package com.synapse.social.studioasinc.shared.domain.service
 
-import kotlinx.cinterop.*
-import platform.AudioToolbox.*
-import platform.CoreAudio.*
+import platform.AVFAudio.*
 import platform.Foundation.*
-import platform.posix.*
-
-class AudioRecordState {
-    var file: CPointer<FILE>? = null
-    var isRecording: Boolean = false
-}
-
-val audioQueueInputCallback: AudioQueueInputCallback = staticCFunction { inUserData, inAQ, inBuffer, inStartTime, inNumberPacketDescriptions, inPacketDescs ->
-    if (inUserData == null || inBuffer == null || inAQ == null) return@staticCFunction
-    val state = inUserData.asStableRef<AudioRecordState>().get()
-
-    if (!state.isRecording) return@staticCFunction
-
-    val buffer = inBuffer.pointed
-    val bytes = buffer.mAudioData
-    val bytesSize = buffer.mAudioDataByteSize
-
-    if (bytes != null && bytesSize > 0u && state.file != null) {
-        fwrite(bytes, 1u, bytesSize.toULong(), state.file)
-    }
-
-    if (state.isRecording) {
-        AudioQueueEnqueueBuffer(inAQ, inBuffer, 0u, null)
-    }
-}
+import platform.CoreAudioTypes.*
+import kotlinx.cinterop.*
+import platform.posix.memcpy
 
 actual class AudioRecorder {
-    private var queue: AudioQueueRef? = null
-    private var stateRef: StableRef<AudioRecordState>? = null
-    private val numBuffers = 3
-    private var allocatedBuffers = mutableListOf<AudioQueueBufferRef>()
-    private var outputPath: String? = null
+    private var recorder: AVAudioRecorder? = null
+    private var outputUrl: NSURL? = null
 
     actual fun startRecording(outputPath: String) {
-        this.outputPath = outputPath
+        val fileManager = NSFileManager.defaultManager
+        val documentDirectory = fileManager.URLForDirectory(
+            directory = NSDocumentDirectory,
+            inDomain = NSUserDomainMask,
+            appropriateForURL = null,
+            create = true,
+            error = null
+        )
+        outputUrl = documentDirectory?.URLByAppendingPathComponent(outputPath)
 
-        val state = AudioRecordState().apply {
-            file = fopen(outputPath, "wb")
-            isRecording = true
-        }
-        stateRef = StableRef.create(state)
-
-        memScoped {
-            val format = alloc<AudioStreamBasicDescription>().apply {
-                mSampleRate = 44100.0
-                mFormatID = kAudioFormatLinearPCM
-                mFormatFlags = kLinearPCMFormatFlagIsSignedInteger or kLinearPCMFormatFlagIsPacked
-                mFramesPerPacket = 1u
-                mChannelsPerFrame = 1u
-                mBitsPerChannel = 16u
-                mBytesPerPacket = 2u
-                mBytesPerFrame = 2u
-            }
-
-            val queueVar = alloc<AudioQueueRefVar>()
-            val status = AudioQueueNewInput(
-                format.ptr,
-                audioQueueInputCallback,
-                stateRef!!.asCPointer(),
-                null,
-                null,
-                0u,
-                queueVar.ptr
+        outputUrl?.let { url ->
+            val settings = mapOf<Any?, Any>(
+                AVFormatIDKey to kAudioFormatMPEG4AAC,
+                AVSampleRateKey to 44100.0,
+                AVNumberOfChannelsKey to 1
             )
 
-            if (status != 0) {
-                stateRef?.dispose()
-                stateRef = null
-                if (state.file != null) fclose(state.file)
-                return
-            }
+            val session = AVAudioSession.sharedInstance()
+            session.setCategory(AVAudioSessionCategoryRecord, error = null)
+            session.setActive(true, error = null)
 
-            val createdQueue = queueVar.value
-            queue = createdQueue
-
-            val bufferByteSize = 4096u
-            for (i in 0 until numBuffers) {
-                val bufferRef = alloc<AudioQueueBufferRefVar>()
-                AudioQueueAllocateBuffer(createdQueue, bufferByteSize, bufferRef.ptr)
-                bufferRef.value?.let {
-                    allocatedBuffers.add(it)
-                    AudioQueueEnqueueBuffer(createdQueue, it, 0u, null)
-                }
-            }
-
-            AudioQueueStart(createdQueue, null)
+            recorder = AVAudioRecorder(url, settings, null)
+            recorder?.prepareToRecord()
+            recorder?.record()
         }
     }
 
-    @OptIn(ExperimentalForeignApi::class)
     actual fun stopRecording(): ByteArray? {
-        var result: ByteArray? = null
-        queue?.let { q ->
-            AudioQueueStop(q, true)
-            AudioQueueDispose(q, true)
-        }
-        queue = null
+        recorder?.stop()
+        recorder = null
 
-        stateRef?.let { ref ->
-            val state = ref.get()
-            state.isRecording = false
-            if (state.file != null) {
-                fclose(state.file)
-                state.file = null
-            }
-            ref.dispose()
-        }
-        stateRef = null
-        allocatedBuffers.clear()
-
-        outputPath?.let { path ->
-            val data = NSData.dataWithContentsOfFile(path)
-            if (data != null) {
-                val bytes = data.bytes
-                val length = data.length.toInt()
-                if (bytes != null && length > 0) {
-                    result = ByteArray(length)
-                    result!!.usePinned { pinned ->
-                        memcpy(pinned.addressOf(0), bytes, length.toULong())
-                    }
-                }
+        return outputUrl?.let { url ->
+            val data = NSData.dataWithContentsOfURL(url)
+            data?.let {
+                if (it.length == 0uL) return@let ByteArray(0)
+                val bytes = ByteArray(it.length.toInt())
+                memcpy(bytes.refTo(0), it.bytes, it.length)
+                bytes
             }
         }
-
-        return result
     }
 
-    actual fun isRecording(): Boolean = stateRef?.get()?.isRecording == true
+    actual fun isRecording(): Boolean = recorder?.recording ?: false
 }
