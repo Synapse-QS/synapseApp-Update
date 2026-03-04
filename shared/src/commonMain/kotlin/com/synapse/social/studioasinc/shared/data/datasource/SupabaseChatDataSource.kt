@@ -136,16 +136,20 @@ class SupabaseChatDataSource(private val client: SupabaseClientLib = SupabaseCli
                     filter { eq("user_id", currentUserId) }
                 }.decodeList<ChatParticipantDto>()
 
-            for (chat in myChats) {
+            if (myChats.isNotEmpty()) {
+                val myChatIds = myChats.map { it.chatId }
+
                 val otherInChat = client.postgrest.from("chat_participants")
-                    .select(columns = Columns.list("user_id")) {
+                    .select(columns = Columns.list("chat_id")) {
                         filter {
-                            eq("chat_id", chat.chatId)
+                            isIn("chat_id", myChatIds)
                             eq("user_id", otherUserId)
                         }
+                        limit(1)
                     }.decodeList<ChatParticipantDto>()
 
-                if (otherInChat.isNotEmpty()) return@withContext chat.chatId
+                val existingChatId = otherInChat.firstOrNull()?.chatId
+                if (existingChatId != null) return@withContext existingChatId
             }
 
             val chatId = "${currentUserId}_${otherUserId}"
