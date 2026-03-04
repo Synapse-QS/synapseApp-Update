@@ -173,7 +173,6 @@ class AuthErrorHandler {
             }
         }
     }
-
 }
 
 
@@ -321,6 +320,48 @@ class SupabaseAuthenticationService : com.synapse.social.studioasinc.data.remote
         }
     }
 
+    private suspend fun clearExistingSession(action: String) {
+        try {
+            client.auth.signOut()
+            debugLog("Cleared existing session before $action")
+        } catch (e: Exception) {
+            debugLog("No existing session to clear", e)
+        }
+    }
+
+    private fun createLocalUser(email: String, supabaseUser: io.github.jan.supabase.auth.user.UserInfo?): User {
+        return if (supabaseUser != null && supabaseUser.id.isNotEmpty()) {
+            User(
+                id = supabaseUser.id,
+                email = supabaseUser.email ?: email,
+                emailConfirmed = supabaseUser.emailConfirmedAt != null,
+                createdAt = supabaseUser.createdAt?.toString()
+            )
+        } else {
+            User(
+                id = "pending",
+                email = email,
+                emailConfirmed = false,
+                createdAt = System.currentTimeMillis().toString()
+            )
+        }
+    }
+
+    private suspend fun handleAuthFailure(email: String, step: String, e: Exception): Result<AuthResult> {
+        logAuthenticationStep("$step failed with exception", email, false)
+        debugLog("$step failed", e)
+
+        try {
+            client.auth.signOut()
+        } catch (signOutError: Exception) {
+            debugLog("Failed to clear session after error", signOutError)
+        }
+
+        val authError = AuthErrorHandler.handleAuthError(e)
+        val errorMessage = AuthErrorHandler.getErrorMessage(authError)
+        return Result.failure(Exception(errorMessage))
+    }
+
 
 
     override suspend fun signUp(email: String, password: String): Result<AuthResult> {
@@ -328,17 +369,15 @@ class SupabaseAuthenticationService : com.synapse.social.studioasinc.data.remote
             try {
                 logAuthenticationStep("Starting sign up", email)
 
-
-                if (!checkSupabaseConfigured("Sign up", email)) {
+                if (!SupabaseClient.isConfigured()) {
+                    logAuthenticationStep("Sign up failed - Supabase not configured", email, false)
                     return@withContext Result.failure(Exception("Supabase not configured. Please set up your credentials."))
                 }
 
-
                 clearExistingSession("sign up")
 
-
                 logAuthenticationStep("Attempting Supabase sign up", email)
-                val authResult = AuthErrorHandler.executeWithRetry(
+                AuthErrorHandler.executeWithRetry(
                     maxAttempts = authConfig.getEffectiveRetryAttempts(),
                     initialDelay = authConfig.getEffectiveRetryDelay()
                 ) {
@@ -347,59 +386,31 @@ class SupabaseAuthenticationService : com.synapse.social.studioasinc.data.remote
                         this.password = password
                     }
                 }
-
-
                 debugLog("Sign up request completed successfully")
-
 
                 client.auth.currentUserOrNull()?.id?.let { userId ->
                     OneSignal.login(userId)
                     debugLog("Linked OneSignal with External User ID: $userId")
                 }
 
-
                 val supabaseUser = client.auth.currentUserOrNull()
-
-
-                val user = if (supabaseUser != null && supabaseUser.id.isNotEmpty()) {
-                    User(
-                        id = supabaseUser.id,
-                        email = supabaseUser.email ?: email,
-                        emailConfirmed = supabaseUser.emailConfirmedAt != null,
-                        createdAt = supabaseUser.createdAt?.toString()
-                    )
-                } else {
-
-
-                    User(
-                        id = "pending",
-                        email = email,
-                        emailConfirmed = false,
-                        createdAt = System.currentTimeMillis().toString()
-                    )
-                }
-
+                val user = createLocalUser(email, supabaseUser)
                 debugLog("User created successfully: ${user.id}")
-
 
                 val needsVerification = if (authConfig.shouldBypassEmailVerification()) {
                     debugLog("Email verification bypassed in development mode")
                     false
                 } else {
-
                     supabaseUser?.emailConfirmedAt == null
                 }
-
 
                 AuthErrorHandler.logVerificationAttempt(email, !needsVerification)
                 logAuthenticationStep("Sign up completed successfully", email, true)
 
-                val message = if (needsVerification) {
-                    "Please check your email and click the verification link to activate your account."
-                } else if (authConfig.shouldBypassEmailVerification()) {
-                    "Account created successfully. Email verification bypassed in development mode."
-                } else {
-                    "Account created successfully!"
+                val message = when {
+                    needsVerification -> "Please check your email and click the verification link to activate your account."
+                    authConfig.shouldBypassEmailVerification() -> "Account created successfully. Email verification bypassed in development mode."
+                    else -> "Account created successfully!"
                 }
 
                 Result.success(AuthResult(
@@ -408,7 +419,7 @@ class SupabaseAuthenticationService : com.synapse.social.studioasinc.data.remote
                     message = message
                 ))
             } catch (e: Exception) {
-                handleAuthException(e, "Sign up", email)
+                handleAuthFailure(email, "Sign up", e)
             }
         }
     }
@@ -420,17 +431,15 @@ class SupabaseAuthenticationService : com.synapse.social.studioasinc.data.remote
             try {
                 logAuthenticationStep("Starting sign in", email)
 
-
-                if (!checkSupabaseConfigured("Sign in", email)) {
+                if (!SupabaseClient.isConfigured()) {
+                    logAuthenticationStep("Sign in failed - Supabase not configured", email, false)
                     return@withContext Result.failure(Exception("Supabase not configured. Please set up your credentials."))
                 }
 
-
                 clearExistingSession("sign in")
 
-
                 logAuthenticationStep("Attempting Supabase sign in", email)
-                val authResult = AuthErrorHandler.executeWithRetry(
+                AuthErrorHandler.executeWithRetry(
                     maxAttempts = authConfig.getEffectiveRetryAttempts(),
                     initialDelay = authConfig.getEffectiveRetryDelay()
                 ) {
@@ -440,30 +449,19 @@ class SupabaseAuthenticationService : com.synapse.social.studioasinc.data.remote
                     }
                 }
 
-
                 val supabaseUser = client.auth.currentUserOrNull()
                 if (supabaseUser != null && supabaseUser.id.isNotEmpty()) {
-                    val user = User(
-                        id = supabaseUser.id,
-                        email = supabaseUser.email ?: email,
-                        emailConfirmed = supabaseUser.emailConfirmedAt != null,
-                        createdAt = supabaseUser.createdAt?.toString()
-                    )
-
+                    val user = createLocalUser(email, supabaseUser)
                     debugLog("User authenticated successfully: ${user.id}")
-
 
                     OneSignal.login(user.id)
                     debugLog("Linked OneSignal with External User ID: ${user.id}")
 
-
                     val emailVerified = supabaseUser.emailConfirmedAt != null || authConfig.shouldBypassEmailVerification()
 
                     if (!emailVerified && !authConfig.shouldBypassEmailVerification()) {
-
                         AuthErrorHandler.logVerificationAttempt(email, false, "Email not verified")
                         logAuthenticationStep("Sign in requires email verification", email, false)
-
 
                         Result.success(AuthResult(
                             user = user,
@@ -471,7 +469,6 @@ class SupabaseAuthenticationService : com.synapse.social.studioasinc.data.remote
                             message = "Please verify your email address to continue"
                         ))
                     } else {
-
                         AuthErrorHandler.logVerificationAttempt(email, true)
                         logAuthenticationStep("Sign in completed successfully", email, true)
 
@@ -480,7 +477,6 @@ class SupabaseAuthenticationService : com.synapse.social.studioasinc.data.remote
                         } else {
                             null
                         }
-
 
                         Result.success(AuthResult(
                             user = user,
@@ -493,7 +489,7 @@ class SupabaseAuthenticationService : com.synapse.social.studioasinc.data.remote
                     Result.failure(Exception("Authentication failed - invalid credentials"))
                 }
             } catch (e: Exception) {
-                handleAuthException(e, "Sign in", email)
+                handleAuthFailure(email, "Sign in", e)
             }
         }
     }
@@ -674,38 +670,6 @@ class SupabaseAuthenticationService : com.synapse.social.studioasinc.data.remote
                 Result.failure(e)
             }
         }
-    }
-
-    private fun checkSupabaseConfigured(stepType: String, email: String): Boolean {
-        if (!SupabaseClient.isConfigured()) {
-            logAuthenticationStep("$stepType failed - Supabase not configured", email, false)
-            return false
-        }
-        return true
-    }
-
-    private suspend fun clearExistingSession(stepType: String) {
-        try {
-            client.auth.signOut()
-            debugLog("Cleared existing session before $stepType")
-        } catch (e: Exception) {
-            debugLog("No existing session to clear", e)
-        }
-    }
-
-    private suspend fun <T> handleAuthException(e: Exception, stepType: String, email: String): Result<T> {
-        logAuthenticationStep("$stepType failed with exception", email, false)
-        debugLog("$stepType failed", e)
-
-        try {
-            client.auth.signOut()
-        } catch (signOutError: Exception) {
-            debugLog("Failed to clear session after error", signOutError)
-        }
-
-        val authError = AuthErrorHandler.handleAuthError(e)
-        val errorMessage = AuthErrorHandler.getErrorMessage(authError)
-        return Result.failure(Exception(errorMessage))
     }
 }
 
