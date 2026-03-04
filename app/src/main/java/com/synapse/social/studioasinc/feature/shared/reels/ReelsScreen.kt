@@ -18,7 +18,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.synapse.social.studioasinc.feature.shared.reels.components.CommentsBottomSheet
 import com.synapse.social.studioasinc.feature.shared.reels.components.MoreActionsBottomSheet
 import com.synapse.social.studioasinc.feature.shared.reels.components.ShareBottomSheet
 import com.synapse.social.studioasinc.ui.components.ShimmerBox
@@ -34,7 +33,6 @@ fun ReelsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val reels = uiState.reels
 
-    var showCommentsForReelId by remember { mutableStateOf<String?>(null) }
     var showMoreActionsForReelId by remember { mutableStateOf<String?>(null) }
     var showShareSheetForReelUrl by remember { mutableStateOf<String?>(null) }
 
@@ -105,7 +103,7 @@ fun ReelsScreen(
                         isActive = page == pagerState.currentPage,
                         onLikeClick = { viewModel.likeReel(reel.id) },
                         onOpposeClick = { viewModel.opposeReel(reel.id) },
-                        onCommentClick = { showCommentsForReelId = reel.id },
+                        onCommentClick = { onCommentClick(reel.id) },
                         onShareClick = { showShareSheetForReelUrl = reel.videoUrl },
                         onMoreClick = { showMoreActionsForReelId = reel.id },
                         onUserClick = { onUserClick(reel.creatorId) },
@@ -117,14 +115,6 @@ fun ReelsScreen(
             }
         }
 
-    }
-
-
-    showCommentsForReelId?.let { reelId ->
-        CommentsBottomSheet(
-            reelId = reelId,
-            onDismiss = { showCommentsForReelId = null }
-        )
     }
 
     showMoreActionsForReelId?.let { reelId ->
