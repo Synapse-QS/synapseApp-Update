@@ -2,6 +2,7 @@ package com.synapse.social.studioasinc.ui.settings
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import android.widget.Toast
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Analytics
@@ -22,6 +23,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.synapse.social.studioasinc.R
 import com.synapse.social.studioasinc.shared.domain.model.business.AccountType
@@ -33,7 +35,10 @@ import com.synapse.social.studioasinc.shared.domain.model.business.VerificationS
 @Composable
 fun BusinessPlatformScreen(
     viewModel: BusinessPlatformViewModel,
-    onBackClick: () -> Unit
+    onBackClick: () -> Unit,
+    onNavigateToBrandPartnerships: () -> Unit = {},
+    onNavigateToScheduledPosts: () -> Unit = {},
+    onNavigateToContentCalendar: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -115,7 +120,11 @@ fun BusinessPlatformScreen(
 
 
                     item {
-                        ProfessionalToolsSection()
+                        ProfessionalToolsSection(
+                            onNavigateToBrandPartnerships = onNavigateToBrandPartnerships,
+                            onNavigateToScheduledPosts = onNavigateToScheduledPosts,
+                            onNavigateToContentCalendar = onNavigateToContentCalendar
+                        )
                     }
 
 
@@ -351,14 +360,18 @@ fun MonetizationSection(
 }
 
 @Composable
-fun ProfessionalToolsSection() {
+fun ProfessionalToolsSection(
+    onNavigateToBrandPartnerships: () -> Unit = {},
+    onNavigateToScheduledPosts: () -> Unit = {},
+    onNavigateToContentCalendar: () -> Unit = {}
+) {
     SettingsSection(title = "Professional Tools") {
         Column {
             SettingsNavigationItem(
                 title = "Scheduled Posts",
                 subtitle = "Manage upcoming content",
                 imageVector = Icons.Default.Schedule,
-                onClick = { /* TODO: Implement Scheduled Posts navigation */ },
+                onClick = onNavigateToScheduledPosts,
                 position = SettingsItemPosition.Top
             )
             SettingsDivider()
@@ -366,7 +379,7 @@ fun ProfessionalToolsSection() {
                 title = "Content Calendar",
                 subtitle = "Plan your strategy",
                 imageVector = Icons.Default.CalendarToday,
-                onClick = { /* TODO: Implement Content Calendar navigation */ },
+                onClick = onNavigateToContentCalendar,
                 position = SettingsItemPosition.Middle
             )
             SettingsDivider()
@@ -374,7 +387,7 @@ fun ProfessionalToolsSection() {
                 title = "Brand Partnerships",
                 subtitle = "Manage collaborations",
                 imageVector = Icons.Default.Work,
-                onClick = { /* TODO: Implement Brand Partnerships navigation */ },
+                onClick = onNavigateToBrandPartnerships,
                 position = SettingsItemPosition.Bottom
             )
         }

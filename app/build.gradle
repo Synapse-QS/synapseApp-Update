@@ -304,6 +304,9 @@ dependencies {
     // DataStore for preferences
     implementation 'androidx.datastore:datastore-preferences:1.1.1'
 
+    // EncryptedSharedPreferences
+    implementation 'androidx.security:security-crypto:1.1.0-alpha06'
+
     // Paging Compose - Added explicitly as per reviewer
     implementation "androidx.paging:paging-compose:3.3.6"
 
@@ -323,6 +326,9 @@ dependencies {
     implementation 'com.onesignal:OneSignal:[5.1.6, 5.1.99]'
 
     // Local AARs
+
+    // Security Crypto
+    implementation "androidx.security:security-crypto:1.1.0-alpha06"
 
     // Kotlin coroutines
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2'

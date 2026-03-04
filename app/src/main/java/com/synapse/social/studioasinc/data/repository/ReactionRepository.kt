@@ -1,7 +1,6 @@
 package com.synapse.social.studioasinc.data.repository
 
 import android.util.Log
-import com.synapse.social.studioasinc.domain.model.CommentReaction
 import com.synapse.social.studioasinc.domain.model.ReactionType
 import com.synapse.social.studioasinc.domain.model.CommentWithUser
 import io.github.jan.supabase.SupabaseClient
@@ -294,7 +293,7 @@ class ReactionRepository @Inject constructor(
                      async {
                          semaphore.withPermit {
                              try {
-                                 client.postgrest.rpc(
+                                 val rpcSummaries = client.postgrest.rpc(
                                     "get_posts_reactions_summary",
                                     buildJsonObject { 
                                         put("post_ids", buildJsonArray { 
@@ -302,6 +301,33 @@ class ReactionRepository @Inject constructor(
                                         }) 
                                     }
                                  ).decodeList<PostReactionSummary>()
+
+                                 val currentUser = client.auth.currentUserOrNull()
+                                 if (currentUser != null) {
+                                     val userReactions = client.from("reactions")
+                                         .select(io.github.jan.supabase.postgrest.query.Columns.raw("post_id, reaction_type")) {
+                                             filter {
+                                                 isIn("post_id", chunkIds)
+                                                 eq("user_id", currentUser.id)
+                                                 eq("target_type", "post")
+                                             }
+                                         }.decodeList<JsonObject>()
+
+                                     val userReactionMap = userReactions.associate {
+                                         it["post_id"]?.jsonPrimitive?.contentOrNull to it["reaction_type"]?.jsonPrimitive?.contentOrNull
+                                     }
+
+                                     rpcSummaries.map { summary ->
+                                         val userReaction = userReactionMap[summary.postId]
+                                         if (userReaction != null) {
+                                             summary.copy(userReaction = userReaction)
+                                         } else {
+                                             summary
+                                         }
+                                     }
+                                 } else {
+                                     rpcSummaries
+                                 }
                              } catch (e: Exception) {
                                  Log.e(TAG, "Failed to fetch reaction summaries for chunk via RPC, falling back", e)
                                  // Fallback: query reactions table directly
@@ -315,9 +341,10 @@ class ReactionRepository @Inject constructor(
                                      .decodeList<JsonObject>()
 
                                  val currentUser = client.auth.currentUserOrNull()
+                                 val reactionsByPostId = reactions.groupBy { it["post_id"]?.jsonPrimitive?.contentOrNull }
 
                                  chunkIds.map { postId ->
-                                     val postReactions = reactions.filter { it["post_id"]?.jsonPrimitive?.contentOrNull == postId }
+                                     val postReactions = reactionsByPostId[postId] ?: emptyList()
                                      val summary = postReactions
                                          .groupBy { ReactionType.fromString(it["reaction_type"]?.jsonPrimitive?.contentOrNull ?: "LIKE") }
                                          .mapValues { it.value.size }
@@ -360,7 +387,7 @@ class ReactionRepository @Inject constructor(
                      async {
                          semaphore.withPermit {
                              try {
-                                 client.postgrest.rpc(
+                                 val rpcSummaries = client.postgrest.rpc(
                                     "get_comments_reactions_summary",
                                     buildJsonObject { 
                                         put("comment_ids", buildJsonArray { 
@@ -368,6 +395,32 @@ class ReactionRepository @Inject constructor(
                                         }) 
                                     }
                                  ).decodeList<CommentReactionSummary>()
+
+                                 val currentUser = client.auth.currentUserOrNull()
+                                 if (currentUser != null) {
+                                     val userReactions = client.from("comment_reactions")
+                                         .select(io.github.jan.supabase.postgrest.query.Columns.raw("comment_id, reaction_type")) {
+                                             filter {
+                                                 isIn("comment_id", chunkIds)
+                                                 eq("user_id", currentUser.id)
+                                             }
+                                         }.decodeList<JsonObject>()
+
+                                     val userReactionMap = userReactions.associate {
+                                         it["comment_id"]?.jsonPrimitive?.contentOrNull to it["reaction_type"]?.jsonPrimitive?.contentOrNull
+                                     }
+
+                                     rpcSummaries.map { summary ->
+                                         val userReaction = userReactionMap[summary.commentId]
+                                         if (userReaction != null) {
+                                             summary.copy(userReaction = userReaction)
+                                         } else {
+                                             summary
+                                         }
+                                     }
+                                 } else {
+                                     rpcSummaries
+                                 }
                              } catch(e: Exception) {
                                  Log.e(TAG, "Failed to fetch reaction summaries for comment chunk via RPC, falling back", e)
                                  val reactions = client.from("comment_reactions")
@@ -376,8 +429,10 @@ class ReactionRepository @Inject constructor(
 
                                  val currentUser = client.auth.currentUserOrNull()
 
+                                 val reactionsByCommentId = reactions.groupBy { it["comment_id"]?.jsonPrimitive?.contentOrNull }
+
                                  chunkIds.map { commentId ->
-                                     val commentReactions = reactions.filter { it["comment_id"]?.jsonPrimitive?.contentOrNull == commentId }
+                                     val commentReactions = reactionsByCommentId[commentId] ?: emptyList()
                                      val summary = commentReactions
                                          .groupBy { ReactionType.fromString(it["reaction_type"]?.jsonPrimitive?.contentOrNull ?: "LIKE") }
                                          .mapValues { it.value.size }

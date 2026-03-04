@@ -8,27 +8,47 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
 import com.synapse.social.studioasinc.R
+import com.synapse.social.studioasinc.presentation.editprofile.EditProfileEvent
+import com.synapse.social.studioasinc.presentation.editprofile.EditProfileViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AvatarScreen(
+    viewModel: AvatarViewModel,
     onBackClick: () -> Unit
 ) {
+    val uiState by viewModel.uiState.collectAsState()
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val context = LocalContext.current
     var showRemoveDialog by remember { mutableStateOf(false) }
+    val isRemoving by viewModel.isRemoving.collectAsState()
+
+    LaunchedEffect(uiState.error) {
+        uiState.error?.let {
+            Toast.makeText(context, it, Toast.LENGTH_LONG).show()
+            viewModel.clearMessages()
+        }
+    }
+
+    LaunchedEffect(uiState.successMessage) {
+        uiState.successMessage?.let {
+            Toast.makeText(context, it, Toast.LENGTH_SHORT).show()
+            viewModel.clearMessages()
+        }
+    }
 
     val photoPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
         if (uri != null) {
-            Toast.makeText(context, "Photo selected: $uri", Toast.LENGTH_SHORT).show()
-            // TODO: Upload to profile via ViewModel
+            viewModel.uploadPhoto(uri)
         }
     }
 
@@ -36,8 +56,7 @@ fun AvatarScreen(
         contract = ActivityResultContracts.TakePicturePreview()
     ) { bitmap ->
         if (bitmap != null) {
-            Toast.makeText(context, "Photo captured", Toast.LENGTH_SHORT).show()
-            // TODO: Upload bitmap to profile
+            viewModel.uploadBitmap(bitmap)
         }
     }
 
@@ -47,12 +66,29 @@ fun AvatarScreen(
             title = { Text("Remove Profile Photo") },
             text = { Text("Are you sure you want to remove your profile photo?") },
             confirmButton = {
-                TextButton(onClick = {
-                    showRemoveDialog = false
-                    Toast.makeText(context, "Profile photo removed", Toast.LENGTH_SHORT).show()
-                    // TODO: Remove via ViewModel
-                }) {
-                    Text("Remove")
+                TextButton(
+                    onClick = {
+                        viewModel.removeProfilePhoto(
+                            onSuccess = {
+                                showRemoveDialog = false
+                                Toast.makeText(context, "Profile photo removed", Toast.LENGTH_SHORT).show()
+                            },
+                            onError = { error ->
+                                showRemoveDialog = false
+                                Toast.makeText(context, error, Toast.LENGTH_SHORT).show()
+                            }
+                        )
+                    },
+                    enabled = !isRemoving
+                ) {
+                    if (isRemoving) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(24.dp),
+                            strokeWidth = 2.dp
+                        )
+                    } else {
+                        Text("Remove")
+                    }
                 }
             },
             dismissButton = {
@@ -88,6 +124,11 @@ fun AvatarScreen(
             verticalArrangement = Arrangement.spacedBy(SettingsSpacing.sectionSpacing)
         ) {
             item {
+                if (uiState.isUploading) {
+                    Box(modifier = Modifier.fillMaxWidth().padding(SettingsSpacing.sectionSpacing), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                }
                 SettingsSection(title = "Profile Photo") {
                     SettingsClickableItem(
                         title = "Choose from Gallery",
