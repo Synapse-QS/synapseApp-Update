@@ -4,6 +4,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -34,27 +35,22 @@ fun PostHeader(
     timestamp: String,
     onUserClick: () -> Unit,
     onOptionsClick: () -> Unit,
-    taggedPeople: List<User> = emptyList(),
-    feeling: FeelingActivity? = null,
-    locationName: String? = null,
     replyToUsername: String? = null,
     onReplyToClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
-    Row(
+    Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(top = 12.dp, end = 4.dp, bottom = 4.dp),
-        verticalAlignment = Alignment.Top
+            .clickable(onClick = onUserClick)
     ) {
-        Column(
-            modifier = Modifier
-                .weight(1f)
-                .clickable(onClick = onUserClick)
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.fillMaxWidth()
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.weight(1f)
             ) {
                 Text(
                     text = user.displayName ?: user.username ?: "Unknown",
@@ -83,7 +79,20 @@ fun PostHeader(
                 )
             }
 
-            if (replyToUsername != null) {
+            IconButton(
+                onClick = onOptionsClick,
+                modifier = Modifier.size(24.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.MoreVert,
+                    contentDescription = "Options",
+                    modifier = Modifier.size(14.dp),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
+        if (replyToUsername != null) {
                 Row(
                     modifier = Modifier.padding(top = 1.dp),
                     verticalAlignment = Alignment.CenterVertically
@@ -110,78 +119,5 @@ fun PostHeader(
                     )
                 }
             }
-
-            if (feeling != null || taggedPeople.isNotEmpty() || !locationName.isNullOrEmpty()) {
-                val annotatedText = buildAnnotatedString {
-                    if (feeling != null) {
-                        append("is ")
-                        append(feeling.emoji)
-                        append(" feeling ")
-                        withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                            append(feeling.text)
-                        }
-                    }
-
-                    if (taggedPeople.isNotEmpty()) {
-                        if (feeling == null) {
-                            append("\u2014 with ")
-                        } else {
-                            append(" with ")
-                        }
-
-                        if (taggedPeople.size == 1) {
-                            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                append(taggedPeople[0].displayName ?: taggedPeople[0].username)
-                            }
-                        } else if (taggedPeople.size == 2) {
-                            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                append(taggedPeople[0].displayName ?: taggedPeople[0].username)
-                            }
-                            append(" and ")
-                            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                append(taggedPeople[1].displayName ?: taggedPeople[1].username)
-                            }
-                        } else {
-                            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                append(taggedPeople[0].displayName ?: taggedPeople[0].username)
-                            }
-                            append(" and ")
-                            withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                                append("${taggedPeople.size - 1} others")
-                            }
-                        }
-                    }
-
-                    if (!locationName.isNullOrEmpty()) {
-                        if (feeling == null && taggedPeople.isEmpty()) {
-                            append("is at ")
-                        } else {
-                            append(" at ")
-                        }
-                        withStyle(style = SpanStyle(fontWeight = FontWeight.Bold)) {
-                            append(locationName)
-                        }
-                    }
-                }
-
-                Text(
-                    text = annotatedText,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.padding(top = 2.dp)
-                )
-            }
-        }
-        IconButton(
-            onClick = onOptionsClick,
-            modifier = Modifier.padding(0.dp)
-        ) {
-            Icon(
-                imageVector = Icons.Default.MoreVert,
-                contentDescription = "Options"
-            )
-        }
     }
 }
