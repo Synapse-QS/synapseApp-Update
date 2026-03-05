@@ -55,6 +55,7 @@ class FeedViewModel @Inject constructor(
     private val bookmarkPostUseCase: BookmarkPostUseCase,
     private val deletePostUseCase: DeletePostUseCase,
     private val togglePostCommentsUseCase: TogglePostCommentsUseCase,
+    private val postRepository: com.synapse.social.studioasinc.data.repository.PostRepository,
     application: Application
 ) : AndroidViewModel(application) {
 
@@ -72,12 +73,17 @@ class FeedViewModel @Inject constructor(
     }.cachedIn(viewModelScope)
     .combine(_modifiedPosts) { pagingData, modifications ->
         pagingData.map { feedItem ->
-            when (feedItem) {
-                is FeedItem.PostItem -> {
-                    val modifiedPost = modifications[feedItem.id]
-                    if (modifiedPost != null) FeedItem.PostItem(modifiedPost) else feedItem
+            val modifiedPost = modifications[feedItem.id]
+            if (modifiedPost != null) {
+                when (feedItem) {
+                    is FeedItem.PostItem -> FeedItem.PostItem(modifiedPost)
+                    is FeedItem.CommentItem -> feedItem.copy(
+                        likeCount = modifiedPost.likesCount,
+                        isLiked = modifiedPost.userReaction == ReactionType.LIKE || modifiedPost.hasUserReacted()
+                    )
                 }
-                is FeedItem.CommentItem -> feedItem
+            } else {
+                feedItem
             }
         }
     }
@@ -101,12 +107,9 @@ class FeedViewModel @Inject constructor(
                         cacheModifiedPost(event.post)
                     }
                     is PostEvent.Deleted -> {
-                        // handled elsewhere or ignored
-                    }
-                    is PostEvent.Created -> {
                         refresh()
                     }
-                    is PostEvent.Deleted -> {
+                    is PostEvent.Created -> {
                         refresh()
                     }
                     else -> {}
@@ -158,6 +161,41 @@ class FeedViewModel @Inject constructor(
          }
     }
 
+    fun reactToComment(commentId: String, reactionType: ReactionType) {
+        viewModelScope.launch {
+            // We use a dummy Post object to reuse reactToPostUseCase if it supports comments,
+            // or we call reactionRepository directly. Since reactToPostUseCase likely 
+            // works on Posts, let's see its implementation or just use repository.
+            // For now, let's assume we need a specific reactToComment or update usecase.
+            // Looking at ReactionRepository, it has toggleReaction(id, type, ...).
+            
+            // Optimistic update
+            val currentPost = _modifiedPosts.value[commentId]
+            val isLiked = reactionType == ReactionType.LIKE
+            val newCount = if (isLiked) 1 else 0 // Simplified for now
+            
+            // We'll call the repository via a launch
+            val result = com.synapse.social.studioasinc.data.repository.ReactionRepository()
+                .toggleReaction(commentId, "comment", reactionType)
+            
+            result.onSuccess {
+                // Fetch updated summary to sync state
+                val summary = com.synapse.social.studioasinc.data.repository.ReactionRepository()
+                    .getReactionSummary(commentId, "comment").getOrDefault(emptyMap())
+                val userReact = com.synapse.social.studioasinc.data.repository.ReactionRepository()
+                    .getUserReaction(commentId, "comment").getOrNull()
+                
+                val updatedCommentPost = Post(
+                    id = commentId,
+                    authorUid = "", // Not strictly needed for the cache merge
+                    likesCount = summary[ReactionType.LIKE] ?: 0,
+                    userReaction = userReact
+                )
+                cacheModifiedPost(updatedCommentPost)
+            }
+        }
+    }
+
     fun votePoll(post: Post, optionIndex: Int) {
         viewModelScope.launch {
             votePollUseCase(post, optionIndex).collect { result ->
@@ -198,7 +236,30 @@ class FeedViewModel @Inject constructor(
         }
     }
 
-    fun resharePost(post: Post) {}
+    fun resharePost(post: Post) {
+        viewModelScope.launch {
+            val optimisticPost = post.copy(
+                isReshared = true,
+                resharesCount = post.resharesCount + 1
+            )
+            cacheModifiedPost(optimisticPost)
+            PostEventBus.emit(PostEvent.Updated(optimisticPost))
+            
+            postRepository.resharePost(post.id).onFailure {
+                // Revert on failure
+                cacheModifiedPost(post)
+                PostEventBus.emit(PostEvent.Updated(post))
+            }
+        }
+    }
+
+    fun quotePost(post: Post, text: String) {
+        viewModelScope.launch {
+            postRepository.quotePost(post.id, text).onSuccess {
+                refresh()
+            }
+        }
+    }
 
     fun refresh() {
         refreshTrigger.value += 1

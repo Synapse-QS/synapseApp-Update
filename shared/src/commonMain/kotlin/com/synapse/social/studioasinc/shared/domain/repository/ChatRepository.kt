@@ -19,5 +19,6 @@ interface ChatRepository {
     fun subscribeToInboxUpdates(chatIds: List<String>): Flow<Message>
     fun subscribeToTypingStatus(chatId: String): Flow<TypingStatus>
     fun subscribeToReadReceipts(chatId: String): Flow<Message>
+    suspend fun initializeE2EE(): Result<Unit>
     fun getCurrentUserId(): String?
 }

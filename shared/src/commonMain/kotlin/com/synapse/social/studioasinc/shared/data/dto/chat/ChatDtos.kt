@@ -18,7 +18,9 @@ data class MessageDto(
     @SerialName("reply_to_id") val replyToId: String? = null,
     @SerialName("created_at") val createdAt: String? = null,
     @SerialName("updated_at") val updatedAt: String? = null,
-    @SerialName("read_by") val readBy: String? = null
+    @SerialName("read_by") val readBy: String? = null,
+    @SerialName("is_encrypted") val isEncrypted: Boolean = false,
+    @SerialName("encrypted_content") val encryptedContent: String? = null
 )
 
 @Serializable
@@ -39,5 +41,16 @@ data class NewMessageDto(
     @SerialName("sender_id") val senderId: String,
     val content: String,
     @SerialName("message_type") val messageType: String = "text",
-    @SerialName("media_url") val mediaUrl: String? = null
+    @SerialName("media_url") val mediaUrl: String? = null,
+    @SerialName("is_encrypted") val isEncrypted: Boolean = false,
+    @SerialName("encrypted_content") val encryptedContent: String? = null
+)
+
+@Serializable
+data class UserPublicKeyDto(
+    @SerialName("user_id") val userId: String,
+    @SerialName("public_key") val publicKey: String,
+    @SerialName("created_at") val createdAt: String? = null,
+    @SerialName("updated_at") val updatedAt: String? = null,
+    @SerialName("key_version") val keyVersion: Int = 1
 )

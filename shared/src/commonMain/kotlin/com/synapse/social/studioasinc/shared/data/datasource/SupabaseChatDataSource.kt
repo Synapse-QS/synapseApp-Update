@@ -4,6 +4,7 @@ import com.synapse.social.studioasinc.shared.core.network.SupabaseClient
 import com.synapse.social.studioasinc.shared.data.dto.chat.ChatParticipantDto
 import com.synapse.social.studioasinc.shared.data.dto.chat.MessageDto
 import com.synapse.social.studioasinc.shared.data.dto.chat.NewMessageDto
+import com.synapse.social.studioasinc.shared.data.dto.chat.UserPublicKeyDto
 import com.synapse.social.studioasinc.shared.domain.model.User
 import io.github.aakira.napier.Napier
 import io.github.jan.supabase.SupabaseClient as SupabaseClientLib
@@ -120,12 +121,35 @@ class SupabaseChatDataSource(private val client: SupabaseClientLib = SupabaseCli
             }
         }
 
-    suspend fun sendMessage(chatId: String, content: String, mediaUrl: String? = null, messageType: String = "text"): MessageDto =
+    suspend fun sendMessage(chatId: String, content: String, mediaUrl: String? = null, messageType: String = "text", isEncrypted: Boolean = false, encryptedContent: String? = null): MessageDto =
         withContext(Dispatchers.IO) {
             val senderId = getCurrentUserId() ?: throw Exception("Not authenticated")
-            val newMessage = NewMessageDto(chatId, senderId, content, messageType, mediaUrl)
+            val newMessage = NewMessageDto(chatId, senderId, content, messageType, mediaUrl, isEncrypted, encryptedContent)
             client.postgrest.from("messages").insert(newMessage) { select() }.decodeSingle<MessageDto>()
         }
+
+    suspend fun getUserPublicKey(userId: String): UserPublicKeyDto? = withContext(Dispatchers.IO) {
+        try {
+            client.postgrest.from("user_public_keys").select {
+                filter { eq("user_id", userId) }
+                limit(1)
+            }.decodeSingleOrNull<UserPublicKeyDto>()
+        } catch (e: Exception) {
+            Napier.e("Error fetching public key for $userId", e)
+            null
+        }
+    }
+
+    suspend fun uploadUserPublicKey(publicKey: String) = withContext(Dispatchers.IO) {
+        try {
+            val currentUserId = getCurrentUserId() ?: throw Exception("Not authenticated")
+            val dto = UserPublicKeyDto(currentUserId, publicKey)
+            client.postgrest.from("user_public_keys").upsert(dto)
+        } catch (e: Exception) {
+            Napier.e("Error uploading public key", e)
+            throw e
+        }
+    }
 
     suspend fun getOrCreateChat(otherUserId: String): String? = withContext(Dispatchers.IO) {
         try {

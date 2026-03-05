@@ -12,10 +12,15 @@ import kotlinx.coroutines.launch
 import java.time.Instant
 import javax.inject.Inject
 
+import com.synapse.social.studioasinc.shared.domain.usecase.chat.GetConversationsUseCase
+import com.synapse.social.studioasinc.shared.domain.usecase.chat.SubscribeToInboxUpdatesUseCase
+import com.synapse.social.studioasinc.shared.domain.usecase.chat.InitializeE2EUseCase
+
 @HiltViewModel
 class InboxViewModel @Inject constructor(
-    // private val getConversationsUseCase: GetConversationsUseCase,
-    // private val subscribeToInboxUpdatesUseCase: SubscribeToInboxUpdatesUseCase
+    private val getConversationsUseCase: GetConversationsUseCase,
+    private val subscribeToInboxUpdatesUseCase: SubscribeToInboxUpdatesUseCase,
+    private val initializeE2EUseCase: InitializeE2EUseCase
 ) : ViewModel() {
 
     private val _currentUserProfile = MutableStateFlow<User?>(null)
@@ -32,6 +37,9 @@ class InboxViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
+            initializeE2EUseCase().onFailure { e ->
+                _error.value = "Failed to initialize E2EE: ${e.message}"
+            }
             loadCurrentUserProfile()
             loadConversations()
             subscribeToInboxUpdates()
@@ -50,26 +58,24 @@ class InboxViewModel @Inject constructor(
             _isLoading.value = true
             _error.value = null
 
-            // Mock Data
-            _conversations.value = listOf(
-                Conversation(
-                    chatId = "mock-chat-1",
-                    participantId = "alice",
-                    participantName = "Alice",
-                    participantAvatar = "https://i.pravatar.cc/150?u=alice",
-                    lastMessage = "Hello Alice! Good to see you.",
-                    lastMessageTime = Instant.now().minusSeconds(1800).toString(),
-                    unreadCount = 0,
-                    isOnline = true
-                )
-            )
-
-            _isLoading.value = false
+            getConversationsUseCase().onSuccess { conversationList ->
+                _conversations.value = conversationList
+                _isLoading.value = false
+            }.onFailure { e ->
+                _error.value = "Failed to load conversations: ${e.message}"
+                _isLoading.value = false
+            }
         }
     }
 
     private fun subscribeToInboxUpdates() {
-        // Mock: no-op
+        viewModelScope.launch {
+            // Re-load conversations periodically or listen to updates
+            // (A proper inbox flow would map real-time message changes to the conversation list)
+            subscribeToInboxUpdatesUseCase(emptyList()).collect {
+                loadConversations() // Simple reload on any new message
+            }
+        }
     }
 
     fun getFormattedTimestamp(timestamp: String?): String = TimestampFormatter.formatRelative(timestamp)

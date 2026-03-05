@@ -74,6 +74,9 @@ import kotlinx.coroutines.SupervisorJob
 import javax.inject.Named
 import com.synapse.social.studioasinc.shared.domain.service.MediaCompressor
 import com.synapse.social.studioasinc.shared.core.media.AndroidMediaCompressor
+import com.synapse.social.studioasinc.shared.data.crypto.SignalProtocolManager
+import com.synapse.social.studioasinc.shared.data.crypto.AndroidSignalProtocolManager
+import com.synapse.social.studioasinc.shared.domain.usecase.chat.InitializeE2EUseCase
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -521,12 +524,22 @@ object RepositoryModule {
 
     @Provides
     @Singleton
+    fun provideSignalProtocolManager(
+        @ApplicationContext context: Context
+    ): SignalProtocolManager {
+        return AndroidSignalProtocolManager(context)
+    }
+
+    @Provides
+    @Singleton
     fun provideChatRepository(
-        client: SupabaseClientType
+        client: SupabaseClientType,
+        signalProtocolManager: SignalProtocolManager
     ): com.synapse.social.studioasinc.shared.domain.repository.ChatRepository {
         return com.synapse.social.studioasinc.shared.data.repository.SupabaseChatRepository(
             com.synapse.social.studioasinc.shared.data.datasource.SupabaseChatDataSource(client),
-            client
+            client,
+            signalProtocolManager
         )
     }
 
@@ -616,5 +629,13 @@ object RepositoryModule {
         chatRepository: com.synapse.social.studioasinc.shared.domain.repository.ChatRepository
     ): com.synapse.social.studioasinc.shared.domain.usecase.chat.UploadMediaUseCase {
         return com.synapse.social.studioasinc.shared.domain.usecase.chat.UploadMediaUseCase(chatRepository)
+    }
+
+    @Provides
+    @Singleton
+    fun provideInitializeE2EUseCase(
+        chatRepository: com.synapse.social.studioasinc.shared.domain.repository.ChatRepository
+    ): InitializeE2EUseCase {
+        return InitializeE2EUseCase(chatRepository)
     }
 }

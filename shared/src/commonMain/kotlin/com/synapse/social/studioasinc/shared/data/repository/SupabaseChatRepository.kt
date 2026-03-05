@@ -11,16 +11,64 @@ import io.github.aakira.napier.Napier
 import io.github.jan.supabase.SupabaseClient as SupabaseClientLib
 import io.github.jan.supabase.realtime.realtime
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
+import com.synapse.social.studioasinc.shared.data.crypto.SignalProtocolManager
+import com.synapse.social.studioasinc.shared.data.crypto.models.EncryptedMessage
+import com.synapse.social.studioasinc.shared.data.crypto.models.PreKeyBundle
+import com.synapse.social.studioasinc.shared.data.dto.chat.MessageDto
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 
 class SupabaseChatRepository(
     private val dataSource: SupabaseChatDataSource = SupabaseChatDataSource(),
-    private val client: SupabaseClientLib = SupabaseClient.client
+    private val client: SupabaseClientLib = SupabaseClient.client,
+    private val signalProtocolManager: SignalProtocolManager? = null
 ) : ChatRepository {
 
+    private suspend fun MessageDto.decryptIfNecessary(currentUserId: String): MessageDto {
+        if (this.isEncrypted && this.encryptedContent != null && signalProtocolManager != null) {
+            try {
+                val payloads = Json.decodeFromString<Map<String, EncryptedMessage>>(this.encryptedContent)
+                val myPayload = payloads[currentUserId]
+                if (myPayload != null) {
+                    val senderId = this.senderId
+                    val decryptedBytes = signalProtocolManager.decryptMessage(
+                        senderId = senderId, // Decrypt using the session we have with the sender
+                        message = myPayload
+                    )
+                    return this.copy(content = decryptedBytes.decodeToString())
+                }
+            } catch (e: Exception) {
+                Napier.e("E2EE decryption failed for message ${this.id}", e)
+            }
+        }
+        return this
+    }
+
+    private suspend fun ensureSession(userId: String) {
+        if (signalProtocolManager != null && !signalProtocolManager.hasSession(userId)) {
+            val keyDto = dataSource.getUserPublicKey(userId)
+            if (keyDto != null) {
+                val bundle = Json.decodeFromString<PreKeyBundle>(keyDto.publicKey)
+                signalProtocolManager.processPreKeyBundle(userId, bundle)
+            } else {
+                throw Exception("Public key not found for user $userId")
+            }
+        }
+    }
+
     override suspend fun getConversations(): Result<List<Conversation>> = try {
+        val currentUserId = getCurrentUserId() ?: throw Exception("Not logged in")
         val conversations = dataSource.getConversations().map { (participation, user) ->
+            var lastMessageText = "No messages yet"
             val lastMessage = dataSource.getLastMessage(participation.chatId)
+            
+            if (lastMessage != null) {
+                val decryptedDto = lastMessage.decryptIfNecessary(currentUserId)
+                lastMessageText = decryptedDto.content
+            }
+            
             val unreadCount = dataSource.getUnreadCount(participation.chatId, participation.lastReadAt)
             
             Conversation(
@@ -28,7 +76,7 @@ class SupabaseChatRepository(
                 participantId = user?.uid ?: "",
                 participantName = user?.displayName ?: user?.username ?: "Unknown",
                 participantAvatar = user?.avatar,
-                lastMessage = lastMessage?.content ?: "No messages yet",
+                lastMessage = lastMessageText,
                 lastMessageTime = lastMessage?.createdAt,
                 unreadCount = unreadCount,
                 isOnline = user?.status?.name == "ONLINE"
@@ -42,16 +90,54 @@ class SupabaseChatRepository(
     }
 
     override suspend fun getMessages(chatId: String, limit: Int, before: String?): Result<List<Message>> = try {
-        val messages = dataSource.getMessages(chatId, limit, before).map { it.toDomain() }
-        Result.success(messages)
+        val currentUserId = getCurrentUserId() ?: throw Exception("Not logged in")
+        val messageDtos = dataSource.getMessages(chatId, limit, before)
+        
+        // Decrypt separately
+        val decrypted = messageDtos.map { 
+            it.decryptIfNecessary(currentUserId).toDomain() 
+        }
+        Result.success(decrypted)
     } catch (e: Exception) {
-        Napier.e("Error getting messages", e)
+        Napier.e("Error getting messages: ${e.message}", e)
         Result.failure(e)
     }
 
     override suspend fun sendMessage(chatId: String, content: String, mediaUrl: String?, messageType: String): Result<Message> = try {
-        val message = dataSource.sendMessage(chatId, content, mediaUrl, messageType)
-        Result.success(message.toDomain())
+        val currentUserId = getCurrentUserId() ?: throw Exception("Not logged in")
+        val otherUserId = chatId.replace(currentUserId, "").replace("_", "")
+        
+        var isEncrypted = false
+        var encryptedContentStr: String? = null
+        var finalContent = content
+        
+        if (signalProtocolManager != null) {
+            try {
+                // Ensure session with the receiver
+                ensureSession(otherUserId)
+                val encryptedForReceiver = signalProtocolManager.encryptMessage(otherUserId, content.encodeToByteArray())
+                
+                // Ensure session with ourselves (to read our own sent messages)
+                ensureSession(currentUserId)
+                val encryptedForSelf = signalProtocolManager.encryptMessage(currentUserId, content.encodeToByteArray())
+
+                val payloads = mapOf(
+                    otherUserId to encryptedForReceiver,
+                    currentUserId to encryptedForSelf
+                )
+                
+                isEncrypted = true
+                encryptedContentStr = Json.encodeToString(payloads)
+                finalContent = "Message is encrypted"
+            } catch (e: Exception) {
+                Napier.e("E2EE encryption failed", e)
+                throw e
+            }
+        }
+
+        val message = dataSource.sendMessage(chatId, finalContent, mediaUrl, messageType, isEncrypted, encryptedContentStr)
+        val decryptedDto = message.copy(content = content) // We already know the content! 
+        Result.success(decryptedDto.toDomain())
     } catch (e: Exception) {
         Napier.e("Error sending message", e)
         Result.failure(e)
@@ -106,10 +192,16 @@ class SupabaseChatRepository(
     }
 
     override fun subscribeToMessages(chatId: String): Flow<Message> =
-        dataSource.subscribeToMessages(chatId).map { it.toDomain() }
+        dataSource.subscribeToMessages(chatId).map { 
+            val userId = getCurrentUserId() ?: ""
+            it.decryptIfNecessary(userId).toDomain() 
+        }
 
     override fun subscribeToInboxUpdates(chatIds: List<String>): Flow<Message> =
-        dataSource.subscribeToInboxUpdates(chatIds).map { it.toDomain() }
+        dataSource.subscribeToInboxUpdates(chatIds).map { 
+            val userId = getCurrentUserId() ?: ""
+            it.decryptIfNecessary(userId).toDomain() 
+        }
 
     override fun subscribeToTypingStatus(chatId: String): Flow<TypingStatus> =
         dataSource.subscribeToTypingStatus(chatId).map { data ->
@@ -121,7 +213,40 @@ class SupabaseChatRepository(
         }
 
     override fun subscribeToReadReceipts(chatId: String): Flow<Message> =
-        dataSource.subscribeToReadReceipts(chatId).map { it.toDomain() }
+        dataSource.subscribeToReadReceipts(chatId).map { 
+            val userId = getCurrentUserId() ?: ""
+            it.decryptIfNecessary(userId).toDomain() 
+        }
+
+    override suspend fun initializeE2EE(): Result<Unit> = try {
+        if (signalProtocolManager != null) {
+            try {
+                signalProtocolManager.getLocalRegistrationId()
+            } catch (e: Exception) {
+                // If this throws, we don't have local keys generated yet.
+                val identity = signalProtocolManager.generateIdentityAndKeys()
+                val preKeys = signalProtocolManager.generateOneTimePreKeys(startId = 1, count = 100)
+                
+                val bundle = PreKeyBundle(
+                    registrationId = identity.registrationId,
+                    deviceId = 1,
+                    preKeyId = preKeys.firstOrNull()?.keyId,
+                    preKeyPublic = preKeys.firstOrNull()?.publicKey,
+                    signedPreKeyId = identity.signedPreKeyId,
+                    signedPreKeyPublic = identity.signedPreKey,
+                    signedPreKeySignature = identity.signedPreKeySignature,
+                    identityKey = identity.identityKey
+                )
+                
+                val bundleStr = Json.encodeToString(bundle)
+                dataSource.uploadUserPublicKey(bundleStr)
+            }
+        }
+        Result.success(Unit)
+    } catch (e: Exception) {
+        Napier.e("Error initializing E2EE keys", e)
+        Result.failure(e)
+    }
 
     override fun getCurrentUserId(): String? = dataSource.getCurrentUserId()
 }

@@ -175,6 +175,8 @@ data class Post(
     var latestCommentAuthor: String? = null,
     @Transient
     var isBookmarked: Boolean = false,
+    @Transient
+    var isReshared: Boolean = false,
 
     @SerialName("metadata")
     val metadata: PostMetadata? = null

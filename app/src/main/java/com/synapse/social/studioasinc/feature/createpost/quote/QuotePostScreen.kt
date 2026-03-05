@@ -82,9 +82,10 @@ fun QuotePostScreen(
                     onBookmarkClick = {},
                     onUserClick = {},
                     onPostClick = {},
-                    onMediaClick = {},
+                    onMediaClick = { _ -> },
                     onOptionsClick = {},
                     onPollVote = {},
+                    onQuoteClick = {},
                     modifier = Modifier.padding(8.dp)
                 )
             }

@@ -52,6 +52,7 @@ fun PostInteractionBar(
     repostCount: Int = 0,
     viewsCount: Int = 0,
     isBookmarked: Boolean,
+    isReshared: Boolean = false,
     hideLikeCount: Boolean = false,
     isComment: Boolean = false,
     onLikeClick: () -> Unit,
@@ -70,10 +71,15 @@ fun PostInteractionBar(
 
 
 
+        val iconColor = Color(0xFF657786) // Twitter-like grey
+        val likeActiveColor = Color(0xFFE0245E) // Twitter-like red
+        val repostActiveColor = Color(0xFF17BF63) // Twitter-like green
+        val blueAlpha = 0.1f
+
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(top = 4.dp, bottom = 4.dp),
+                .padding(top = 8.dp, bottom = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
@@ -90,7 +96,7 @@ fun PostInteractionBar(
                         R.string.comment_on_post_with_count,
                         commentCount
                     ),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = iconColor,
                     modifier = Modifier.size(18.dp)
                 )
                 if (commentCount > 0) {
@@ -98,7 +104,7 @@ fun PostInteractionBar(
                     Text(
                         text = formatCount(commentCount),
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = iconColor
                     )
                 }
             }
@@ -114,7 +120,7 @@ fun PostInteractionBar(
                     Icon(
                         imageVector = Icons.Outlined.Repeat,
                         contentDescription = "Repost",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        tint = if (isReshared) repostActiveColor else iconColor,
                         modifier = Modifier.size(18.dp)
                     )
                     if (repostCount > 0) {
@@ -122,7 +128,8 @@ fun PostInteractionBar(
                         Text(
                             text = formatCount(repostCount),
                             style = MaterialTheme.typography.labelSmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = if (isReshared) repostActiveColor else iconColor,
+                            fontWeight = if (isReshared) FontWeight.Bold else FontWeight.Normal
                         )
                     }
                 }
@@ -138,7 +145,7 @@ fun PostInteractionBar(
                             showRepostMenu = false
                         },
                         leadingIcon = {
-                            Icon(Icons.Outlined.Repeat, contentDescription = null)
+                            Icon(Icons.Outlined.Repeat, contentDescription = null, tint = repostActiveColor)
                         }
                     )
                     androidx.compose.material3.DropdownMenuItem(
@@ -173,7 +180,7 @@ fun PostInteractionBar(
                         if (isLiked) R.string.like_post_liked else R.string.like_post_with_count,
                         likeCount
                     ),
-                    tint = if (isLiked) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = if (isLiked) likeActiveColor else iconColor,
                     modifier = Modifier.size(18.dp)
                 )
                 if (likeCount > 0 && !hideLikeCount) {
@@ -181,8 +188,8 @@ fun PostInteractionBar(
                     Text(
                         text = formatCount(likeCount),
                         style = MaterialTheme.typography.labelSmall,
-                        color = if (isLiked) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = if (isLiked) FontWeight.SemiBold else FontWeight.Normal
+                        color = if (isLiked) likeActiveColor else iconColor,
+                        fontWeight = if (isLiked) FontWeight.Bold else FontWeight.Normal
                     )
                 }
             }
@@ -195,7 +202,7 @@ fun PostInteractionBar(
                 Icon(
                     imageVector = Icons.Outlined.BarChart,
                     contentDescription = "Views",
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = iconColor,
                     modifier = Modifier.size(18.dp)
                 )
                 if (viewsCount > 0) {
@@ -203,7 +210,7 @@ fun PostInteractionBar(
                     Text(
                         text = formatCount(viewsCount),
                         style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = iconColor
                     )
                 }
             }
@@ -218,7 +225,7 @@ fun PostInteractionBar(
                     contentDescription = stringResource(
                         if (isBookmarked) R.string.unsave_post else R.string.save_post
                     ),
-                    tint = if (isBookmarked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = if (isBookmarked) MaterialTheme.colorScheme.primary else iconColor,
                     modifier = Modifier.size(18.dp)
                 )
             }
@@ -231,7 +238,7 @@ fun PostInteractionBar(
                 Icon(
                     imageVector = Icons.Outlined.Share,
                     contentDescription = stringResource(R.string.share_post),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    tint = iconColor,
                     modifier = Modifier.size(18.dp)
                 )
             }

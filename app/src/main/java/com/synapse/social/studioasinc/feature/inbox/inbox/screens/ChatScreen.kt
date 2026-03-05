@@ -17,6 +17,8 @@ import androidx.compose.foundation.text.ClickableText
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -154,8 +156,7 @@ fun ChatScreen(
                         modifier = Modifier
                             .size(48.dp)
                             .combinedClickable(
-                                onClick = viewModel::sendMessage,
-                                onLongClick = viewModel::receiveMockMessage
+                                onClick = viewModel::sendMessage
                             ),
                         shape = RoundedCornerShape(16.dp),
                         color = MaterialTheme.colorScheme.primary,
@@ -339,6 +340,14 @@ fun MessageBubble(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
+                    if (message.isEncrypted) {
+                        Icon(
+                            imageVector = Icons.Filled.Lock,
+                            contentDescription = "End-to-End Encrypted",
+                            modifier = Modifier.size(10.dp),
+                            tint = contentColor.copy(alpha = 0.6f)
+                        )
+                    }
                     Text(
                         text = formatMessageTime(message.createdAt),
                         fontSize = 11.sp,

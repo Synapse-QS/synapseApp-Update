@@ -2,13 +2,14 @@ package com.synapse.social.studioasinc.feature.inbox.inbox
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.synapse.social.studioasinc.domain.model.User
+import com.synapse.social.studioasinc.shared.domain.model.User
 import com.synapse.social.studioasinc.shared.domain.model.chat.DeliveryStatus
 import com.synapse.social.studioasinc.shared.domain.model.chat.Message
 import com.synapse.social.studioasinc.shared.domain.model.chat.MessageType
 import com.synapse.social.studioasinc.shared.domain.model.chat.TypingStatus
 import com.synapse.social.studioasinc.shared.domain.repository.ChatRepository
 import com.synapse.social.studioasinc.shared.domain.usecase.chat.*
+import com.synapse.social.studioasinc.shared.domain.usecase.user.GetUserProfileUseCase
 import com.synapse.social.studioasinc.shared.util.TimestampFormatter
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.aakira.napier.Napier
@@ -22,16 +23,18 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ChatViewModel @Inject constructor(
-//    private val getMessagesUseCase: GetMessagesUseCase,
-//    private val sendMessageUseCase: SendMessageUseCase,
-//    private val subscribeToMessagesUseCase: SubscribeToMessagesUseCase,
-//    private val markMessagesAsReadUseCase: MarkMessagesAsReadUseCase,
-//    private val broadcastTypingStatusUseCase: BroadcastTypingStatusUseCase,
-//    private val subscribeToTypingStatusUseCase: SubscribeToTypingStatusUseCase,
-//    private val editMessageUseCase: EditMessageUseCase,
-//    private val deleteMessageUseCase: DeleteMessageUseCase,
-//    private val uploadMediaUseCase: UploadMediaUseCase,
-//    private val chatRepository: ChatRepository
+    private val getMessagesUseCase: GetMessagesUseCase,
+    private val sendMessageUseCase: SendMessageUseCase,
+    private val subscribeToMessagesUseCase: SubscribeToMessagesUseCase,
+    private val markMessagesAsReadUseCase: MarkMessagesAsReadUseCase,
+    private val broadcastTypingStatusUseCase: BroadcastTypingStatusUseCase,
+    private val subscribeToTypingStatusUseCase: SubscribeToTypingStatusUseCase,
+    private val editMessageUseCase: EditMessageUseCase,
+    private val deleteMessageUseCase: DeleteMessageUseCase,
+    private val uploadMediaUseCase: UploadMediaUseCase,
+    private val getUserProfileUseCase: GetUserProfileUseCase,
+    private val initializeE2EUseCase: InitializeE2EUseCase,
+    private val chatRepository: ChatRepository
 ) : ViewModel() {
 
     private val _messages = MutableStateFlow<List<Message>>(emptyList())
@@ -61,7 +64,7 @@ class ChatViewModel @Inject constructor(
     private var typingDebounceJob: Job? = null
 
     val currentUserId: String?
-        get() = "me"
+        get() = chatRepository.getCurrentUserId()
 
     fun initialize(chatId: String, participantId: String? = null) {
         if (currentChatId == chatId) return
@@ -69,36 +72,55 @@ class ChatViewModel @Inject constructor(
         cleanup()
         currentChatId = chatId
 
-        // Mock initialization
-        _participantProfile.value = User(
-            id = "alice",
-            uid = "alice",
-            username = "alice",
-            displayName = "Alice",
-            email = "alice@example.com",
-            avatar = "https://i.pravatar.cc/150?u=alice"
-        )
-        _messages.value = listOf(
-            Message(
-                id = UUID.randomUUID().toString(),
-                chatId = chatId,
-                senderId = "alice",
-                content = "Hi there! I'm Alice.",
-                messageType = MessageType.TEXT,
-                deliveryStatus = DeliveryStatus.READ,
-                createdAt = Instant.now().minusSeconds(3600).toString()
-            ),
-            Message(
-                id = UUID.randomUUID().toString(),
-                chatId = chatId,
-                senderId = "me",
-                content = "Hello Alice! Good to see you.",
-                messageType = MessageType.TEXT,
-                deliveryStatus = DeliveryStatus.READ,
-                createdAt = Instant.now().minusSeconds(1800).toString()
-            )
-        )
-        _isLoading.value = false
+        _isLoading.value = true
+        _error.value = null
+
+        // Set participant profile info
+        if (participantId != null) {
+            viewModelScope.launch {
+                getUserProfileUseCase(participantId).onSuccess { user ->
+                    _participantProfile.value = user
+                }.onFailure { e ->
+                    Napier.e("Failed to load participant profile", e)
+                }
+            }
+        }
+
+        // Initialize E2EE keys if not already (safeguard)
+        viewModelScope.launch {
+            initializeE2EUseCase()
+        }
+
+        // Fetch initial messages
+        viewModelScope.launch {
+            getMessagesUseCase(chatId).onSuccess { messages ->
+                _messages.value = messages.sortedBy { it.createdAt } // oldest first for UI
+                _isLoading.value = false
+            }.onFailure { e ->
+                _error.value = e.message
+                _isLoading.value = false
+            }
+        }
+
+        // Subscribe to real-time message updates
+        messageSubscriptionJob = viewModelScope.launch {
+            subscribeToMessagesUseCase(chatId).collect { newMessage ->
+                _messages.update { current ->
+                    val existing = current.find { it.id == newMessage.id }
+                    if (existing != null) {
+                        current.map { if (it.id == newMessage.id) newMessage else it }
+                    } else {
+                        (current + newMessage).sortedBy { it.createdAt }
+                    }
+                }
+                markMessagesAsReadUseCase(chatId)
+            }
+        }
+
+        // Mark current messages as read
+        viewModelScope.launch {
+            markMessagesAsReadUseCase(chatId)
+        }
     }
 
     fun onInputTextChange(newText: String) {
@@ -112,54 +134,46 @@ class ChatViewModel @Inject constructor(
 
         _inputText.value = ""
 
-        val newMessage = Message(
-            id = UUID.randomUUID().toString(),
-            chatId = chatId,
-            senderId = "me",
-            content = text,
-            messageType = MessageType.TEXT,
-            deliveryStatus = DeliveryStatus.SENT,
-            createdAt = Instant.now().toString()
-        )
-        
-        _messages.value = _messages.value + newMessage
-    }
+        viewModelScope.launch {
+            // Optimistic update
+            val tempId = UUID.randomUUID().toString()
+            val newMessage = Message(
+                id = tempId,
+                chatId = chatId,
+                senderId = currentUserId ?: "",
+                content = text,
+                messageType = MessageType.TEXT,
+                deliveryStatus = DeliveryStatus.SENT,
+                createdAt = Instant.now().toString()
+            )
+            _messages.update { (it + newMessage).sortedBy { msg -> msg.createdAt } }
 
-    fun receiveMockMessage() {
-        val text = _inputText.value.trim()
-        val chatId = currentChatId ?: return
-        if (text.isEmpty()) return
-
-        _inputText.value = ""
-
-        val newMessage = Message(
-            id = UUID.randomUUID().toString(),
-            chatId = chatId,
-            senderId = "alice", // Received as Alice
-            content = text,
-            messageType = MessageType.TEXT,
-            deliveryStatus = DeliveryStatus.READ,
-            createdAt = Instant.now().toString()
-        )
-
-        _messages.value = _messages.value + newMessage
-    }
-
-    fun loadMoreMessages() {
-        // Mock: no-op
+            // Actual send
+            sendMessageUseCase(
+                chatId = chatId,
+                content = text,
+                messageType = "text"
+            ).onSuccess { actualMessage ->
+                _messages.update { current ->
+                    current.map { if (it.id == tempId) actualMessage else it }.sortedBy { msg -> msg.createdAt }
+                }
+            }.onFailure { e ->
+                _error.value = "Failed to send: ${e.message}"
+                // Remove optimistic message on failure
+                _messages.update { current -> current.filter { it.id != tempId } }
+            }
+        }
     }
 
     fun editMessage(messageId: String, newContent: String) {
-        // Mock: edit local state directly
-        _messages.value = _messages.value.map { msg ->
-            if (msg.id == messageId) msg.copy(content = newContent, isEdited = true) else msg
+        viewModelScope.launch {
+            editMessageUseCase(messageId, newContent)
         }
     }
 
     fun deleteMessage(messageId: String) {
-        // Mock: delete local state directly
-        _messages.value = _messages.value.map { msg ->
-            if (msg.id == messageId) msg.copy(isDeleted = true, content = "") else msg
+        viewModelScope.launch {
+            deleteMessageUseCase(messageId)
         }
     }
 

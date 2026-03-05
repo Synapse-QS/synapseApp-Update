@@ -282,7 +282,8 @@ private fun PostDetailContent(
                                 onPollVote = onPostPollVote,
                                 onUserClick = onUserClick,
                                 onMediaClick = onPostMediaClick,
-                                onReactionSelected = onPostReactionSelected
+                                onReactionSelected = onPostReactionSelected,
+                                onQuote = onPostRepost
                             )
                         }
 

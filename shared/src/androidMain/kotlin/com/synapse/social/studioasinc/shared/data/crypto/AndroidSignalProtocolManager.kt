@@ -6,111 +6,101 @@ import com.synapse.social.studioasinc.shared.data.crypto.models.EncryptedMessage
 import com.synapse.social.studioasinc.shared.data.crypto.models.PreKeyBundle
 import com.synapse.social.studioasinc.shared.data.crypto.models.SignalIdentityKeys
 import com.synapse.social.studioasinc.shared.data.crypto.models.SignalOneTimePreKey
-import com.synapse.social.studioasinc.shared.data.crypto.store.AndroidSignalStore
+import org.whispersystems.libsignal.IdentityKey
 import org.whispersystems.libsignal.IdentityKeyPair
 import org.whispersystems.libsignal.SessionBuilder
 import org.whispersystems.libsignal.SessionCipher
 import org.whispersystems.libsignal.SignalProtocolAddress
+import org.whispersystems.libsignal.protocol.CiphertextMessage
 import org.whispersystems.libsignal.protocol.PreKeySignalMessage
 import org.whispersystems.libsignal.protocol.SignalMessage
 import org.whispersystems.libsignal.state.PreKeyRecord
 import org.whispersystems.libsignal.state.SignedPreKeyRecord
 import org.whispersystems.libsignal.util.KeyHelper
-import org.whispersystems.libsignal.ecc.Curve
+import org.whispersystems.libsignal.state.PreKeyBundle as SignalNativePreKeyBundle
 
-class AndroidSignalProtocolManager(context: Context, private val deviceId: Int = 1) : SignalProtocolManager {
+class AndroidSignalProtocolManager(context: Context) : SignalProtocolManager {
 
-    private val store = AndroidSignalStore(context)
-
-    companion object {
-        private const val PREKEY_TYPE = 3
-    }
+    private val store = AndroidSignalProtocolStore(context)
+    private val DEVICE_ID = 1
 
     override suspend fun generateIdentityAndKeys(): SignalIdentityKeys {
-
-        val identityKeyPair: IdentityKeyPair = KeyHelper.generateIdentityKeyPair()
+        val identityKeyPair = KeyHelper.generateIdentityKeyPair()
         val registrationId = KeyHelper.generateRegistrationId(false)
+        val signedPreKey = KeyHelper.generateSignedPreKey(identityKeyPair, 1)
 
-        store.saveIdentityKeyPair(identityKeyPair)
-        store.saveLocalRegistrationId(registrationId)
-
-
-        val lastSignedId = store.getLastSignedPreKeyId()
-        val signedPreKeyId = lastSignedId + 1
-        val signedPreKey: SignedPreKeyRecord = KeyHelper.generateSignedPreKey(identityKeyPair, signedPreKeyId)
-
-        store.storeSignedPreKey(signedPreKeyId, signedPreKey)
-        store.setLastSignedPreKeyId(signedPreKeyId)
+        store.storeLocalIdentity(identityKeyPair, registrationId)
+        store.storeSignedPreKey(signedPreKey.id, signedPreKey)
 
         return SignalIdentityKeys(
             registrationId = registrationId,
             identityKey = Base64.encodeToString(identityKeyPair.publicKey.serialize(), Base64.NO_WRAP),
-            signedPreKeyId = signedPreKeyId,
+            signedPreKeyId = signedPreKey.id,
             signedPreKey = Base64.encodeToString(signedPreKey.keyPair.publicKey.serialize(), Base64.NO_WRAP),
             signedPreKeySignature = Base64.encodeToString(signedPreKey.signature, Base64.NO_WRAP)
         )
     }
 
     override suspend fun generateOneTimePreKeys(startId: Int, count: Int): List<SignalOneTimePreKey> {
-        val preKeys: List<PreKeyRecord> = KeyHelper.generatePreKeys(startId, count)
-
-        return preKeys.map { record ->
-            store.storePreKey(record.id, record)
-            SignalOneTimePreKey(
-                keyId = record.id,
-                publicKey = Base64.encodeToString(record.keyPair.publicKey.serialize(), Base64.NO_WRAP)
+        val preKeys = KeyHelper.generatePreKeys(startId, count)
+        val resultList = mutableListOf<SignalOneTimePreKey>()
+        for (preKey in preKeys) {
+            store.storePreKey(preKey.id, preKey)
+            resultList.add(
+                SignalOneTimePreKey(
+                    keyId = preKey.id,
+                    publicKey = Base64.encodeToString(preKey.keyPair.publicKey.serialize(), Base64.NO_WRAP)
+                )
             )
         }
+        return resultList
     }
 
     override suspend fun processPreKeyBundle(userId: String, bundle: PreKeyBundle) {
-        val address = SignalProtocolAddress(userId, deviceId)
-        val sessionBuilder = SessionBuilder(store, store, store, store, address)
+        val address = SignalProtocolAddress(userId, DEVICE_ID)
+        val sessionBuilder = SessionBuilder(store, address)
 
-        val preKeyBundle = org.whispersystems.libsignal.state.PreKeyBundle(
+        val nativeBundle = SignalNativePreKeyBundle(
             bundle.registrationId,
             bundle.deviceId,
-            bundle.preKeyId ?: 0,
-            if (bundle.preKeyPublic != null) Curve.decodePoint(Base64.decode(bundle.preKeyPublic, Base64.NO_WRAP), 0) else null,
+            bundle.preKeyId ?: -1,
+            bundle.preKeyPublic?.let { org.whispersystems.libsignal.ecc.Curve.decodePoint(Base64.decode(it, Base64.DEFAULT), 0) },
             bundle.signedPreKeyId,
-            Curve.decodePoint(Base64.decode(bundle.signedPreKeyPublic, Base64.NO_WRAP), 0),
-            Base64.decode(bundle.signedPreKeySignature, Base64.NO_WRAP),
-            org.whispersystems.libsignal.IdentityKey(Base64.decode(bundle.identityKey, Base64.NO_WRAP), 0)
+            org.whispersystems.libsignal.ecc.Curve.decodePoint(Base64.decode(bundle.signedPreKeyPublic, Base64.DEFAULT), 0),
+            Base64.decode(bundle.signedPreKeySignature, Base64.DEFAULT),
+            IdentityKey(Base64.decode(bundle.identityKey, Base64.DEFAULT), 0)
         )
 
-        sessionBuilder.process(preKeyBundle)
+        sessionBuilder.process(nativeBundle)
     }
 
     override suspend fun hasSession(userId: String): Boolean {
-        val address = SignalProtocolAddress(userId, deviceId)
+        val address = SignalProtocolAddress(userId, DEVICE_ID)
         return store.containsSession(address)
     }
 
     override suspend fun encryptMessage(recipientId: String, message: ByteArray): EncryptedMessage {
-        val address = SignalProtocolAddress(recipientId, deviceId)
-        val sessionCipher = SessionCipher(store, store, store, store, address)
-
-        val ciphertext = sessionCipher.encrypt(message)
+        val address = SignalProtocolAddress(recipientId, DEVICE_ID)
+        val sessionCipher = SessionCipher(store, address)
+        val ciphertextMessage = sessionCipher.encrypt(message)
 
         return EncryptedMessage(
-            type = ciphertext.type,
-            body = Base64.encodeToString(ciphertext.serialize(), Base64.NO_WRAP),
+            type = ciphertextMessage.type,
+            body = Base64.encodeToString(ciphertextMessage.serialize(), Base64.NO_WRAP),
             registrationId = store.getLocalRegistrationId()
         )
     }
 
     override suspend fun decryptMessage(senderId: String, message: EncryptedMessage): ByteArray {
-        val address = SignalProtocolAddress(senderId, deviceId)
-        val sessionCipher = SessionCipher(store, store, store, store, address)
+        val address = SignalProtocolAddress(senderId, DEVICE_ID)
+        val sessionCipher = SessionCipher(store, address)
 
-        val messageBytes = Base64.decode(message.body, Base64.NO_WRAP)
+        val decodedBody = Base64.decode(message.body, Base64.DEFAULT)
 
-        return if (message.type == PREKEY_TYPE) {
-            val preKeyMessage = PreKeySignalMessage(messageBytes)
-            sessionCipher.decrypt(preKeyMessage)
+        return if (message.type == CiphertextMessage.PREKEY_TYPE) {
+            sessionCipher.decrypt(PreKeySignalMessage(decodedBody))
         } else {
-            val signalMessage = SignalMessage(messageBytes)
-            sessionCipher.decrypt(signalMessage)
+            sessionCipher.decrypt(SignalMessage(decodedBody))
         }
     }
 
@@ -119,7 +109,6 @@ class AndroidSignalProtocolManager(context: Context, private val deviceId: Int =
     }
 
     override suspend fun getLocalIdentityKey(): String {
-        val keyPair = store.getIdentityKeyPair()
-        return Base64.encodeToString(keyPair.publicKey.serialize(), Base64.NO_WRAP)
+        return Base64.encodeToString(store.identityKeyPair.publicKey.serialize(), Base64.NO_WRAP)
     }
 }

@@ -112,6 +112,7 @@ fun CommentsList(
                         onOptionsClick = { onShowOptions(comment) },
                         onPollVote = { /* No polls in comments */ },
                         onReactionSelected = { reaction -> onShowReactions(comment) },
+                        onQuoteClick = { },
                         modifier = Modifier
                     )
                     
@@ -216,6 +217,7 @@ private fun RenderReplies(
                 onOptionsClick = { onShowOptions(reply) },
                 onPollVote = { /* No polls in comments */ },
                 onReactionSelected = { reaction -> onShowReactions(reply) },
+                onQuoteClick = { },
                 onParentAuthorClick = { parentComment.userId?.let { onUserClick(it) } },
                 modifier = Modifier
             )

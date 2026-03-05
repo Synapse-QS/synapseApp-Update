@@ -183,49 +183,50 @@ fun FeedScreen(
                                     state = commentState,
                                     postViewStyle = uiState.postViewStyle,
                                     onLikeClick = {
-                                        // Optional: Handle comment liking in future
+                                        viewModel.reactToComment(feedItem.id, com.synapse.social.studioasinc.domain.model.ReactionType.LIKE)
                                     },
                                     onCommentClick = {
-                                        // Navigate to parent post to show comment
+                                        // Still navigates to detail for now, but could open specific reply
                                         feedItem.parentPostId?.let { postId ->
                                             currentOnCommentClick(postId)
                                         }
                                     },
                                     onShareClick = {
-                                        // Optional: Handle comment sharing in future
+                                        // Share comment link?
                                     },
                                     onRepostClick = {
-                                        // Not applicable for comments
+                                        // Comments can be reshared too
+                                        viewModel.resharePost(commentState.post)
+                                    },
+                                    onQuoteClick = {
+                                        // Comments can be quoted too
+                                        viewModel.quotePost(commentState.post, "") 
                                     },
                                     onBookmarkClick = {
-                                        // Not applicable for comments
+                                        viewModel.bookmarkPost(commentState.post)
                                     },
                                     onUserClick = {
                                         currentOnUserClick(feedItem.userId)
                                     },
                                     onPostClick = {
-                                        // Navigate to parent post to show comment
                                         feedItem.parentPostId?.let { postId ->
                                             currentOnCommentClick(postId)
                                         }
                                     },
                                     onMediaClick = { index ->
-                                        // Not applicable for comments
+                                        // Comments might have media
+                                        currentOnMediaClick(index)
                                     },
                                     onOptionsClick = {
-                                        // Optional: Handle comment options in future
+                                        // Map minimal post for options
+                                        selectedPost = commentState.post
                                     },
-                                    onPollVote = { _ ->
-                                        // Not applicable for comments
+                                    onPollVote = { _ -> },
+                                    onReactionSelected = { reaction ->
+                                        viewModel.reactToComment(feedItem.id, reaction)
                                     },
-                                    onReactionSelected = null,
                                     onParentAuthorClick = {
-                                        // Navigate to parent author if available
-                                        feedItem.parentAuthorUsername?.let { username ->
-                                            // Note: We need userId, not username for navigation
-                                            // This is a limitation - we may need to enhance FeedItem.CommentItem
-                                            // For now, clicking parent author will do nothing
-                                        }
+                                        // Navigate to parent author
                                     }
                                 )
                             }

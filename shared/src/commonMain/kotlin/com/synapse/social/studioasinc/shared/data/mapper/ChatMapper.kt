@@ -28,6 +28,8 @@ object ChatMapper {
         replyToId = replyToId,
         createdAt = createdAt ?: "",
         updatedAt = updatedAt,
-        readBy = readBy?.split(",")?.filter { it.isNotBlank() } ?: emptyList()
+        readBy = readBy?.split(",")?.filter { it.isNotBlank() } ?: emptyList(),
+        isEncrypted = isEncrypted,
+        encryptedContent = encryptedContent
     )
 }

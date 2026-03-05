@@ -31,6 +31,7 @@ fun SharedPostItem(
     val onCommentClick = remember(post, actions) { { actions.onComment(post) } }
     val onShareClick = remember(post, actions) { { actions.onShare(post) } }
     val onRepostClick = remember(post, actions) { { actions.onRepost(post) } }
+    val onQuoteClick = remember(post, actions) { { actions.onQuote(post) } }
     val onBookmarkClick = remember(post, actions) { { actions.onBookmark(post) } }
     val onUserClick = remember(post, actions) { { actions.onUserClick(post.authorUid) } }
     val onPostClick = remember(post, actions) { { actions.onComment(post) } }
@@ -60,6 +61,7 @@ fun SharedPostItem(
         onCommentClick = onCommentClick,
         onShareClick = onShareClick,
         onRepostClick = onRepostClick,
+        onQuoteClick = onQuoteClick,
         onBookmarkClick = onBookmarkClick,
         onUserClick = onUserClick,
         onPostClick = onPostClick,

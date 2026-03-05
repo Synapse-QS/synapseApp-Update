@@ -233,6 +233,7 @@ fun SearchScreen(
                                                     onComment = { p -> onNavigateToPost(p.id) },
                                                     onShare = viewModel::sharePost,
                                                     onRepost = { },
+                                                    onQuote = { },
                                                     onBookmark = viewModel::bookmarkPost,
                                                     onOptionClick = { p -> selectedPost = p },
                                                     onPollVote = viewModel::votePoll,
