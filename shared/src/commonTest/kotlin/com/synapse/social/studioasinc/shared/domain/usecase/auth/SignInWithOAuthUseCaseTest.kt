@@ -42,6 +42,7 @@ class FakeAuthRepository : AuthRepository {
         return signInWithOAuthResult
     }
 
+    override suspend fun signInWithGoogleIdToken(idToken: String): Result<String> = Result.failure(Exception("Not implemented"))
     override suspend fun linkIdentity(provider: SocialProvider): Result<Unit> = Result.failure(Exception("Not implemented"))
     override suspend fun unlinkIdentity(identityId: String): Result<Unit> = Result.failure(Exception("Not implemented"))
     override suspend fun getLinkedIdentities(): Result<List<String>> = Result.failure(Exception("Not implemented"))

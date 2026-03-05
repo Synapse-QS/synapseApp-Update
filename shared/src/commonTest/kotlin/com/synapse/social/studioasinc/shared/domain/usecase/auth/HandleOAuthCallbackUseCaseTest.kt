@@ -58,6 +58,7 @@ class HandleOAuthCallbackUseCaseTest {
             return handleOAuthCallbackResult
         }
         override suspend fun signInWithOAuth(provider: SocialProvider, redirectUrl: String): Result<Unit> = Result.success(Unit)
+        override suspend fun signInWithGoogleIdToken(idToken: String): Result<String> = Result.success("")
         override suspend fun linkIdentity(provider: SocialProvider): Result<Unit> = Result.success(Unit)
         override suspend fun unlinkIdentity(identityId: String): Result<Unit> = Result.success(Unit)
         override suspend fun getLinkedIdentities(): Result<List<String>> = Result.success(emptyList())

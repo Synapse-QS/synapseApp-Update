@@ -38,6 +38,7 @@ class SendPasswordResetUseCaseTest {
         override suspend fun getOAuthUrl(provider: String, redirectUrl: String): Result<String> = Result.success("")
         override suspend fun handleOAuthCallback(code: String?, accessToken: String?, refreshToken: String?): Result<Unit> = Result.success(Unit)
         override suspend fun signInWithOAuth(provider: SocialProvider, redirectUrl: String): Result<Unit> = Result.success(Unit)
+        override suspend fun signInWithGoogleIdToken(idToken: String): Result<String> = Result.success("")
         override suspend fun linkIdentity(provider: SocialProvider): Result<Unit> = Result.success(Unit)
         override suspend fun unlinkIdentity(identityId: String): Result<Unit> = Result.success(Unit)
         override suspend fun getLinkedIdentities(): Result<List<String>> = Result.success(emptyList())

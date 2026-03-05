@@ -36,6 +36,7 @@ class ResendVerificationEmailUseCaseTest {
         override suspend fun getOAuthUrl(provider: String, redirectUrl: String): Result<String> = throw NotImplementedError()
         override suspend fun handleOAuthCallback(code: String?, accessToken: String?, refreshToken: String?): Result<Unit> = throw NotImplementedError()
         override suspend fun signInWithOAuth(provider: SocialProvider, redirectUrl: String): Result<Unit> = throw NotImplementedError()
+        override suspend fun signInWithGoogleIdToken(idToken: String): Result<String> = throw NotImplementedError()
         override suspend fun linkIdentity(provider: SocialProvider): Result<Unit> = throw NotImplementedError()
         override suspend fun unlinkIdentity(identityId: String): Result<Unit> = throw NotImplementedError()
         override suspend fun getLinkedIdentities(): Result<List<String>> = throw NotImplementedError()
