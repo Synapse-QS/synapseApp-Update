@@ -37,22 +37,16 @@ fun PostHeader(
     taggedPeople: List<User> = emptyList(),
     feeling: FeelingActivity? = null,
     locationName: String? = null,
-    avatarSize: androidx.compose.ui.unit.Dp = 40.dp,
+    replyToUsername: String? = null,
+    onReplyToClick: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     Row(
         modifier = modifier
             .fillMaxWidth()
-            .padding(start = 12.dp, top = 12.dp, end = 4.dp, bottom = 8.dp),
+            .padding(top = 12.dp, end = 4.dp, bottom = 4.dp),
         verticalAlignment = Alignment.Top
     ) {
-        CircularAvatar(
-            imageUrl = user.avatar,
-            contentDescription = "Avatar of ${user.username}",
-            onClick = onUserClick,
-            size = avatarSize
-        )
-        Spacer(modifier = Modifier.width(12.dp))
         Column(
             modifier = Modifier
                 .weight(1f)
@@ -87,6 +81,34 @@ fun PostHeader(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+            }
+
+            if (replyToUsername != null) {
+                Row(
+                    modifier = Modifier.padding(top = 1.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    val replyingToText = androidx.compose.ui.res.stringResource(
+                        com.synapse.social.studioasinc.R.string.replying_to,
+                        ""
+                    ).replace("%s", "").trim()
+
+                    Text(
+                        text = "$replyingToText ",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        text = "@$replyToUsername",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.primary,
+                        modifier = if (onReplyToClick != null) {
+                            Modifier.clickable { onReplyToClick() }
+                        } else {
+                            Modifier
+                        }
+                    )
+                }
             }
 
             if (feeling != null || taggedPeople.isNotEmpty() || !locationName.isNullOrEmpty()) {

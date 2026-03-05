@@ -119,28 +119,32 @@ fun PostCard(
             }
         }
  
-        // Use Row to position thread line alongside content for comments
+        // Main layout Row: Avatar on left, content on right
         Row(
-            modifier = Modifier.fillMaxWidth()
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 8.dp)
         ) {
-            // Thread line column (only for comments with thread line)
-            // Memoize the thread line visibility check
-            val showThreadLineColumn = remember(state.isComment, state.showThreadLine, state.isLastReply) {
-                state.isComment && state.showThreadLine && !state.isLastReply
-            }
-            
-            if (showThreadLineColumn) {
-                Column(
-                    modifier = Modifier.padding(start = 12.dp + (avatarSize / 2) - (com.synapse.social.studioasinc.feature.shared.theme.Spacing.Tiny / 2)),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    // Spacer to position thread line below avatar
-                    // Header has top padding of 12.dp, avatar size, and bottom padding of 8.dp
-                    Spacer(modifier = Modifier.size(12.dp + avatarSize + 8.dp))
-                    
-                    // Vertical thread line
+            // Left Column: Avatar and Thread Line
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.width(avatarSize)
+            ) {
+                CircularAvatar(
+                    imageUrl = state.user.avatar,
+                    contentDescription = "Avatar of ${state.user.username}",
+                    onClick = onUserClick,
+                    size = avatarSize
+                )
+
+                val showThreadLineColumn = remember(state.isComment, state.showThreadLine, state.isLastReply) {
+                    state.isComment && state.showThreadLine && !state.isLastReply
+                }
+
+                if (showThreadLineColumn) {
                     Box(
                         modifier = Modifier
+                            .padding(top = 8.dp)
                             .width(com.synapse.social.studioasinc.feature.shared.theme.Spacing.Tiny)
                             .weight(1f)
                             .background(
@@ -149,18 +153,11 @@ fun PostCard(
                     )
                 }
             }
-            
-            // Main content column
-            // Memoize the content column modifier
-            val contentModifier = remember(showThreadLineColumn) {
-                if (showThreadLineColumn) {
-                    Modifier.weight(1f)
-                } else {
-                    Modifier.fillMaxWidth()
-                }
-            }
-            
-            Column(modifier = contentModifier) {
+
+            Spacer(modifier = Modifier.width(12.dp))
+
+            // Right Column: Header, Content, Interaction Bar
+            Column(modifier = Modifier.weight(1f)) {
                 PostHeader(
                     user = state.user,
                     timestamp = state.formattedTimestamp,
@@ -169,44 +166,36 @@ fun PostCard(
                     taggedPeople = state.post.metadata?.taggedPeople ?: emptyList(),
                     feeling = state.post.metadata?.feeling,
                     locationName = state.post.locationName,
-                    avatarSize = avatarSize
+                    replyToUsername = if (state.isComment) state.parentAuthorUsername else null,
+                    onReplyToClick = onParentAuthorClick
                 )
 
-                Column(modifier = Modifier.padding(horizontal = 12.dp)) {
-                    // Reply context display for comments
-                    if (state.isComment && state.parentAuthorUsername != null) {
-                        ReplyContext(
-                            parentAuthorUsername = state.parentAuthorUsername,
-                            onParentAuthorClick = onParentAuthorClick
-                        )
-                    }
-                    
-                    // Memoize conditional parameters to avoid recomputation
-                    val contentMediaUrls = state.mediaUrls
-                    val contentPollQuestion = remember(state.isComment, state.pollQuestion) {
-                        if (state.isComment) null else state.pollQuestion
-                    }
-                    val contentPollOptions = remember(state.isComment, state.pollOptions) {
-                        if (state.isComment) null else state.pollOptions
-                    }
-                    val contentQuotedPost = remember(state.isComment, state.post.quotedPost) {
-                        if (state.isComment) null else state.post.quotedPost
-                    }
-                    
-                    PostContent(
-                        text = state.post.postText,
-                        mediaUrls = contentMediaUrls,
-                        postViewStyle = postViewStyle,
-                        isVideo = state.isVideo,
-                        pollQuestion = contentPollQuestion,
-                        pollOptions = contentPollOptions,
-                        userPollVote = state.userPollVote,
-                        onMediaClick = onMediaClick,
-                        onPollVote = onPollVote,
-                        quotedPost = contentQuotedPost,
-                        isExpanded = state.isExpanded
-                    )
+                // Memoize conditional parameters to avoid recomputation
+                val contentMediaUrls = state.mediaUrls
+                val contentPollQuestion = remember(state.isComment, state.pollQuestion) {
+                    if (state.isComment) null else state.pollQuestion
                 }
+                val contentPollOptions = remember(state.isComment, state.pollOptions) {
+                    if (state.isComment) null else state.pollOptions
+                }
+                val contentQuotedPost = remember(state.isComment, state.post.quotedPost) {
+                    if (state.isComment) null else state.post.quotedPost
+                }
+
+                PostContent(
+                    text = state.post.postText,
+                    mediaUrls = contentMediaUrls,
+                    postViewStyle = postViewStyle,
+                    isVideo = state.isVideo,
+                    pollQuestion = contentPollQuestion,
+                    pollOptions = contentPollOptions,
+                    userPollVote = state.userPollVote,
+                    onMediaClick = onMediaClick,
+                    onPollVote = onPollVote,
+                    quotedPost = contentQuotedPost,
+                    isExpanded = state.isExpanded,
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
 
                 PostInteractionBar(
                     isLiked = state.isLiked,
@@ -246,35 +235,3 @@ fun PostCard(
     }
 }
 
-@Composable
-private fun ReplyContext(
-    parentAuthorUsername: String,
-    onParentAuthorClick: (() -> Unit)?,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier.padding(bottom = com.synapse.social.studioasinc.feature.shared.theme.Spacing.Tiny),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        val replyingToText = androidx.compose.ui.res.stringResource(
-            com.synapse.social.studioasinc.R.string.replying_to,
-            ""
-        ).replace("%s", "").trim()
-        
-        Text(
-            text = "$replyingToText ",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-        Text(
-            text = "@$parentAuthorUsername",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.primary,
-            modifier = if (onParentAuthorClick != null) {
-                Modifier.clickable { onParentAuthorClick() }
-            } else {
-                Modifier
-            }
-        )
-    }
-}

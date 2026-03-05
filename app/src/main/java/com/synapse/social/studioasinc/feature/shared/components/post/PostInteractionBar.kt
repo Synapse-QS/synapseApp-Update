@@ -70,177 +70,148 @@ fun PostInteractionBar(
 
 
 
-        HorizontalDivider(
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f),
-            thickness = 0.5.dp
-        )
-
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-
-                .padding(horizontal = 12.dp, vertical = 8.dp),
+                .padding(start = 12.dp, end = 12.dp, bottom = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .background(
-                            if (isLiked) Color.Red.copy(alpha = 0.1f) else Color.Transparent,
-                            RoundedCornerShape(20.dp)
-                        )
-                        .combinedClickable(
-                            onClick = onLikeClick,
-                            onLongClick = {
-                                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                onReactionLongPress?.invoke()
-                            }
-                        )
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Icon(
-                        imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                        contentDescription = stringResource(
-                            if (isLiked) R.string.like_post_liked else R.string.like_post_with_count,
-                            likeCount
-                        ),
-                        tint = if (isLiked) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    if (likeCount > 0 && !hideLikeCount) {
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = formatCount(likeCount),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = if (isLiked) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontWeight = if (isLiked) FontWeight.SemiBold else FontWeight.Normal
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.width(16.dp))
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .clickable(onClick = onCommentClick)
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.AutoMirrored.Outlined.Comment,
-                        contentDescription = stringResource(
-                            R.string.comment_on_post_with_count,
-                            commentCount
-                        ),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    if (commentCount > 0) {
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = formatCount(commentCount),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.width(16.dp))
-
-                // Hide repost button for comments
-                if (!isComment) {
-                    Box {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier
-                                .clickable { showRepostMenu = true }
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Outlined.Repeat,
-                                contentDescription = "Repost",
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            if (repostCount > 0) {
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = formatCount(repostCount),
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                        }
-                        
-                        androidx.compose.material3.DropdownMenu(
-                            expanded = showRepostMenu,
-                            onDismissRequest = { showRepostMenu = false }
-                        ) {
-                            androidx.compose.material3.DropdownMenuItem(
-                                text = { Text("Reshare") },
-                                onClick = {
-                                    onRepostClick()
-                                    showRepostMenu = false
-                                },
-                                leadingIcon = {
-                                    Icon(Icons.Outlined.Repeat, contentDescription = null)
-                                }
-                            )
-                            androidx.compose.material3.DropdownMenuItem(
-                                text = { Text("Quote") },
-                                onClick = {
-                                    onQuoteClick()
-                                    showRepostMenu = false
-                                },
-                                leadingIcon = {
-                                    Icon(androidx.compose.material.icons.Icons.AutoMirrored.Outlined.Comment, contentDescription = null)
-                                }
-                            )
-                        }
-                    }
-
-                    Spacer(modifier = Modifier.width(16.dp))
-                }
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier
-                        .padding(horizontal = 8.dp, vertical = 4.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.BarChart,
-                        contentDescription = "Views",
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    if (viewsCount > 0) {
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            text = formatCount(viewsCount),
-                            style = MaterialTheme.typography.labelMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-
-                IconButton(
-                    onClick = onShareClick,
-                    modifier = Modifier.size(32.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Outlined.Share,
-                        contentDescription = stringResource(R.string.share_post),
-                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.size(20.dp)
+            // Comment
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .clickable(onClick = onCommentClick)
+                    .padding(vertical = 4.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.AutoMirrored.Outlined.Comment,
+                    contentDescription = stringResource(
+                        R.string.comment_on_post_with_count,
+                        commentCount
+                    ),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp)
+                )
+                if (commentCount > 0) {
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = formatCount(commentCount),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
 
+            // Repost
+            Box {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .clickable { showRepostMenu = true }
+                        .padding(vertical = 4.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Repeat,
+                        contentDescription = "Repost",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    if (repostCount > 0) {
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = formatCount(repostCount),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                androidx.compose.material3.DropdownMenu(
+                    expanded = showRepostMenu,
+                    onDismissRequest = { showRepostMenu = false }
+                ) {
+                    androidx.compose.material3.DropdownMenuItem(
+                        text = { Text("Reshare") },
+                        onClick = {
+                            onRepostClick()
+                            showRepostMenu = false
+                        },
+                        leadingIcon = {
+                            Icon(Icons.Outlined.Repeat, contentDescription = null)
+                        }
+                    )
+                    androidx.compose.material3.DropdownMenuItem(
+                        text = { Text("Quote") },
+                        onClick = {
+                            onQuoteClick()
+                            showRepostMenu = false
+                        },
+                        leadingIcon = {
+                            Icon(androidx.compose.material.icons.Icons.AutoMirrored.Outlined.Comment, contentDescription = null)
+                        }
+                    )
+                }
+            }
+
+            // Like
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .combinedClickable(
+                        onClick = onLikeClick,
+                        onLongClick = {
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            onReactionLongPress?.invoke()
+                        }
+                    )
+                    .padding(vertical = 4.dp)
+            ) {
+                Icon(
+                    imageVector = if (isLiked) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                    contentDescription = stringResource(
+                        if (isLiked) R.string.like_post_liked else R.string.like_post_with_count,
+                        likeCount
+                    ),
+                    tint = if (isLiked) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp)
+                )
+                if (likeCount > 0 && !hideLikeCount) {
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = formatCount(likeCount),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (isLiked) Color.Red else MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = if (isLiked) FontWeight.SemiBold else FontWeight.Normal
+                    )
+                }
+            }
+
+            // Views
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(vertical = 4.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.BarChart,
+                    contentDescription = "Views",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp)
+                )
+                if (viewsCount > 0) {
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = formatCount(viewsCount),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+
+            // Bookmark
             IconButton(
                 onClick = onBookmarkClick,
-                modifier = Modifier.size(32.dp)
+                modifier = Modifier.size(24.dp)
             ) {
                 Icon(
                     imageVector = if (isBookmarked) Icons.Default.Bookmark else Icons.Default.BookmarkBorder,
@@ -248,7 +219,20 @@ fun PostInteractionBar(
                         if (isBookmarked) R.string.unsave_post else R.string.save_post
                     ),
                     tint = if (isBookmarked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.size(20.dp)
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+
+            // Share
+            IconButton(
+                onClick = onShareClick,
+                modifier = Modifier.size(24.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Share,
+                    contentDescription = stringResource(R.string.share_post),
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.size(18.dp)
                 )
             }
         }
