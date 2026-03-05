@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import com.synapse.social.studioasinc.domain.model.Post
 import com.synapse.social.studioasinc.domain.model.User
 import com.synapse.social.studioasinc.domain.model.ReactionType
+import com.synapse.social.studioasinc.ui.components.CircularAvatar
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
