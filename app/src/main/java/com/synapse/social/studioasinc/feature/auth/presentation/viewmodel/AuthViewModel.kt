@@ -241,14 +241,7 @@ class AuthViewModel @Inject constructor(
 
     fun onOAuthClick(provider: String) {
         viewModelScope.launch {
-             if (provider.equals("GitHub", ignoreCase = true)) {
-                 signInWithOAuthUseCase(SocialProvider.GITHUB, Constants.AUTH_REDIRECT_URL).fold(
-                     onSuccess = {},
-                     onFailure = { e ->
-                          // Simple error handling
-                     }
-                 )
-             } else if (provider.equals("Google", ignoreCase = true)) {
+             if (provider.equals("Google", ignoreCase = true)) {
                  // Google Sign-In is handled natively via GoogleAuthHelper in AuthActivity
                  _navigationEvent.emit(AuthNavigationEvent.InitiateGoogleSignIn)
              } else {

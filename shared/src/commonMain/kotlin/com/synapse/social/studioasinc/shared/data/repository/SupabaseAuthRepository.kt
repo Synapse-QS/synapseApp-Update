@@ -12,6 +12,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import io.github.jan.supabase.auth.OtpType
 import io.github.jan.supabase.auth.providers.builtin.Email
+import io.github.jan.supabase.auth.providers.builtin.IDToken
 import io.github.jan.supabase.auth.providers.OAuthProvider
 import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.Apple
@@ -328,8 +329,10 @@ class SupabaseAuthRepository(private val client: SupabaseClientLib = SupabaseCli
         return try {
             withContext(Dispatchers.Default) {
                 // Use the ID token to sign in with Google
-                // Note: Supabase auth-kt 3.1.1 may require using IDToken provider
-                client.auth.signInWith(Google)
+                client.auth.signInWith(IDToken) {
+                    this.idToken = idToken
+                    this.provider = Google
+                }
                 
                 val userId = client.auth.currentUserOrNull()?.id
                     ?: throw Exception("User ID not found after Google sign-in")
