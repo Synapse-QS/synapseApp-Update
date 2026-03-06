@@ -79,11 +79,8 @@ class SupabaseAuthenticationService(
                 )
                 client.from("users").insert(profileInsert)
 
-                val settingsInsert = UserSettingsInsert(user_id = userId)
-                client.from("user_settings").insert(settingsInsert)
-
-                val presenceInsert = UserPresenceInsert(user_id = userId)
-                client.from("user_presence").insert(presenceInsert)
+                // Note: user_settings and user_presence are automatically created by database trigger
+                // when the user signs up via Supabase Auth (see handle_new_auth_user trigger)
 
                 Napier.d("User profile created successfully: $userId")
                 Result.success(Unit)

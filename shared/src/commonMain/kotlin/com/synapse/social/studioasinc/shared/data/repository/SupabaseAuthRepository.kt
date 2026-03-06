@@ -4,6 +4,7 @@ import com.synapse.social.studioasinc.shared.core.network.SupabaseClient
 import com.synapse.social.studioasinc.shared.data.model.UserProfileInsert
 import com.synapse.social.studioasinc.shared.data.model.UserSettingsInsert
 import com.synapse.social.studioasinc.shared.data.model.UserPresenceInsert
+import com.synapse.social.studioasinc.shared.data.mapper.AuthErrorMapper
 import com.synapse.social.studioasinc.shared.domain.repository.AuthRepository
 import com.synapse.social.studioasinc.shared.domain.model.auth.AuthSessionStatus
 import io.github.jan.supabase.auth.auth
@@ -63,7 +64,8 @@ class SupabaseAuthRepository(private val client: SupabaseClientLib = SupabaseCli
             }
         } catch (e: Exception) {
             logSafeError("Sign up failed", e)
-            Result.failure(e)
+            val authError = AuthErrorMapper.mapException(e)
+            Result.failure(authError)
         }
     }
 
@@ -78,7 +80,8 @@ class SupabaseAuthRepository(private val client: SupabaseClientLib = SupabaseCli
             }
         } catch (e: Exception) {
             logSafeError("Sign up with profile failed", e)
-            Result.failure(e)
+            val authError = AuthErrorMapper.mapException(e)
+            Result.failure(authError)
         }
     }
 
@@ -103,25 +106,13 @@ class SupabaseAuthRepository(private val client: SupabaseClientLib = SupabaseCli
                         uid = userId, // Ensure ID is passed if model requires it
                         username = actualUsername
                     )
-                    // Note: Check table name. Previous code said "user_profiles", but supabase tables showed "users".
-                    // The app/UserRepository used "users". shared used "user_profiles".
-                    // I see "users" table in Supabase list_tables output earlier.
-                    // I will change it to "users" to match the actual DB.
                     Napier.d("Inserting user profile for $userId into users table...", tag = TAG)
                     client.from("users").insert(profileInsert)
                     Napier.d("Successfully inserted user profile for $userId.", tag = TAG)
 
-                    // Also check if user_settings and user_presence exist in list_tables
-                    // Yes: user_settings, user_presence.
-                    val settingsInsert = UserSettingsInsert(user_id = userId)
-                    Napier.d("Inserting user settings for $userId...", tag = TAG)
-                    client.from("user_settings").insert(settingsInsert)
-                    Napier.d("Successfully inserted user settings for $userId.", tag = TAG)
-
-                    val presenceInsert = UserPresenceInsert(user_id = userId)
-                    Napier.d("Inserting user presence for $userId...", tag = TAG)
-                    client.from("user_presence").insert(presenceInsert)
-                    Napier.d("Successfully inserted user presence for $userId.", tag = TAG)
+                    // Note: user_settings and user_presence are automatically created by database trigger
+                    // when the user signs up via Supabase Auth (see handle_new_auth_user trigger)
+                    // No need to manually insert them here
 
                     Napier.d("User profile created: $userId", tag = TAG)
                 } else {
@@ -131,7 +122,8 @@ class SupabaseAuthRepository(private val client: SupabaseClientLib = SupabaseCli
             }
         } catch (e: Exception) {
             logSafeError("Ensure profile exists failed", e)
-            Result.failure(e)
+            val authError = AuthErrorMapper.mapException(e)
+            Result.failure(authError)
         }
     }
 
@@ -149,7 +141,8 @@ class SupabaseAuthRepository(private val client: SupabaseClientLib = SupabaseCli
             }
         } catch (e: Exception) {
             logSafeError("Sign in failed", e)
-            Result.failure(e)
+            val authError = AuthErrorMapper.mapException(e)
+            Result.failure(authError)
         }
     }
 

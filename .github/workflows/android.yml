@@ -49,6 +49,7 @@ jobs:
           SUPABASE_SYNAPSE_S3_ACCESS_KEY: ${{ secrets.SUPABASE_SYNAPSE_S3_ACCESS_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
           IMGBB_API_KEY: ${{ secrets.IMGBB_API_KEY }}
+          GOOGLE_WEB_CLIENT_ID: ${{ secrets.GOOGLE_WEB_CLIENT_ID }}
           GRADLE_OPTS: "-Xmx6g -Dorg.gradle.jvmargs='-Xmx6g -XX:MaxMetaspaceSize=1g'"
         run: ./gradlew assembleRelease --no-daemon
 
