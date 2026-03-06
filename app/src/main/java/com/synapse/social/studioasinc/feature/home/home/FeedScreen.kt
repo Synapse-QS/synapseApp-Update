@@ -111,7 +111,7 @@ fun FeedScreen(
     }
 
     LaunchedEffect(posts.loadState.refresh) {
-        if (posts.loadState.refresh is LoadState.NotLoading) {
+        if (posts.loadState.refresh is LoadState.NotLoading || posts.loadState.refresh is LoadState.Error) {
             isUserRefreshing = false
         }
     }
@@ -120,10 +120,11 @@ fun FeedScreen(
         PullToRefreshBox(
             isRefreshing = isRefreshing,
             onRefresh = {
-                isUserRefreshing = true
-                posts.refresh()
-                viewModel.refresh()
-                storyTrayViewModel.refresh()
+                if (!isRefreshing) {
+                    isUserRefreshing = true
+                    posts.refresh()
+                    storyTrayViewModel.refresh()
+                }
             },
             state = pullToRefreshState,
             indicator = {

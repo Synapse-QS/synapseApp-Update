@@ -4,6 +4,7 @@ import com.synapse.social.studioasinc.shared.core.network.SupabaseClient
 import com.synapse.social.studioasinc.shared.data.model.UserProfileInsert
 import com.synapse.social.studioasinc.shared.data.model.UserSettingsInsert
 import com.synapse.social.studioasinc.shared.data.model.UserPresenceInsert
+import com.synapse.social.studioasinc.shared.data.mapper.AuthErrorMapper
 import com.synapse.social.studioasinc.shared.domain.repository.AuthRepository
 import com.synapse.social.studioasinc.shared.domain.model.auth.AuthSessionStatus
 import io.github.jan.supabase.auth.auth
@@ -12,6 +13,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import io.github.jan.supabase.auth.OtpType
 import io.github.jan.supabase.auth.providers.builtin.Email
+import io.github.jan.supabase.auth.providers.builtin.IDToken
 import io.github.jan.supabase.auth.providers.OAuthProvider
 import io.github.jan.supabase.auth.providers.Google
 import io.github.jan.supabase.auth.providers.Apple
@@ -51,18 +53,19 @@ class SupabaseAuthRepository(private val client: SupabaseClientLib = SupabaseCli
     override suspend fun signUp(email: String, password: String): Result<String> {
         return try {
             withContext(Dispatchers.Default) {
-                client.auth.signUpWith(Email) {
+                val user = client.auth.signUpWith(Email) {
                     this.email = email
                     this.password = password
                 }
-                val userId = client.auth.currentUserOrNull()?.id
+                val userId = user?.id ?: client.auth.currentUserOrNull()?.id
                     ?: throw Exception("User ID not found")
                 Napier.d("User signed up: $userId", tag = TAG)
                 Result.success(userId)
             }
         } catch (e: Exception) {
             logSafeError("Sign up failed", e)
-            Result.failure(e)
+            val authError = AuthErrorMapper.mapException(e)
+            Result.failure(authError)
         }
     }
 
@@ -77,50 +80,50 @@ class SupabaseAuthRepository(private val client: SupabaseClientLib = SupabaseCli
             }
         } catch (e: Exception) {
             logSafeError("Sign up with profile failed", e)
-            Result.failure(e)
+            val authError = AuthErrorMapper.mapException(e)
+            Result.failure(authError)
         }
     }
 
     override suspend fun ensureProfileExists(userId: String, email: String, username: String?): Result<Unit> {
         return try {
             withContext(Dispatchers.Default) {
+                Napier.d("Checking if user profile exists for userId: $userId", tag = TAG)
                 val count = client.from("users").select(columns = Columns.list("id")) {
                     count(Count.EXACT)
                     filter {
-                        eq("uid", userId)
+                        eq("id", userId)
                     }
                 }.countOrNull()
+                Napier.d("User profile count for $userId: $count", tag = TAG)
 
                 if (count == null || count == 0L) {
+                    Napier.d("Profile does not exist for $userId, creating new profile...", tag = TAG)
                     val actualUsername = username ?: email.substringBefore("@")
 
                     // SECURITY: Do not include sensitive fields (account_premium, verify, banned) here. They must be handled server-side.
                     val profileInsert = UserProfileInsert(
                         uid = userId, // Ensure ID is passed if model requires it
-                        username = actualUsername,
-                        email = email
+                        username = actualUsername
                     )
-                    // Note: Check table name. Previous code said "user_profiles", but supabase tables showed "users".
-                    // The app/UserRepository used "users". shared used "user_profiles".
-                    // I see "users" table in Supabase list_tables output earlier.
-                    // I will change it to "users" to match the actual DB.
+                    Napier.d("Inserting user profile for $userId into users table...", tag = TAG)
                     client.from("users").insert(profileInsert)
+                    Napier.d("Successfully inserted user profile for $userId.", tag = TAG)
 
-                    // Also check if user_settings and user_presence exist in list_tables
-                    // Yes: user_settings, user_presence.
-                    val settingsInsert = UserSettingsInsert(user_id = userId)
-                    client.from("user_settings").insert(settingsInsert)
-
-                    val presenceInsert = UserPresenceInsert(user_id = userId)
-                    client.from("user_presence").insert(presenceInsert)
+                    // Note: user_settings and user_presence are automatically created by database trigger
+                    // when the user signs up via Supabase Auth (see handle_new_auth_user trigger)
+                    // No need to manually insert them here
 
                     Napier.d("User profile created: $userId", tag = TAG)
+                } else {
+                    Napier.d("Profile already exists for $userId.", tag = TAG)
                 }
                 Result.success(Unit)
             }
         } catch (e: Exception) {
             logSafeError("Ensure profile exists failed", e)
-            Result.failure(e)
+            val authError = AuthErrorMapper.mapException(e)
+            Result.failure(authError)
         }
     }
 
@@ -138,7 +141,8 @@ class SupabaseAuthRepository(private val client: SupabaseClientLib = SupabaseCli
             }
         } catch (e: Exception) {
             logSafeError("Sign in failed", e)
-            Result.failure(e)
+            val authError = AuthErrorMapper.mapException(e)
+            Result.failure(authError)
         }
     }
 
@@ -264,11 +268,29 @@ class SupabaseAuthRepository(private val client: SupabaseClientLib = SupabaseCli
 
     override suspend fun getOAuthUrl(provider: String, redirectUrl: String): Result<String> {
         return try {
+            // Map string provider to SocialProvider enum
+            val socialProvider = when (provider.lowercase()) {
+                "google" -> SocialProvider.GOOGLE
+                "apple" -> SocialProvider.APPLE
+                "github" -> SocialProvider.GITHUB
+                "discord" -> SocialProvider.DISCORD
+                "twitter" -> SocialProvider.TWITTER
+                "facebook" -> SocialProvider.FACEBOOK
+                "spotify" -> SocialProvider.SPOTIFY
+                "slack" -> SocialProvider.SLACK
+                else -> throw IllegalArgumentException("Unsupported OAuth provider: $provider")
+            }
+            
+            val oauthProvider = mapSocialProviderToOAuthProvider(socialProvider)
+            
+            // Use Supabase's built-in OAuth URL generation with proper redirect
             val oauthUrl = URLBuilder(client.supabaseUrl).apply {
                 appendPathSegments("auth", "v1", "authorize")
-                parameters.append("provider", provider)
+                parameters.append("provider", oauthProvider.name.lowercase())
                 parameters.append("redirect_to", redirectUrl)
             }.buildString()
+            
+            Napier.d("Generated OAuth URL for ${oauthProvider.name}: $oauthUrl", tag = TAG)
             Result.success(oauthUrl)
         } catch (e: Exception) {
             logSafeError("OAuth URL generation failed", e)
@@ -317,12 +339,16 @@ class SupabaseAuthRepository(private val client: SupabaseClientLib = SupabaseCli
         return try {
             withContext(Dispatchers.Default) {
                 // Use the ID token to sign in with Google
-                // Note: Supabase auth-kt 3.1.1 may require using IDToken provider
-                client.auth.signInWith(Google)
+                client.auth.signInWith(IDToken) {
+                    this.idToken = idToken
+                    this.provider = Google
+                }
                 
-                val userId = client.auth.currentUserOrNull()?.id
+                // wait for session to establish after OAuth
+                val user = client.auth.currentUserOrNull()
+                val userId = user?.id
                     ?: throw Exception("User ID not found after Google sign-in")
-                val email = client.auth.currentUserOrNull()?.email
+                val email = user?.email
                     ?: throw Exception("Email not found after Google sign-in")
                 
                 ensureProfileExists(userId, email, null)

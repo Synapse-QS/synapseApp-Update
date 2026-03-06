@@ -119,7 +119,14 @@ private fun SignInForm(
         textAlign = TextAlign.End
     )
 
-    Spacer(modifier = Modifier.height(24.dp))
+    Spacer(modifier = Modifier.height(16.dp))
+
+    state.generalError?.let { errorMsg ->
+        ErrorCard(error = errorMsg)
+        Spacer(modifier = Modifier.height(16.dp))
+    }
+
+    Spacer(modifier = Modifier.height(8.dp))
 
     AuthButton(
         text = "Sign In",

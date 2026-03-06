@@ -377,7 +377,7 @@ class SupabaseAuthenticationService : com.synapse.social.studioasinc.data.remote
                 clearExistingSession("sign up")
 
                 logAuthenticationStep("Attempting Supabase sign up", email)
-                AuthErrorHandler.executeWithRetry(
+                val createdUser = AuthErrorHandler.executeWithRetry(
                     maxAttempts = authConfig.getEffectiveRetryAttempts(),
                     initialDelay = authConfig.getEffectiveRetryDelay()
                 ) {
@@ -388,12 +388,13 @@ class SupabaseAuthenticationService : com.synapse.social.studioasinc.data.remote
                 }
                 debugLog("Sign up request completed successfully")
 
-                client.auth.currentUserOrNull()?.id?.let { userId ->
-                    OneSignal.login(userId)
-                    debugLog("Linked OneSignal with External User ID: $userId")
+                val userId = createdUser?.id ?: client.auth.currentUserOrNull()?.id
+                userId?.let {
+                    OneSignal.login(it)
+                    debugLog("Linked OneSignal with External User ID: $it")
                 }
 
-                val supabaseUser = client.auth.currentUserOrNull()
+                val supabaseUser = createdUser ?: client.auth.currentUserOrNull()
                 val user = createLocalUser(email, supabaseUser)
                 debugLog("User created successfully: ${user.id}")
 
