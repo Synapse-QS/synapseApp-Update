@@ -52,11 +52,11 @@ class SupabaseAuthRepository(private val client: SupabaseClientLib = SupabaseCli
     override suspend fun signUp(email: String, password: String): Result<String> {
         return try {
             withContext(Dispatchers.Default) {
-                client.auth.signUpWith(Email) {
+                val user = client.auth.signUpWith(Email) {
                     this.email = email
                     this.password = password
                 }
-                val userId = client.auth.currentUserOrNull()?.id
+                val userId = user?.id ?: client.auth.currentUserOrNull()?.id
                     ?: throw Exception("User ID not found")
                 Napier.d("User signed up: $userId", tag = TAG)
                 Result.success(userId)
@@ -333,9 +333,11 @@ class SupabaseAuthRepository(private val client: SupabaseClientLib = SupabaseCli
                     this.provider = Google
                 }
                 
-                val userId = client.auth.currentUserOrNull()?.id
+                // wait for session to establish after OAuth
+                val user = client.auth.currentUserOrNull()
+                val userId = user?.id
                     ?: throw Exception("User ID not found after Google sign-in")
-                val email = client.auth.currentUserOrNull()?.email
+                val email = user?.email
                     ?: throw Exception("Email not found after Google sign-in")
                 
                 ensureProfileExists(userId, email, null)

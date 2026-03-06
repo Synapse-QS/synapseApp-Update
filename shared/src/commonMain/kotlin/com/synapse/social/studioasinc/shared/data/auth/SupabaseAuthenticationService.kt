@@ -42,7 +42,7 @@ class SupabaseAuthenticationService(
     override suspend fun signUp(email: String, password: String): Result<String> {
         return try {
             withContext(Dispatchers.Default) {
-                client.auth.signUpWith(Email) {
+                val user = client.auth.signUpWith(Email) {
                     this.email = email
                     this.password = password
                 }
@@ -58,7 +58,7 @@ class SupabaseAuthenticationService(
                     )
                 }
 
-                val userId = client.auth.currentUserOrNull()?.id
+                val userId = user?.id ?: client.auth.currentUserOrNull()?.id
                     ?: return@withContext Result.failure(IllegalStateException("User ID not found after signup"))
 
                 Napier.d("User signed up successfully: $userId")
