@@ -7,7 +7,7 @@ import com.synapse.social.studioasinc.BuildConfig
 
 
 data class AuthConfig(
-    val requireEmailVerification: Boolean = true,
+    val requireEmailVerification: Boolean = false,  // Disabled for development
     val resendCooldownSeconds: Int = 60,
     val maxResendAttempts: Int = 5,
     val enableDebugLogging: Boolean = false,
@@ -243,7 +243,9 @@ data class AuthConfig(
 
 
     fun shouldBypassEmailVerification(): Boolean {
-        return developmentMode && !requireEmailVerification
+        // Always bypass email verification for development
+        return true
+        // Original logic: return developmentMode && !requireEmailVerification
     }
 
 

@@ -88,6 +88,7 @@ fun SynapseTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = SynapseTypography,
+        shapes = ExpressiveShapes,
         content = content
     )
 }
