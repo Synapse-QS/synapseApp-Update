@@ -43,7 +43,7 @@ kotlin {
         val commonMain by getting {
             dependencies {
                 // Supabase & Ktor
-                implementation(project.dependencies.platform("io.github.jan-tennert.supabase:bom:3.2.6"))
+                implementation(project.dependencies.platform("io.github.jan-tennert.supabase:bom:3.2.2"))
                 implementation("io.github.jan-tennert.supabase:postgrest-kt")
                 implementation("io.github.jan-tennert.supabase:auth-kt")
                 implementation("io.github.jan-tennert.supabase:realtime-kt")
@@ -54,10 +54,10 @@ kotlin {
                 implementation("io.ktor:ktor-serialization-kotlinx-json:3.2.2")
 
                 // Serialization
-                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
 
                 // Coroutines
-                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
 
                 // DateTime
                 implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
@@ -66,14 +66,14 @@ kotlin {
                 implementation("io.github.aakira:napier:2.7.1")
 
                 // DI
-                implementation("io.insert-koin:koin-core:4.0.0")
+                implementation("io.insert-koin:koin-core:4.1.1")
 
                 // Settings
-                implementation("com.russhwolf:multiplatform-settings-no-arg:1.2.0")
+                implementation("com.russhwolf:multiplatform-settings-no-arg:1.3.0")
 
                 // SQLDelight
-                implementation("app.cash.sqldelight:runtime:2.0.2")
-                implementation("app.cash.sqldelight:coroutines-extensions:2.0.2")
+                implementation("app.cash.sqldelight:runtime:2.2.1")
+                implementation("app.cash.sqldelight:coroutines-extensions:2.2.1")
             }
         }
 
@@ -90,8 +90,8 @@ kotlin {
                 implementation("org.whispersystems:signal-protocol-android:2.8.1")
                 implementation("androidx.security:security-crypto:1.1.0-alpha06")
                 implementation("androidx.exifinterface:exifinterface:1.3.7")
-                implementation("app.cash.sqldelight:android-driver:2.0.2")
-                implementation("io.insert-koin:koin-android:4.0.0")
+                implementation("app.cash.sqldelight:android-driver:2.2.1")
+                implementation("io.insert-koin:koin-android:4.1.1")
             }
         }
 
@@ -105,7 +105,7 @@ kotlin {
         val iosMain by getting {
             dependencies {
                 implementation("io.ktor:ktor-client-darwin:3.2.2")
-                implementation("app.cash.sqldelight:native-driver:2.0.2")
+                implementation("app.cash.sqldelight:native-driver:2.2.1")
             }
         }
     }
@@ -163,7 +163,7 @@ android {
 
 configurations.all {
     resolutionStrategy {
-        force("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.9.0")
+        force("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.1")
         force("org.jetbrains.kotlinx:kotlinx-datetime:0.6.1")
         eachDependency {
             if (requested.group == "org.jetbrains.kotlin" && requested.name.startsWith("kotlin-stdlib")) {
