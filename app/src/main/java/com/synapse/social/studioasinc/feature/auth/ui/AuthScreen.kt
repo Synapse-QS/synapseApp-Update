@@ -87,8 +87,7 @@ fun AuthScreen(
             }
         ) {
             composable("signIn") {
-                val state = lastContentState
-                if (state is AuthUiState.SignIn) {
+                val state = lastContentState as? AuthUiState.SignIn ?: AuthUiState.SignIn()
                     SignInScreen(
                         state = state,
                         onEmailChanged = viewModel::onEmailChanged,
@@ -100,12 +99,10 @@ fun AuthScreen(
                         onToggleModeClick = viewModel::onToggleModeClick,
                         onOAuthClick = viewModel::onOAuthClick
                     )
-                }
             }
 
             composable("signUp") {
-                val state = lastContentState
-                if (state is AuthUiState.SignUp) {
+                val state = lastContentState as? AuthUiState.SignUp ?: AuthUiState.SignUp()
                     SignUpScreen(
                         state = state,
                         onEmailChanged = viewModel::onEmailChanged,
@@ -117,23 +114,19 @@ fun AuthScreen(
                         onToggleModeClick = viewModel::onToggleModeClick,
                         onOAuthClick = viewModel::onOAuthClick
                     )
-                }
             }
 
             composable("emailVerification") {
-                val state = lastContentState
-                if (state is AuthUiState.EmailVerification) {
+                val state = lastContentState as? AuthUiState.EmailVerification ?: AuthUiState.EmailVerification(email = "")
                     EmailVerificationScreen(
                         state = state,
                         onResendClick = viewModel::onResendVerificationEmail,
                         onBackToSignInClick = viewModel::onBackToSignInClick
                     )
-                }
             }
 
             composable("forgotPassword") {
-                val state = lastContentState
-                if (state is AuthUiState.ForgotPassword) {
+                val state = lastContentState as? AuthUiState.ForgotPassword ?: AuthUiState.ForgotPassword()
                     ForgotPasswordScreen(
                         state = state,
                         onEmailChanged = viewModel::onEmailChanged,
@@ -142,12 +135,10 @@ fun AuthScreen(
                         },
                         onBackClick = viewModel::onBackToSignInClick
                     )
-                }
             }
 
             composable("resetPassword") {
-                 val state = lastContentState
-                 if (state is AuthUiState.ResetPassword) {
+                val state = lastContentState as? AuthUiState.ResetPassword ?: AuthUiState.ResetPassword()
                      ResetPasswordScreen(
                          state = state,
                          onPasswordChanged = viewModel::onPasswordChanged,
@@ -158,7 +149,6 @@ fun AuthScreen(
                              viewModel.onSubmitNewPassword()
                          }
                      )
-                 }
             }
         }
     }
