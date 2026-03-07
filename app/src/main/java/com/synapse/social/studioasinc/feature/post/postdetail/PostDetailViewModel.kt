@@ -25,6 +25,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import com.synapse.social.studioasinc.core.util.NotificationHelper
 
 @HiltViewModel
 class PostDetailViewModel @Inject constructor(
@@ -148,7 +149,19 @@ class PostDetailViewModel @Inject constructor(
             
             postActionsRepository.updateLocalPost(optimisticPost.post)
 
-            reactionRepository.toggleReaction(postId, "post", reactionType, currentReaction, skipCheck = true).onFailure {
+            reactionRepository.toggleReaction(postId, "post", reactionType, currentReaction, skipCheck = true).onSuccess {
+                val ownerId = currentPost.post.authorUid
+                val myId = _uiState.value.currentUserId
+                if (!isRemoving && ownerId != myId && myId != null) {
+                    NotificationHelper.sendNotification(
+                        recipientUid = ownerId,
+                        senderUid = myId,
+                        message = "Someone reacted to your post.",
+                        notificationType = "NEW_LIKE_POST",
+                        data = mapOf("postId" to postId)
+                    )
+                }
+            }.onFailure {
                 _uiState.update { it.copy(post = currentPost) }
                 PostEventBus.emit(PostEvent.Updated(currentPost.post))
             }
@@ -183,6 +196,18 @@ class PostDetailViewModel @Inject constructor(
                 commentRepository.addComment(postId, content, mediaUrl, parentId).onSuccess {
                     refreshComments()
                     setReplyTo(null)
+                    
+                    val ownerId = _uiState.value.post?.post?.authorUid
+                    val myId = _uiState.value.currentUserId
+                    if (ownerId != null && myId != null && ownerId != myId) {
+                        NotificationHelper.sendNotification(
+                            recipientUid = ownerId,
+                            senderUid = myId,
+                            message = if (parentId != null) "Someone replied to your comment." else "Someone commented on your post.",
+                            notificationType = if (parentId != null) "NEW_REPLY" else "NEW_COMMENT",
+                            data = mapOf("postId" to postId)
+                        )
+                    }
                 }.onFailure { e ->
                     _uiState.update { it.copy(error = e.message ?: "Failed to add comment") }
                 }

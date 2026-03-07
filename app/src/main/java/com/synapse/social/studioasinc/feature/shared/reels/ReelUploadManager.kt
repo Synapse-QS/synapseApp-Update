@@ -2,10 +2,8 @@ package com.synapse.social.studioasinc.feature.shared.reels
 
 import android.content.Context
 import android.net.Uri
-import android.provider.OpenableColumns
 import com.synapse.social.studioasinc.shared.data.repository.ReelRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
-import io.ktor.utils.io.jvm.javaio.toByteReadChannel
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -18,6 +16,7 @@ import javax.inject.Singleton
 @Singleton
 class ReelUploadManager @Inject constructor(
     private val reelRepository: ReelRepository,
+    private val uploadMediaUseCase: com.synapse.social.studioasinc.shared.domain.usecase.UploadMediaUseCase,
     @ApplicationContext private val context: Context
 ) {
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
@@ -29,32 +28,26 @@ class ReelUploadManager @Inject constructor(
     val uploadError = _uploadError.asStateFlow()
 
     fun uploadReel(videoUri: Uri, caption: String, musicTrack: String) {
-        val fileName = "reel_${System.currentTimeMillis()}.mp4"
         scope.launch {
             _uploadError.value = null
             _uploadProgress.value = 0f
 
             try {
-                val size = context.contentResolver.query(videoUri, null, null, null, null)?.use { cursor ->
-                    val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
-                    cursor.moveToFirst()
-                    cursor.getLong(sizeIndex)
-                } ?: -1L
-
-                val inputStream = context.contentResolver.openInputStream(videoUri)
-                    ?: throw Exception("Failed to open input stream for URI: $videoUri")
-
-                val channel = inputStream.toByteReadChannel()
-
-                reelRepository.uploadReel(
-                    dataChannel = channel,
-                    size = size,
-                    fileName = fileName,
-                    caption = caption,
-                    musicTrack = musicTrack,
+                // Upload video
+                val videoUrl = uploadMediaUseCase(
+                    filePath = videoUri.toString(),
+                    mediaType = com.synapse.social.studioasinc.shared.domain.model.MediaType.VIDEO,
+                    bucketName = "reels",
                     onProgress = { progress ->
                         _uploadProgress.value = progress
                     }
+                ).getOrThrow()
+
+                // Register with database
+                reelRepository.createReel(
+                    videoUrl = videoUrl,
+                    caption = caption,
+                    musicTrack = musicTrack
                 ).onSuccess {
                     _uploadProgress.value = null
                 }.onFailure { e ->
@@ -72,3 +65,4 @@ class ReelUploadManager @Inject constructor(
         _uploadError.value = null
     }
 }
+

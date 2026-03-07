@@ -156,42 +156,19 @@ class ReelRepository {
 
 
 
-    suspend fun uploadReel(
-        dataChannel: ByteReadChannel,
-        size: Long,
-        fileName: String,
+    suspend fun createReel(
+        videoUrl: String,
         caption: String,
         musicTrack: String,
         locationName: String? = null,
         locationAddress: String? = null,
         locationLatitude: Double? = null,
         locationLongitude: Double? = null,
-        metadata: Map<String, Any?>? = null,
-        onProgress: (Float) -> Unit
+        metadata: Map<String, Any?>? = null
     ): Result<Unit> {
         return try {
             val currentUser = client.auth.currentUserOrNull() ?: throw Exception("Not logged in")
-            val storagePath = "${currentUser.id}/$fileName"
 
-            val uploadData = UploadData(dataChannel, size)
-
-
-            val bucket = client.storage.from("reels")
-            bucket.uploadAsFlow(storagePath, uploadData) {
-                upsert = true
-            }.onEach { status ->
-                when (status) {
-                    is UploadStatus.Progress -> {
-                        val progress = status.totalBytesSend.toFloat() / status.contentLength.toFloat()
-                        onProgress(progress)
-                    }
-                    is UploadStatus.Success -> {
-                        onProgress(1.0f)
-                    }
-                }
-            }.collect()
-
-            val videoUrl = bucket.publicUrl(storagePath)
             val reelData = mutableMapOf<String, Any?>(
                 "creator_id" to currentUser.id,
                 "video_url" to videoUrl,
@@ -213,8 +190,8 @@ class ReelRepository {
 
             Result.success(Unit)
         } catch (e: Exception) {
-            Napier.e("Failed to upload reel: ${e::class.simpleName}: ${e.message}", e, tag = TAG)
-            Result.failure(Exception("Reel upload failed: ${e.message ?: e::class.simpleName}", e))
+            Napier.e("Failed to create reel: ${e::class.simpleName}: ${e.message}", e, tag = TAG)
+            Result.failure(Exception("Reel creation failed: ${e.message ?: e::class.simpleName}", e))
         }
     }
 
