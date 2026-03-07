@@ -135,9 +135,12 @@ fun FeedScreen(
                 )
             }
         ) {
-        val showLoading = isRefreshing && posts.itemCount == 0
+        val showLoading = (isRefreshing || posts.loadState.refresh is LoadState.Loading || (posts.itemCount == 0 && !posts.loadState.refresh.endOfPaginationReached)) && posts.itemCount == 0
         val showError = posts.loadState.refresh is LoadState.Error && posts.itemCount == 0
-        val showEmpty = posts.loadState.refresh is LoadState.NotLoading && posts.itemCount == 0 && !isRefreshing
+        val showEmpty = posts.loadState.refresh is LoadState.NotLoading && 
+                        posts.loadState.append.endOfPaginationReached && 
+                        posts.itemCount == 0 && 
+                        !isRefreshing
 
         if (showLoading) {
             FeedLoading()

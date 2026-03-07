@@ -535,7 +535,7 @@ private fun ProfileContent(
             crossfadeContent(targetState = state.contentFilter) { filter ->
                 when (filter) {
                     ProfileContentFilter.PHOTOS -> {
-                        if (state.photos.isEmpty() && !state.isLoadingMore) {
+                        if (state.photos.isEmpty() && !state.isLoadingMore && !state.isRefreshing) {
                             EmptyState(
                                 icon = Icons.Default.PhotoLibrary,
                                 title = stringResource(R.string.empty_profile_photos_title),
@@ -614,7 +614,7 @@ private fun ProfileContent(
                             Spacer(modifier = Modifier.height(16.dp))
 
 
-                            if (state.posts.isEmpty() && !state.isLoadingMore) {
+                            if (state.posts.isEmpty() && !state.isLoadingMore && !state.isRefreshing) {
                                 EmptyState(
                                     icon = Icons.AutoMirrored.Filled.Article,
                                     title = if (state.isOwnProfile) stringResource(R.string.empty_own_posts_title) else stringResource(R.string.empty_user_posts_title),
@@ -624,7 +624,7 @@ private fun ProfileContent(
                         }
                     }
                     ProfileContentFilter.REELS -> {
-                        if (state.reels.isEmpty() && !state.isLoadingMore) {
+                        if (state.reels.isEmpty() && !state.isLoadingMore && !state.isRefreshing) {
                             EmptyState(
                                 icon = Icons.Default.VideoLibrary,
                                 title = stringResource(R.string.empty_profile_reels_title),

@@ -67,11 +67,10 @@ class ChatViewModel @Inject constructor(
         get() = chatRepository.getCurrentUserId()
 
     fun initialize(chatId: String, participantId: String? = null) {
-        if (currentChatId == chatId) return
+        if (currentChatId == chatId && chatId != "new") return
         
         cleanup()
-        currentChatId = chatId
-
+        
         _isLoading.value = true
         _error.value = null
 
@@ -91,35 +90,46 @@ class ChatViewModel @Inject constructor(
             initializeE2EUseCase()
         }
 
-        // Fetch initial messages
         viewModelScope.launch {
-            getMessagesUseCase(chatId).onSuccess { messages ->
+            val actualChatId = if (chatId == "new" && participantId != null) {
+                // We need to resolve the actual chat ID or create a new chat
+                chatRepository.getOrCreateChat(participantId).getOrElse { 
+                    _error.value = "Failed to create chat"
+                    _isLoading.value = false
+                    return@launch 
+                }
+            } else {
+                chatId
+            }
+            
+            currentChatId = actualChatId
+
+            // Fetch initial messages
+            getMessagesUseCase(actualChatId).onSuccess { messages ->
                 _messages.value = messages.sortedBy { it.createdAt } // oldest first for UI
                 _isLoading.value = false
             }.onFailure { e ->
                 _error.value = e.message
                 _isLoading.value = false
             }
-        }
 
-        // Subscribe to real-time message updates
-        messageSubscriptionJob = viewModelScope.launch {
-            subscribeToMessagesUseCase(chatId).collect { newMessage ->
-                _messages.update { current ->
-                    val existing = current.find { it.id == newMessage.id }
-                    if (existing != null) {
-                        current.map { if (it.id == newMessage.id) newMessage else it }
-                    } else {
-                        (current + newMessage).sortedBy { it.createdAt }
+            // Subscribe to real-time message updates
+            messageSubscriptionJob = launch {
+                subscribeToMessagesUseCase(actualChatId).collect { newMessage ->
+                    _messages.update { current ->
+                        val existing = current.find { it.id == newMessage.id }
+                        if (existing != null) {
+                            current.map { if (it.id == newMessage.id) newMessage else it }
+                        } else {
+                            (current + newMessage).sortedBy { it.createdAt }
+                        }
                     }
+                    markMessagesAsReadUseCase(actualChatId)
                 }
-                markMessagesAsReadUseCase(chatId)
             }
-        }
 
-        // Mark current messages as read
-        viewModelScope.launch {
-            markMessagesAsReadUseCase(chatId)
+            // Mark current messages as read
+            markMessagesAsReadUseCase(actualChatId)
         }
     }
 
