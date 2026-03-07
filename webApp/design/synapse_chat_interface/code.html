@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Synapse Social Web - Premium Chat</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#6163f5",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#0a0a16",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+                },
+            },
+        }
+    </script>
+<style>
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-input {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glow-accent {
+            background: radial-gradient(circle at 50% 50%, rgba(97, 99, 245, 0.15) 0%, transparent 70%);
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 overflow-hidden h-screen">
+<div class="relative flex h-full w-full flex-col overflow-hidden">
+<!-- Background Accents -->
+<div class="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] glow-accent pointer-events-none"></div>
+<div class="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] glow-accent pointer-events-none"></div>
+<!-- Top Navigation -->
+<header class="flex items-center justify-between px-6 py-3 glass-panel border-b-0 z-10">
+<div class="flex items-center gap-3">
+<div class="p-2 rounded-lg bg-primary/20 text-primary">
+<span class="material-symbols-outlined">hub</span>
+</div>
+<h2 class="text-lg font-bold tracking-tight">Synapse Social Web</h2>
+</div>
+<div class="flex flex-1 max-w-xl mx-12">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">search</span>
+<input class="w-full glass-input rounded-xl pl-10 pr-4 py-2 focus:ring-1 focus:ring-primary focus:outline-none placeholder:text-slate-500" placeholder="Search conversations, files..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 glass-panel rounded-full hover:bg-white/10">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="p-2 glass-panel rounded-full hover:bg-white/10">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="h-10 w-10 rounded-full border-2 border-primary/40 p-0.5">
+<div class="h-full w-full rounded-full bg-cover bg-center" data-alt="User profile avatar of current user" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBrsfgzeneoeTpH21Ph3PMXo0mj2U03rg_Dd6tftRR29_JVQowoLFipQmssKpqt2jHFm7H6g0_6-uVOCA8bDbqo3rFLC5Vz_fKzTUdg5jCqAmP8VpSXz3bKzO-2R6CGXMbGdFKUaM517zZQgn10sKqyopsDRhz3hgivVVzjRWpH7grsao4NLFvd1SQ6L7i2K2UCPgEU5JOEgpHoGoNfefWT9kZYUNe8s_mck2TIHWcdWvE-6b7wElCsOpJsBaCQESL5y34HdQmEbw')"></div>
+</div>
+</div>
+</header>
+<!-- Main Layout -->
+<main class="flex flex-1 overflow-hidden p-4 gap-4">
+<!-- Left Sidebar: Conversation List -->
+<aside class="w-80 flex flex-col gap-4 glass-panel rounded-2xl overflow-hidden">
+<div class="p-4 border-b border-white/5 flex justify-between items-center">
+<h3 class="font-bold text-lg">Messages</h3>
+<button class="text-primary p-1 hover:bg-primary/10 rounded-lg">
+<span class="material-symbols-outlined">edit_square</span>
+</button>
+</div>
+<div class="flex-1 overflow-y-auto px-2 space-y-1">
+<!-- Active Conversation -->
+<div class="flex items-center gap-3 p-3 rounded-xl bg-primary/20 border border-primary/30 cursor-pointer">
+<div class="relative">
+<div class="h-12 w-12 rounded-full bg-cover bg-center" data-alt="Avatar of Alex Rivera" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDO8nvb9HMyJFUm9eSTR3pw1KFH8JXNLu6BNfX-2D3RRky35ymi-FHfoIIWPbhcjWpHpYkkF0mLLqiUcQ-r5oUy2208dAvluY-lIaKxQAzuXYhikyP4O5AfcIZ9CTg9dJJS1HqLR38ExGzfRtMMWiI92cDpWQ9Fbr8didIMvWgYGyzqhA23GqLHH5QH1PJ4JKRLMBp2gp7EgPFpoWFmZFXCV2ZxelSkRpUJOSn8TlJbqnJ8ISkE8tkc0_LlqQiPFw6b_kTKbCvqrA')"></div>
+<div class="absolute bottom-0 right-0 h-3 w-3 bg-green-500 rounded-full border-2 border-background-dark"></div>
+</div>
+<div class="flex-1 overflow-hidden">
+<div class="flex justify-between items-center">
+<span class="font-semibold truncate">Alex Rivera</span>
+<span class="text-[10px] text-slate-400">2m</span>
+</div>
+<p class="text-xs text-slate-300 truncate font-medium">The glassmorphism looks amazing...</p>
+</div>
+</div>
+<!-- Other Conversations -->
+<div class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 cursor-pointer">
+<div class="h-12 w-12 rounded-full bg-cover bg-center" data-alt="Avatar of Design Team group" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBR0GR0INnPnb36P62SByRZOQl8qSZYKGLe_-7qZhIx34n7rsgF2s_rJ-2fHyx3un7uqRO4XwnsWCzmbRMosTm0cW2S4RR9KzJsmdX54Gv_fUaYOIyA9Dhhv89G11EBZCv7ddiYoxmUNANrSVosU9ka1uCxcuPCSl7mtoCYAZvc75yW7ZjfR2DjoqP-B_gzEM8Lr_M39ijgBjVh6w_gVAVI3xx3hAcMJKgmm3brM9r2jIh5hGLpFoPFsGLrOvL3pc-zrRx4s-eo1Q')"></div>
+<div class="flex-1 overflow-hidden">
+<div class="flex justify-between items-center">
+<span class="font-semibold truncate">Design Team</span>
+<span class="text-[10px] text-slate-400">1h</span>
+</div>
+<p class="text-xs text-slate-400 truncate">New assets uploaded to gallery</p>
+</div>
+<div class="h-2 w-2 rounded-full bg-primary"></div>
+</div>
+<div class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 cursor-pointer">
+<div class="h-12 w-12 rounded-full bg-cover bg-center" data-alt="Avatar of Sarah Johnson" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDKbW__DYr8GfOTG64Vpi8RZPEbR1xDNN-zL8V1jVq9eReFKnX3ELcr94LSF1RsQEdygfxlF5K3ACNQsL0RFm2w-fZMbSI5PwrlhKXj6Mft2W3O0XuixUP2lY7x0E22XgNah4Wyu2cHA3RVsSaUyitwJbeMjPJsOZ-RkL58SQSrhgFMtpFqYcOjQjXHiGheszEHzy46xLMYfrKuzd7arlLl8xwGGSDshWeDIvhJCnlj2ZhcVnFyL6DkQ1GtZheFbKWMQYvSl-6vHA')"></div>
+<div class="flex-1 overflow-hidden">
+<div class="flex justify-between items-center">
+<span class="font-semibold truncate">Sarah Johnson</span>
+<span class="text-[10px] text-slate-400">3h</span>
+</div>
+<p class="text-xs text-slate-400 truncate">Did you see the latest review?</p>
+</div>
+</div>
+<div class="flex items-center gap-3 p-3 rounded-xl hover:bg-white/5 cursor-pointer opacity-70">
+<div class="h-12 w-12 rounded-full bg-cover bg-center" data-alt="Avatar of Mike Ross" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCZFznp2q3_smILeH2-5kcPMIBTxJFW0EWJ8UdjdUqcfVnQaKo0FczSr4vOKXGFV26cyVT14_MtaWWtQHCR-veNPePkcXMNfHY35zZBKFkD-6RlNQ2cMtjdgzw6PauTWgH6NLdJNrriXxCQfNTiuciiDmHfknwQLWnwp1DPl5A2jPppqMrW3wo4vMZ_BkuKinrvHOnyHrd-8x-0SCld8N5zn3d0qmOTl9X5rFmmmFFLvJOidcpOOBqqsUCMLWhwN15xBwy2WG_ZJA')"></div>
+<div class="flex-1 overflow-hidden">
+<div class="flex justify-between items-center">
+<span class="font-semibold truncate">Mike Ross</span>
+<span class="text-[10px] text-slate-400">Yesterday</span>
+</div>
+<p class="text-xs text-slate-400 truncate">Thanks for the update!</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Chat Area -->
+<section class="flex-1 flex flex-col glass-panel rounded-2xl overflow-hidden relative">
+<!-- Chat Header -->
+<div class="p-4 border-b border-white/5 flex items-center justify-between glass-panel sticky top-0 z-20">
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 rounded-full bg-cover bg-center" data-alt="Profile image of Alex Rivera" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBRrzlwx-tS8iDozfWLL73pVB1oML4u08VQtv6f_sSmjE5GWzCcntnHyj7sub11gt3EJ_0ZI7uKz9dC5mlo90Wgk3MW5x7KAoOoJLh15CdPdsxYYyTLqreoWhwzl-a8bMyNtSKqGpAQZqDVpI22pVeih5TcP1HMNE7iwGfLQPrIWlf6nnHFp_LCoiXYH6X14c3W-IfXsFx9RTBUtrHYp9foxVYNk_Kyc0m8aG9MGrmEGpjP-EfA6CVqDOVSaKiic_9UzAX_ZkVdYw')"></div>
+<div>
+<h3 class="font-bold leading-none">Alex Rivera</h3>
+<div class="flex items-center gap-1.5 mt-1">
+<span class="h-2 w-2 rounded-full bg-green-500"></span>
+<span class="text-[11px] text-slate-400 uppercase tracking-widest font-semibold">Online</span>
+</div>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="p-2 hover:bg-white/5 rounded-lg text-slate-300">
+<span class="material-symbols-outlined">videocam</span>
+</button>
+<button class="p-2 hover:bg-white/5 rounded-lg text-slate-300">
+<span class="material-symbols-outlined">call</span>
+</button>
+<button class="p-2 hover:bg-white/5 rounded-lg text-slate-300">
+<span class="material-symbols-outlined">more_vert</span>
+</button>
+</div>
+</div>
+<!-- Messages Content -->
+<div class="flex-1 overflow-y-auto p-6 space-y-6">
+<div class="flex justify-center">
+<span class="text-[10px] text-slate-500 bg-white/5 px-3 py-1 rounded-full uppercase tracking-widest font-bold">Today</span>
+</div>
+<!-- Message Other -->
+<div class="flex gap-3 max-w-[80%]">
+<div class="h-8 w-8 rounded-full bg-cover bg-center shrink-0" data-alt="Small avatar of Alex" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB1NolMjQj3cwIiyiQ5RMbmxbCtwX2cAOYJh4UWAZNzMzdFb_FEigG2OSO1jeT1PKQgRKdHdZrsvlJIf66EIb3mwuDqwm2yJUW38SaKVjZmwZwkPcgJdrTfRa45DYxVfjbqlwK-d2_rgKUF24Bmp90ElR6-JHiDLqyJtBHIfifIYzGLYLpT_HJFfcN4VyQeRLIubjhyDlDQOQVZR-zYEhr2BSRK6oIhrvAMNEOGjWTrQnuQmOANrM8PevzmduGPyFsrQSTtIXfJ6A')"></div>
+<div class="flex flex-col gap-1">
+<div class="glass-panel p-3 rounded-2xl rounded-tl-none">
+<p class="text-sm">Hey! Check out the progress on the new glassmorphism interface. It's looking really sleek.</p>
+</div>
+<span class="text-[10px] text-slate-500 ml-1">10:42 AM</span>
+</div>
+</div>
+<!-- Message Current User -->
+<div class="flex flex-row-reverse gap-3 max-w-[80%] ml-auto">
+<div class="flex flex-col gap-1 items-end">
+<div class="bg-primary/30 border border-primary/40 backdrop-blur-md p-3 rounded-2xl rounded-tr-none">
+<p class="text-sm">The glassmorphism looks amazing on this! The blurring effect is perfect. Have you finished the mobile view yet?</p>
+</div>
+<span class="text-[10px] text-slate-500 mr-1">10:44 AM · Read</span>
+</div>
+</div>
+<!-- Message Other with Image -->
+<div class="flex gap-3 max-w-[80%]">
+<div class="h-8 w-8 rounded-full bg-cover bg-center shrink-0" data-alt="Small avatar of Alex" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDJI6H873Fm5o05f3v5OhfRbQGIIlxZT5UTntZ5Iu7m0V_pMr5QdUtYulKFx1aWOPP7vsE1U_6tAYbTvYd6XKZD5zwdEEDfCU4VBfpJ-ROSTjYx6SVEtjIZGRg2W-6VAvhtqU6mRLgwKnV1U5OrvjsLt3ybxcVh4JdY9GlztGrM8sxT_vyGjycoYtjfMPxFETMJ4KQDfase-fsuK4RsUWf01Z-sDFS_Wlu0GfotLlisUClGNL3LFo_JXe6XqA6MCGPqELH01DvKSQ')"></div>
+<div class="flex flex-col gap-2">
+<div class="glass-panel p-2 rounded-2xl rounded-tl-none overflow-hidden">
+<div class="w-full aspect-video rounded-xl bg-cover bg-center mb-2" data-alt="Abstract 3D rendering with neon colors" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAx-tNjVPEXHvyF0ZAbpBBvVZNPfeXl9ViugJ5p9zYkjF1WnAe_eIw2F_UEiK0xgRnBrWxs1dZOkfMD9HdtjkBo9SfFPSL9DdwoLjYCBRgiX0ZvQN9BUxNvHt9sZOEeOMuA4CNODM1kdorZfqHvMgNU8lhVQw-BzFJo0G92k6pvR_-s7BQnl_6bnJh7jxesz_yup2mLSVjv06VX0zw0QfqmDTTMUiXr1_a6uEzuo2kxGXujvOkfBB_W5F1U-unb4wkQbvW3Ewztzw')"></div>
+<p class="text-sm px-1 mb-1">Take a look at this palette I'm thinking of using for the dashboard.</p>
+</div>
+<span class="text-[10px] text-slate-500 ml-1">10:46 AM</span>
+</div>
+</div>
+<!-- Message Current User with Link -->
+<div class="flex flex-row-reverse gap-3 max-w-[80%] ml-auto">
+<div class="flex flex-col gap-1 items-end">
+<div class="bg-primary/30 border border-primary/40 backdrop-blur-md p-2 rounded-2xl rounded-tr-none overflow-hidden w-72">
+<div class="bg-black/20 rounded-xl overflow-hidden mb-2">
+<div class="h-24 bg-cover bg-center" data-alt="Preview of a tech website with dark theme" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCHwAuZ5UPBBoFLF-yKuAN7GyoMtN-ex2IbNiAV7i6idrTJOLSaVEiCW2-tGA0xJr7cDZApVt-Mu8p1zv9qF7ey72Lss-MeY6CRvRT6UhF_pxx0sJIKrnPFuWNa1Ys0dy3lrGQR3Eahn6PuQpLJV7gOaHZ2ZDS1MHOronOSFSDI1hewNiFC2P6FR3rt5uWQ4Kpc3NvEYIc6yVc3dCvSo_ApT_z4Z2g3t3g69bD2Ww8V8pkFtYqEJn6CvFyM4HWVA1qbESkmb6aDOg')"></div>
+<div class="p-2">
+<p class="text-xs font-bold truncate">Interface Guidelines 2024</p>
+<p class="text-[10px] text-slate-300 truncate">framer.com/design-systems</p>
+</div>
+</div>
+<p class="text-sm px-2 mb-1">Found these guidelines. Might be helpful for the spacing rules.</p>
+</div>
+<span class="text-[10px] text-slate-500 mr-1">10:50 AM · Read</span>
+</div>
+</div>
+</div>
+<!-- Chat Input Area -->
+<div class="p-4 glass-panel border-t-0">
+<div class="glass-input rounded-2xl p-2 flex items-center gap-2">
+<button class="p-2 hover:bg-white/10 rounded-xl text-slate-400">
+<span class="material-symbols-outlined">add_circle</span>
+</button>
+<button class="p-2 hover:bg-white/10 rounded-xl text-slate-400">
+<span class="material-symbols-outlined">mood</span>
+</button>
+<input class="bg-transparent border-none focus:ring-0 flex-1 text-sm placeholder:text-slate-500" placeholder="Type a message..." type="text"/>
+<button class="p-2 hover:bg-white/10 rounded-xl text-slate-400">
+<span class="material-symbols-outlined">mic</span>
+</button>
+<button class="bg-primary hover:bg-primary/80 text-white p-2 rounded-xl flex items-center justify-center">
+<span class="material-symbols-outlined text-lg">send</span>
+</button>
+</div>
+</div>
+</section>
+<!-- Right Sidebar: Info & Media -->
+<aside class="w-72 hidden xl:flex flex-col gap-4">
+<!-- User Profile Info -->
+<div class="glass-panel rounded-2xl p-6 flex flex-col items-center text-center">
+<div class="h-24 w-24 rounded-3xl bg-cover bg-center shadow-2xl mb-4" data-alt="Large profile picture of Alex Rivera" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCQ9XRWNHHkSTn4NHjftxf3VZY2chMyS4rAgS7zv9IhP2pcE7G4H9iLxZMkMB1q8_t21KOKWU24gupDYv_AbtRLojUcUBQfvRAvFvSAyXtcwSww0PRxxoVF5jYU2VqolmuKSDRzY189arqE1hRADE-Z0HCl7TVVG8J1M2FoRXxPGWmd8H2Erg58fVzBRQZ0TJ6skhQA3H4_v7Wn0vdrYeBIHP2SAJvQXiBkM8CbXdYkdHuu2uQMJm1E5lVccZq2wZUpSJDBcXv0CA')"></div>
+<h3 class="text-lg font-bold">Alex Rivera</h3>
+<p class="text-xs text-slate-400 mb-4">Senior UI Designer</p>
+<div class="flex gap-2 w-full">
+<button class="flex-1 glass-panel py-2 rounded-xl text-xs font-semibold hover:bg-white/5">Profile</button>
+<button class="flex-1 glass-panel py-2 rounded-xl text-xs font-semibold hover:bg-white/5">Mute</button>
+</div>
+</div>
+<!-- Shared Media Gallery -->
+<div class="glass-panel rounded-2xl flex-1 flex flex-col overflow-hidden">
+<div class="p-4 border-b border-white/5 flex justify-between items-center">
+<h3 class="font-bold text-sm">Shared Media</h3>
+<button class="text-[11px] text-primary font-bold uppercase tracking-wider">View All</button>
+</div>
+<div class="p-3 grid grid-cols-3 gap-2 overflow-y-auto">
+<div class="aspect-square glass-panel rounded-lg overflow-hidden bg-cover bg-center" data-alt="Shared tech photo 1" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAxNw00RPBylHWMbEyNRFJ0jDSg8o8ZojgcVV104ni2PLmUtQOBJQNgkRlraqcMilKDXKuwFGUdYeJ2KQcG9GXfDUq__KUxPODK8jlDRHUvn9Txf7PS-U2GecLon14bjb56qZ8W-49ROVAMfEr7bTnUWzqvp-4pg9gvVMXx9pLsDX6bccRfJ5S4JC0R4hc69TaoMezLf56J_SqawLsaMdtAGvB_yoj5xLF_NC1Jv4aZqaUaVqeUPGP27FcpMb-OX8V2CRhBz9QAmQ')"></div>
+<div class="aspect-square glass-panel rounded-lg overflow-hidden bg-cover bg-center" data-alt="Shared design photo 2" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuD75-M7KDh3uhMzZoLBA3OdbP4541tJLI6pZwMCPHKRudfAS9RmvNzBKhRqbdn8JjtLJ6jJtDZdRIgYHDZfqBuFjOHjwCcEvppgu-XQ02g0OJXs_pcMwtc1pqv0uZeoVCxdPK4B_wBTV377lYj0b3EqoBwmOd-mXcDrJqxIgMO8DmFQ5k6DaBAXV0wEF9nO-Y3xwWrQ-g28qGkPaXnZ8KebcPhQzxyk6HVkP79Lav-Rkh-cj0c3qRQ6f38cWscXsbYlZ90iyi2iaQ')"></div>
+<div class="aspect-square glass-panel rounded-lg overflow-hidden bg-cover bg-center" data-alt="Shared laptop photo 3" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCnY4LySng5Bmrw0TWpWUUC7DxgsNdwxT0zH7ralOFDjiJz-PqsHs9-AISeJCAggbsl68TKDl37Rp5tt4_5D22QxXYZMZ_x935ZNNyYvM46R8ZAvLRTWmJ9wdfNiS7xx7Yq5Lbr4HNYMOoQEcjGn9UVwqOz_NpZH6Euk65jjHWBSyF3J-w4_uYkH5IMe4Yq-6EODClmwqHH1emm_1Cx9T5zET2ASgBRtPlfzS2vG3uxFQjBAxFykbvvHVcNNe1RzWvp-elB1-aCvw')"></div>
+<div class="aspect-square glass-panel rounded-lg overflow-hidden bg-cover bg-center" data-alt="Shared minimalist photo 4" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBodMYchj5LlhAGcFDerQQi9lTZjxpUOYbUO82pR8xrCrqzlgn6PQvkUYsvQu-bhc3t8UZqbf4kdsr8GOxNhJ_KPcFIDipIe5nxnRZWpE1HTkSG7aCyopkzpqQLu6DROYNTVOetApKJEowx828PUBYywbDCFmBu_GOU46J0F94FoHVzcu28_3cFa9xAinWSjiYXIgjVY68hqxOgQYM5mCA9wT-svD2CHS_N1mi_xad8CnxWgsmYIUAklVlbDoTixWgD9OGW8MSNQg')"></div>
+<div class="aspect-square glass-panel rounded-lg overflow-hidden bg-cover bg-center" data-alt="Shared abstract photo 5" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBXP3VayZcqE7EGPfWPkZAa5TsETcjJTHaeCBdLhcWyrI3spaKuaIPf8dZ5_D4U2BHLS-oRtm9h9p6RJ36h_ucU8ju-PJl-6qAnUgL-dOGh1bc7GxFme3J0J3yuy0OHomJXLDsS84kMmbDTivUmTNz2vWpib1gcQSlJDoGLrJed8NsPpxuopoFPFooJSUH4AK7dblczK75hNaaXUoWRjWNk7sihbUDacm0z6dwrY6qLbtuQ0VLmcMHU0H5KhgcvVMhvmDggYC40AQ')"></div>
+<div class="aspect-square glass-panel rounded-lg overflow-hidden flex items-center justify-center bg-white/5">
+<span class="text-[10px] font-bold text-slate-400">+24</span>
+</div>
+</div>
+<div class="p-4 border-t border-white/5 mt-auto">
+<div class="flex items-center justify-between text-xs text-slate-400 mb-3">
+<span>Files shared</span>
+<span>12</span>
+</div>
+<div class="space-y-2">
+<div class="flex items-center gap-3 p-2 hover:bg-white/5 rounded-lg">
+<span class="material-symbols-outlined text-primary">description</span>
+<div class="flex-1 overflow-hidden">
+<p class="text-[11px] font-medium truncate">Project_Brief_v2.pdf</p>
+<p class="text-[10px] text-slate-500">2.4 MB</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</aside>
+</main>
+</div>
+</body></html>

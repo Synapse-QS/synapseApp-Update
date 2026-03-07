@@ -110,11 +110,13 @@ fun FeedScreen(
         )
     }
 
-    LaunchedEffect(posts.loadState.refresh, storyTrayState.isLoading) {
-        val isPostsDone = posts.loadState.refresh is LoadState.NotLoading || posts.loadState.refresh is LoadState.Error
-        val isStoriesDone = !storyTrayState.isLoading
-        if (isPostsDone && isStoriesDone) {
-            isUserRefreshing = false
+    LaunchedEffect(posts.loadState.refresh, storyTrayState.isLoading, isUserRefreshing) {
+        if (isUserRefreshing) {
+            val isPostsDone = posts.loadState.refresh is LoadState.NotLoading || posts.loadState.refresh is LoadState.Error
+            val isStoriesDone = !storyTrayState.isLoading
+            if (isPostsDone && isStoriesDone) {
+                isUserRefreshing = false
+            }
         }
     }
 

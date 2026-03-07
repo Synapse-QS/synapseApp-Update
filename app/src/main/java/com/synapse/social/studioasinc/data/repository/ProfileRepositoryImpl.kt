@@ -29,10 +29,13 @@ private data class FollowingIdResponse(
 )
 
 
-class ProfileRepositoryImpl(private val client: SupabaseClientType) : ProfileRepository {
+class ProfileRepositoryImpl(
+    private val client: SupabaseClientType,
+    private val commentRepository: CommentRepository
+) : ProfileRepository {
 
-    private val reactionRepository = ReactionRepository()
-    private val pollRepository = PollRepository()
+    private val reactionRepository = ReactionRepository(client)
+    private val pollRepository = PollRepository(client)
 
     private companion object {
 
@@ -390,6 +393,13 @@ class ProfileRepositoryImpl(private val client: SupabaseClientType) : ProfileRep
 
     override suspend fun getProfileReels(userId: String, limit: Int, offset: Int): Result<List<com.synapse.social.studioasinc.feature.profile.profile.components.MediaItem>> =
         getMediaItemsByType(userId, limit, offset, isVideo = true)
+
+    override suspend fun getProfileReplies(userId: String, limit: Int, offset: Int): Result<List<com.synapse.social.studioasinc.domain.model.CommentWithUser>> = try {
+        val actualUserId = resolveUserId(userId) ?: return Result.failure(Exception("User not authenticated"))
+        commentRepository.fetchUserComments(actualUserId, limit, offset)
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
 
     override suspend fun isFollowing(userId: String, targetUserId: String): Result<Boolean> = try {
         val actualUserId = resolveUserId(userId) ?: return Result.failure(Exception("User not authenticated"))

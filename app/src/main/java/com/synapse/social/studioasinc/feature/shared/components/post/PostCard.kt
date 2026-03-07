@@ -10,6 +10,14 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.Offset
+import com.synapse.social.studioasinc.feature.shared.theme.Spacing
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -93,11 +101,16 @@ fun PostCard(
         if (state.isComment) 40.dp else 48.dp
     }
 
+    val indentation = remember(state.depth) {
+        if (state.depth > 0) (state.depth * 16).dp else 0.dp
+    }
+
     Column(
         modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background)
             .clickable(onClick = onPostClick)
+            .padding(start = indentation)
     ) {
         if (state.repostedBy != null) {
             Row(
@@ -125,21 +138,53 @@ fun PostCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 8.dp)
+                .height(IntrinsicSize.Min)
+                .padding(horizontal = Spacing.SmallMedium, vertical = Spacing.Small)
         ) {
             // Left Column: Avatar and Thread Line
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                modifier = Modifier.width(avatarSize)
+            Box(
+                modifier = Modifier
+                    .width(avatarSize)
+                    .fillMaxHeight(),
+                contentAlignment = Alignment.TopCenter
             ) {
+                // Twitter/X style: Visual thread lines connecting avatars
+                if (state.showThreadLine) {
+                    val lineColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    val strokeWidth = 2.dp
+                    
+                    Canvas(modifier = Modifier.fillMaxSize()) {
+                        val centerX = size.width / 2
+                        val avatarCenterY = (avatarSize / 2).toPx()
+                        
+                        // Line above (only for comments after the root parent)
+                        if (state.isComment && state.depth >= 0) {
+                            drawLine(
+                                color = lineColor,
+                                start = Offset(centerX, 0f),
+                                end = Offset(centerX, avatarCenterY),
+                                strokeWidth = strokeWidth.toPx()
+                            )
+                        }
+                        
+                        // Line below (if there are more replies or thread continues)
+                        if (!state.isLastReply) {
+                            drawLine(
+                                color = lineColor,
+                                start = Offset(centerX, avatarCenterY),
+                                end = Offset(centerX, size.height),
+                                strokeWidth = strokeWidth.toPx()
+                            )
+                        }
+                    }
+                }
+
                 CircularAvatar(
                     imageUrl = state.user.avatar,
                     contentDescription = "Avatar of ${state.user.username}",
                     onClick = onUserClick,
                     size = avatarSize
                 )
-
-                // Twitter/X style: No visual thread lines
             }
 
             Spacer(modifier = Modifier.width(12.dp))
@@ -208,10 +253,13 @@ fun PostCard(
             }
         }
 
-        HorizontalDivider(
-            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
-            thickness = 0.5.dp
-        )
+        if (!state.showThreadLine || state.isLastReply) {
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = Spacing.SmallMedium),
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),
+                thickness = 0.5.dp
+            )
+        }
     }
 
     if (showReactionPicker && onReactionSelected != null) {

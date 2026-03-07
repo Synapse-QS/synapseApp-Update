@@ -14,5 +14,6 @@ interface ProfileRepository {
     suspend fun getProfilePosts(userId: String, limit: Int = 10, offset: Int = 0): Result<List<com.synapse.social.studioasinc.domain.model.Post>>
     suspend fun getProfilePhotos(userId: String, limit: Int = 20, offset: Int = 0): Result<List<MediaItem>>
     suspend fun getProfileReels(userId: String, limit: Int = 20, offset: Int = 0): Result<List<MediaItem>>
+    suspend fun getProfileReplies(userId: String, limit: Int = 10, offset: Int = 0): Result<List<com.synapse.social.studioasinc.domain.model.CommentWithUser>>
     suspend fun isFollowing(userId: String, targetUserId: String): Result<Boolean>
 }

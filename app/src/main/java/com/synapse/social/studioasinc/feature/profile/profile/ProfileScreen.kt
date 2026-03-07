@@ -635,6 +635,15 @@ private fun ProfileContent(
                             )
                         }
                     }
+                    ProfileContentFilter.REPLIES -> {
+                        if (state.replies.isEmpty() && !state.isLoadingMore && !state.isRefreshing) {
+                            EmptyState(
+                                icon = Icons.AutoMirrored.Filled.Article,
+                                title = stringResource(com.synapse.social.studioasinc.R.string.no_replies),
+                                message = stringResource(com.synapse.social.studioasinc.R.string.no_replies_msg)
+                            )
+                        }
+                    }
                 }
             }
         }
@@ -662,6 +671,44 @@ private fun ProfileContent(
                     post = post,
                     currentProfile = currentProfile,
                     actions = postActions
+                )
+            }
+        }
+
+        if (state.contentFilter == ProfileContentFilter.REPLIES && state.replies.isNotEmpty()) {
+            val replies = state.replies.filterIsInstance<com.synapse.social.studioasinc.domain.model.CommentWithUser>()
+            items(replies, key = { it.id }) { comment ->
+                val postCardState = remember(comment) {
+                    com.synapse.social.studioasinc.feature.shared.components.post.PostUiMapper.toPostCardState(
+                        comment = comment,
+                        depth = 0,
+                        showThreadLine = false,
+                        isLastReply = false
+                    )
+                }
+
+                PostCard(
+                    state = postCardState,
+                    onLikeClick = { viewModel.reactToPost(postCardState.post, com.synapse.social.studioasinc.domain.model.ReactionType.LIKE) },
+                    onCommentClick = { /* Navigate to detail */ },
+                    onShareClick = { /* Share comment */ },
+                    onRepostClick = { },
+                    onBookmarkClick = { },
+                    onUserClick = { comment.userId.let { onNavigateToUserProfile(it) } },
+                    onPostClick = { 
+                        PostDetailActivity.start(context, comment.postId, comment.userId)
+                    },
+                    onMediaClick = { index -> 
+                        val urls = listOfNotNull(comment.mediaUrl)
+                        if (urls.isNotEmpty()) {
+                            onOpenMediaViewer(urls, index)
+                        }
+                    },
+                    onOptionsClick = { /* Show options */ },
+                    onPollVote = { /* No polls in comments */ },
+                    onReactionSelected = { reaction -> /* Handle reaction */ },
+                    onQuoteClick = { },
+                    modifier = Modifier.padding(bottom = 8.dp)
                 )
             }
         }

@@ -24,4 +24,11 @@ class GetProfileContentUseCase @Inject constructor(private val repository: Profi
         require(offset >= 0) { "Offset cannot be negative" }
         return repository.getProfileReels(userId, limit, offset)
     }
+
+    suspend fun getReplies(userId: String, limit: Int = 10, offset: Int = 0): Result<List<Any>> {
+        require(userId.isNotBlank()) { "User ID cannot be blank" }
+        require(limit > 0) { "Limit must be positive" }
+        require(offset >= 0) { "Offset cannot be negative" }
+        return repository.getProfileReplies(userId, limit, offset)
+    }
 }

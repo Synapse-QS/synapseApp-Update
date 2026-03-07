@@ -138,6 +138,35 @@ class CommentRepository constructor(
         }
     }
 
+    suspend fun fetchUserComments(userId: String, limit: Int = 20, offset: Int = 0): Result<List<CommentWithUser>> = withContext(Dispatchers.IO) {
+        try {
+            Log.d(TAG, "Fetching comments for user: $userId")
+            val response = client.from("comments")
+                .select(columns = Columns.raw("*, users(uid, username, display_name, avatar, bio, verify, status, account_type, followers_count, following_count, posts_count, banned)")) {
+                    filter {
+                        eq("user_id", userId)
+                        filterNot("is_deleted", io.github.jan.supabase.postgrest.query.filter.FilterOperator.EQ, true)
+                    }
+                    order("created_at", Order.DESCENDING)
+                    range(offset.toLong(), (offset + limit - 1).toLong())
+                }
+
+            val comments = mutableListOf<CommentWithUser>()
+            for (json in response.decodeList<JsonObject>()) {
+                parseCommentFromJson(json)?.let {
+                    comments.add(it)
+                }
+            }
+
+            val populatedComments = reactionRepository.populateCommentReactions(comments)
+
+            Result.success(populatedComments)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to fetch user comments: ${e.message}", e)
+            Result.failure(Exception(mapSupabaseError(e)))
+        }
+    }
+
     fun getCommentsForPost(postId: String): Flow<List<CommentWithUser>> {
         return commentDao.getCommentsForPost(postId).map { entities ->
             entities.map { entity ->

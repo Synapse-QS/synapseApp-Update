@@ -1264,4 +1264,6 @@ Please explain the following message from %3$s in detail, considering the contex
     <string name="network_usage_received">Received</string>
     <string name="storage_review_delete">Review and delete items</string>
     <string name="storage_larger_than">Larger than 5 MB</string>
+    <string name="no_replies">No replies yet</string>
+    <string name="no_replies_msg">When you reply to posts, they\'ll appear here</string>
 </resources>

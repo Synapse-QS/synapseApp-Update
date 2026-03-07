@@ -157,8 +157,11 @@ object RepositoryModule {
 
     @Provides
     @Singleton
-    fun provideProfileRepository(client: SupabaseClientType): ProfileRepository {
-        return ProfileRepositoryImpl(client)
+    fun provideProfileRepository(
+        client: SupabaseClientType,
+        commentRepository: CommentRepository
+    ): ProfileRepository {
+        return ProfileRepositoryImpl(client, commentRepository)
     }
 
     @Provides

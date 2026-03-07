@@ -56,6 +56,7 @@ private fun getFilterLabel(filter: ProfileContentFilter): String {
         ProfileContentFilter.POSTS -> "Posts"
         ProfileContentFilter.PHOTOS -> "Photos"
         ProfileContentFilter.REELS -> "Reels"
+        ProfileContentFilter.REPLIES -> "Replies"
     }
 }
 

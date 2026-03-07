@@ -89,12 +89,12 @@ fun CommentsList(
                 val hasReplies = comment.repliesCount > 0 || replies.isNotEmpty()
                 val isLastComment = index == comments.itemCount - 1
                 
-                // Twitter/X style: Map comment to flat PostCardState
+                // X (Twitter) style: Nesting with thread lines
                 val postCardState = PostUiMapper.toPostCardState(
                     comment = comment,
                     parentAuthorUsername = null,
-                    depth = 0,  // Twitter/X: Always flat
-                    showThreadLine = false,  // Twitter/X: No thread lines
+                    depth = 0,
+                    showThreadLine = hasReplies,
                     isLastReply = false
                 )
                 
@@ -190,17 +190,17 @@ private fun RenderReplies(
     onShareClick: ((String) -> Unit)?,
     onViewReplies: (String) -> Unit
 ) {
-    // Twitter/X style: Render all replies flat (no visual nesting)
     replies.forEachIndexed { replyIndex, reply ->
         val nestedReplies = repliesState[reply.id] ?: emptyList()
+        val isLastInBranch = replyIndex == replies.size - 1
         
-        // Twitter/X style: depth always 0, no thread lines
+        // X (Twitter) style: Use nesting depth and thread lines
         val replyState = PostUiMapper.toPostCardState(
             comment = reply,
             parentAuthorUsername = parentComment.getUsername(),
-            depth = 0,  // Twitter/X: Always flat
-            showThreadLine = false,  // Twitter/X: No thread lines
-            isLastReply = false
+            depth = depth,
+            showThreadLine = true,
+            isLastReply = isLastInBranch && nestedReplies.isEmpty()
         )
         
         Column {
@@ -222,14 +222,14 @@ private fun RenderReplies(
                 modifier = Modifier
             )
             
-            // Twitter/X style: Render nested replies flat (same level)
+            // X (Twitter) style: Render nested replies with increased depth
             if (nestedReplies.isNotEmpty()) {
                 RenderReplies(
                     replies = nestedReplies,
                     parentComment = reply,
                     repliesState = repliesState,
                     replyLoadingState = replyLoadingState,
-                    depth = 0,  // Twitter/X: Keep flat
+                    depth = depth + 1,
                     onReplyClick = onReplyClick,
                     onLikeClick = onLikeClick,
                     onShowReactions = onShowReactions,
@@ -241,6 +241,9 @@ private fun RenderReplies(
             }
             
             // Show "Show more replies" button
+            val basePadding = 68.dp
+            val depthPadding = (depth * 16).dp
+            
             if (reply.repliesCount > nestedReplies.size && !replyLoadingState.contains(reply.id)) {
                 Text(
                     text = androidx.compose.ui.res.stringResource(com.synapse.social.studioasinc.R.string.show_more_replies),
@@ -248,7 +251,7 @@ private fun RenderReplies(
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.primary,
                     modifier = Modifier
-                        .padding(start = 68.dp, top = 4.dp, bottom = 12.dp)  // Twitter/X: No depth-based padding
+                        .padding(start = basePadding + depthPadding, top = 4.dp, bottom = 12.dp)
                         .clickable { onViewReplies(reply.id) }
                 )
             }
@@ -257,7 +260,7 @@ private fun RenderReplies(
             if (replyLoadingState.contains(reply.id)) {
                 CircularProgressIndicator(
                     modifier = Modifier
-                        .padding(start = 68.dp, top = 4.dp, bottom = 12.dp)  // Twitter/X: No depth-based padding
+                        .padding(start = basePadding + depthPadding, top = 4.dp, bottom = 12.dp)
                         .size(20.dp),
                     strokeWidth = 2.dp
                 )

@@ -56,6 +56,8 @@ data class ProfileScreenState(
     val postsOffset: Int = 0,
     val photosOffset: Int = 0,
     val reelsOffset: Int = 0,
+    val repliesOffset: Int = 0,
+    val replies: List<Any> = emptyList(),
     val currentUserId: String = "",
     val isOwnProfile: Boolean = false,
     val showMoreMenu: Boolean = false,
@@ -408,6 +410,11 @@ class ProfileViewModel @Inject constructor(
                 ProfileContentFilter.REELS -> {
                     getProfileContentUseCase.getReels(userId).onSuccess { reels ->
                         _state.update { it.copy(reels = reels, reelsOffset = reels.size) }
+                    }
+                }
+                ProfileContentFilter.REPLIES -> {
+                    getProfileContentUseCase.getReplies(userId).onSuccess { replies ->
+                        _state.update { it.copy(replies = replies, repliesOffset = replies.size) }
                     }
                 }
             }

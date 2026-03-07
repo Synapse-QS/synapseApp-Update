@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Synapse Social Web - Premium Feed</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#6163f5",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101022",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .glass-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glow-accent {
+            box-shadow: 0 0 20px rgba(97, 99, 245, 0.15);
+        }
+        body {
+            font-family: 'Manrope', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="flex h-screen overflow-hidden">
+<!-- Left Sidebar Navigation -->
+<aside class="w-72 border-r border-slate-200 dark:border-slate-800 flex flex-col p-6 gap-8 bg-background-light dark:bg-background-dark z-20">
+<div class="flex items-center gap-3 px-2">
+<div class="bg-primary p-2 rounded-xl flex items-center justify-center text-white">
+<span class="material-symbols-outlined">auto_awesome</span>
+</div>
+<h1 class="text-xl font-extrabold tracking-tight">Synapse</h1>
+</div>
+<nav class="flex flex-col gap-2">
+<a class="flex items-center gap-4 px-4 py-3 rounded-xl bg-primary/10 text-primary font-semibold transition-all" href="#">
+<span class="material-symbols-outlined">home</span>
+<span>Home</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400 transition-all" href="#">
+<span class="material-symbols-outlined">chat_bubble</span>
+<span>Messages</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400 transition-all" href="#">
+<span class="material-symbols-outlined">person</span>
+<span>Profile</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400 transition-all" href="#">
+<span class="material-symbols-outlined">explore</span>
+<span>Search</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800/50 text-slate-600 dark:text-slate-400 transition-all" href="#">
+<span class="material-symbols-outlined">notifications</span>
+<span>Notifications</span>
+</a>
+</nav>
+<div class="mt-auto">
+<button class="w-full bg-primary hover:bg-primary/90 text-white font-bold py-4 rounded-xl shadow-lg shadow-primary/20 flex items-center justify-center gap-2">
+<span class="material-symbols-outlined">add_circle</span>
+                    New Post
+                </button>
+</div>
+</aside>
+<!-- Main Feed Column -->
+<main class="flex-1 overflow-y-auto bg-slate-50 dark:bg-[#0c0c1a] relative">
+<!-- Background Glows -->
+<div class="absolute top-0 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-[120px] pointer-events-none"></div>
+<div class="absolute bottom-1/4 right-1/4 w-64 h-64 bg-violet-500/10 rounded-full blur-[100px] pointer-events-none"></div>
+<!-- Top Header -->
+<header class="sticky top-0 z-10 glass-card px-8 py-4 flex items-center justify-between">
+<div class="relative w-full max-w-md">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+<input class="w-full bg-slate-200/50 dark:bg-slate-800/50 border-none rounded-xl pl-11 pr-4 py-2 focus:ring-2 focus:ring-primary/50 text-sm" placeholder="Search the synapse..." type="text"/>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-500 transition-colors">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="h-10 w-10 rounded-full bg-cover bg-center border-2 border-primary/30" data-alt="User profile avatar portrait" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuAOlrttRFo8S0IiENB3q5_puOfg_TMm2u7Mh_FNmrRDs-zCEbEmQgXBGCj7F3BMjw7FYlz6B6ye3MhW3aFdNO-61-omOU2OOxhme-E0dLgwKNoFWUmq1WRX6Qjlo9-3D2cLxLsH-WVjnfriuuYx3Gqbcw6zhvkxCbmFutoX5qsDbbuoiIBvc-qbM3n1GUkA99SvN2OzLciAQxj2oeDS_gE7Wb9IZ36Cvqu9kbPy0bEECrsS7ZNJGTZvN-u2yBWMQ5GBbp0bcqRlIg');"></div>
+</div>
+</header>
+<div class="max-w-2xl mx-auto py-8 px-4 flex flex-col gap-6">
+<!-- Create Post Card -->
+<div class="glass-card rounded-2xl p-6 flex flex-col gap-4">
+<div class="flex gap-4">
+<div class="h-12 w-12 rounded-full bg-cover bg-center shrink-0" data-alt="User avatar small" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBNnLn2TDIOCfpBQUQLnf6-7Iq4kxf32rcAVtRik45ytuNpBHa1Te7FMv63ZsRfcrbl5eWm9FdUgoHrTLB4Ed0qozBEaGW8Xl-bkZ1VqVtnBe2kpDhBtt5VdzWDGvY2vmFfHYxaOOvtmmtRH7Og8E_cFeoHaIHNMFnTMzLqvnxZAquKkiTOeN5G9X7seuOVwyNwEwLBqp_qbtiGGRXkVvJcm-ZKKMHCxR26FDpli76pYdx8WtyHmEEuIWk3QsrAE0b5TX0qE3OTNg');"></div>
+<textarea class="w-full bg-transparent border-none focus:ring-0 resize-none text-lg placeholder:text-slate-500 pt-2" placeholder="What's sparking in your mind?"></textarea>
+</div>
+<div class="flex items-center justify-between border-t border-slate-200 dark:border-slate-800 pt-4">
+<div class="flex gap-2">
+<button class="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"><span class="material-symbols-outlined">image</span></button>
+<button class="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"><span class="material-symbols-outlined">poll</span></button>
+<button class="p-2 text-primary hover:bg-primary/10 rounded-lg transition-colors"><span class="material-symbols-outlined">sentiment_satisfied</span></button>
+</div>
+<button class="px-6 py-2 bg-primary text-white font-bold rounded-lg text-sm">Post</button>
+</div>
+</div>
+<!-- Feed Post: Text & Image -->
+<article class="glass-card rounded-2xl overflow-hidden group hover:border-primary/30 transition-all duration-300">
+<div class="p-6">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 rounded-full bg-cover bg-center" data-alt="Author profile avatar" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBjc0Lf5iBKI9-xISmolNF6uXECFeG_8RcQd-n6P-k33MyML6a9Vzj5RYayYR0DdtAF7NPWnpu1KkomYeliVlyzHQLD5Qoc6AH7knH7GmensqG0e0qg03Q-2vRBkTzloCRog429NMnenLyy_FVmPyhENPXdET8zUVjlz95lLSDV-yyWM551-TPQ3UDpOZeY1Wm6BIJBdmexVhnd7KOdYgunhkVJBNJyEA7Sc6spF0KycFFK_SH5EuJyqzfUiuX8OFg6vCsbWAQtEg');"></div>
+<div>
+<h4 class="font-bold text-sm">Elena Vance</h4>
+<p class="text-xs text-slate-500">2 hours ago • Neural Designer</p>
+</div>
+</div>
+<button class="text-slate-400"><span class="material-symbols-outlined">more_horiz</span></button>
+</div>
+<p class="text-slate-700 dark:text-slate-300 mb-4 leading-relaxed">
+                            Just finished exploring the new spatial UI paradigms for the upcoming Synapse update. The way we interact with information is about to become more intuitive than ever. 🌌 #DesignFuture #SpatialComputing
+                        </p>
+</div>
+<div class="w-full h-80 bg-cover bg-center" data-alt="Abstract futuristic UI design illustration" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDI0ZJxVt9kgxfB91nB68EaQz6SM-HdVkitCCgqpU_MTLfdWeyWopSExPx6EIyy6yIT-J4iEeb7jaMLugtX9SQptstp7tSp7BlMy4MM6-gVFZS_RVw3n0zVO0FsfAEDpYKfcrDcpRWw0hOUXkxPmjG4JrRKreR131V8uwxD8CmuV4DfKxMlBT9McEse-Nupv13K6EYtatsL5DOcHbkPapbLDcetjM_isDqXrZWvkkGFq3jWM95VVVsD6eL9Izpw01RZsnMYsvLUwA');"></div>
+<div class="p-4 px-6 flex items-center justify-between border-t border-slate-200 dark:border-slate-800">
+<div class="flex gap-6">
+<button class="flex items-center gap-2 text-slate-500 hover:text-primary transition-colors group/btn">
+<span class="material-symbols-outlined group-hover/btn:scale-110 transition-transform">favorite</span>
+<span class="text-sm font-medium">1.2k</span>
+</button>
+<button class="flex items-center gap-2 text-slate-500 hover:text-primary transition-colors group/btn">
+<span class="material-symbols-outlined group-hover/btn:scale-110 transition-transform">chat_bubble</span>
+<span class="text-sm font-medium">84</span>
+</button>
+<button class="flex items-center gap-2 text-slate-500 hover:text-primary transition-colors group/btn">
+<span class="material-symbols-outlined group-hover/btn:scale-110 transition-transform">share</span>
+<span class="text-sm font-medium">12</span>
+</button>
+</div>
+<button class="text-slate-500 hover:text-primary"><span class="material-symbols-outlined">bookmark</span></button>
+</div>
+</article>
+<!-- Feed Post: Poll -->
+<article class="glass-card rounded-2xl p-6 group hover:border-primary/30 transition-all duration-300">
+<div class="flex items-center justify-between mb-4">
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 rounded-full bg-primary/20 flex items-center justify-center text-primary">
+<span class="material-symbols-outlined">auto_awesome</span>
+</div>
+<div>
+<h4 class="font-bold text-sm">Synapse AI <span class="bg-primary/20 text-primary text-[10px] px-2 py-0.5 rounded-full ml-1">SYSTEM</span></h4>
+<p class="text-xs text-slate-500">Sponsored • Community Pulse</p>
+</div>
+</div>
+</div>
+<p class="text-slate-700 dark:text-slate-300 mb-6 font-semibold">Which feature would you like to see integrated into the Synapse ecosystem next?</p>
+<div class="flex flex-col gap-3 mb-6">
+<button class="w-full p-4 rounded-xl bg-slate-100 dark:bg-slate-800/40 hover:bg-primary/10 border border-transparent hover:border-primary/30 transition-all text-left flex justify-between items-center group/poll">
+<span>Deep Neural Integration</span>
+<span class="text-xs text-slate-500 opacity-0 group-hover/poll:opacity-100 transition-opacity">42%</span>
+</button>
+<button class="w-full p-4 rounded-xl bg-slate-100 dark:bg-slate-800/40 hover:bg-primary/10 border border-transparent hover:border-primary/30 transition-all text-left flex justify-between items-center group/poll">
+<span>AR Social Overlay</span>
+<span class="text-xs text-slate-500 opacity-0 group-hover/poll:opacity-100 transition-opacity">28%</span>
+</button>
+<button class="w-full p-4 rounded-xl bg-slate-100 dark:bg-slate-800/40 hover:bg-primary/10 border border-transparent hover:border-primary/30 transition-all text-left flex justify-between items-center group/poll">
+<span>Haptic Communication</span>
+<span class="text-xs text-slate-500 opacity-0 group-hover/poll:opacity-100 transition-opacity">30%</span>
+</button>
+</div>
+<div class="flex items-center justify-between text-xs text-slate-500 border-t border-slate-200 dark:border-slate-800 pt-4">
+<span>4,290 votes • 1 day left</span>
+<div class="flex items-center gap-4">
+<button class="hover:text-primary flex items-center gap-1"><span class="material-symbols-outlined text-sm">favorite</span> 243</button>
+<button class="hover:text-primary flex items-center gap-1"><span class="material-symbols-outlined text-sm">share</span> Share</button>
+</div>
+</div>
+</article>
+</div>
+</main>
+<!-- Right Sidebar (Trends & AI) -->
+<aside class="w-80 border-l border-slate-200 dark:border-slate-800 hidden lg:flex flex-col p-6 gap-8 bg-background-light dark:bg-background-dark overflow-y-auto">
+<!-- AI Assistant Feature -->
+<div class="glass-card rounded-2xl p-5 relative overflow-hidden glow-accent border-primary/20">
+<div class="absolute -top-4 -right-4 w-20 h-20 bg-primary/20 rounded-full blur-2xl"></div>
+<div class="flex items-center gap-2 mb-3">
+<span class="material-symbols-outlined text-primary text-xl">auto_fix_high</span>
+<h3 class="font-bold text-sm tracking-tight">Synapse AI Assistant</h3>
+</div>
+<p class="text-xs text-slate-500 leading-relaxed mb-4">
+                    Based on your recent activity, I've curated some articles about spatial UI that might interest you.
+                </p>
+<button class="w-full py-2.5 bg-primary/10 hover:bg-primary/20 text-primary text-xs font-bold rounded-lg transition-colors">
+                    View Personalized Insights
+                </button>
+</div>
+<!-- Trending Section -->
+<div class="flex flex-col gap-4">
+<h3 class="text-sm font-bold uppercase tracking-widest text-slate-500 px-2">Trending Now</h3>
+<div class="flex flex-col gap-1">
+<a class="p-3 hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-xl transition-all group" href="#">
+<p class="text-[10px] text-slate-500 uppercase">Technology • Trending</p>
+<h4 class="text-sm font-bold group-hover:text-primary transition-colors">#QuantumComputing</h4>
+<p class="text-[10px] text-slate-500 mt-1">12.5k Synapses</p>
+</a>
+<a class="p-3 hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-xl transition-all group" href="#">
+<p class="text-[10px] text-slate-500 uppercase">Design • Popular</p>
+<h4 class="text-sm font-bold group-hover:text-primary transition-colors">#GlassmorphismV2</h4>
+<p class="text-[10px] text-slate-500 mt-1">8.2k Synapses</p>
+</a>
+<a class="p-3 hover:bg-slate-100 dark:hover:bg-slate-800/50 rounded-xl transition-all group" href="#">
+<p class="text-[10px] text-slate-500 uppercase">Science • Trending</p>
+<h4 class="text-sm font-bold group-hover:text-primary transition-colors">#Web3Sustainability</h4>
+<p class="text-[10px] text-slate-500 mt-1">5.1k Synapses</p>
+</a>
+</div>
+<button class="text-primary text-xs font-bold px-3 hover:underline text-left">Show more</button>
+</div>
+<!-- Suggested Users -->
+<div class="flex flex-col gap-4">
+<h3 class="text-sm font-bold uppercase tracking-widest text-slate-500 px-2">Who to follow</h3>
+<div class="flex flex-col gap-4">
+<div class="flex items-center justify-between px-2">
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 rounded-full bg-cover bg-center" data-alt="Suggested user profile avatar" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBkHE8FA9OnbguefTylDWAaJ0_ncW1AoXs8F80vGj7YDo1WsMVK5lf7JIie8fe6ftdXcYW7EisgO_TVTHV9DAO-2pXNmCUmhjbnphwvmgq4xMaOIqQXtMZd63Y96FPFTEjIMPSaPlrPAliF64cw777WZRtR6NeHGWZJX8DQVbl7OzA71dNoIN51JEwikSx-SQ5Tp1RA6KDWrwPpKwD3Kb9povqioO0zlx6lEO17BVSSfK72-nSNXEVl-XkH5SacF943ey-nClw6Qg');"></div>
+<div>
+<h4 class="text-sm font-bold">Marcus Thorne</h4>
+<p class="text-[10px] text-slate-500">@m_thorne</p>
+</div>
+</div>
+<button class="text-xs font-bold text-primary px-3 py-1.5 rounded-full border border-primary/30 hover:bg-primary/10 transition-colors">Follow</button>
+</div>
+<div class="flex items-center justify-between px-2">
+<div class="flex items-center gap-3">
+<div class="h-10 w-10 rounded-full bg-cover bg-center" data-alt="Suggested user profile avatar" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuCu82pQA9CWxQIz0gN3puITS2ntjF2wgTxU3Nt37lFwNGAXJdExLC__dq-vHrm6SuDNOLwZ9pctACs_kqBLBfj-0L8eijRmDf0MHPW4yog4u7YOHdslZzidGQjOXtNk8wr4XIau-gG3pF9Qbvl1YgsejNzGDGxmvXilIUf_ybCxCWjs1LthteNK-tFE43NR-HtSBiWvcxgZH4h85o0wXhyLupuJ3FHEDtuLGG7ssomJGcezPW43d3uMCdZFVV6Zj7vcAL75YXLVCw');"></div>
+<div>
+<h4 class="text-sm font-bold">Lila Chen</h4>
+<p class="text-[10px] text-slate-500">@lila_ux</p>
+</div>
+</div>
+<button class="text-xs font-bold text-primary px-3 py-1.5 rounded-full border border-primary/30 hover:bg-primary/10 transition-colors">Follow</button>
+</div>
+</div>
+</div>
+<footer class="mt-auto px-2">
+<p class="text-[10px] text-slate-500 leading-normal">
+                    Privacy Policy • Terms • Advertising <br/>
+                    Synapse Social Web © 2024
+                </p>
+</footer>
+</aside>
+</div>
+</body></html>

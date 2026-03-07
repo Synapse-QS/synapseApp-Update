@@ -166,6 +166,7 @@ class SupabaseChatDataSource(private val client: SupabaseClientLib = SupabaseCli
             val currentUserId = getCurrentUserId() ?: throw Exception("Not authenticated")
             val dto = UserPublicKeyDto(currentUserId, publicKey)
             client.postgrest.from("user_public_keys").upsert(dto)
+            Unit
         } catch (e: Exception) {
             Napier.e("Error uploading public key", e)
             throw e
@@ -177,7 +178,7 @@ class SupabaseChatDataSource(private val client: SupabaseClientLib = SupabaseCli
             val currentUserId = getCurrentUserId() ?: return@withContext null
             
             val myChats = client.postgrest.from("chat_participants")
-                .select(columns = Columns.list("chat_id")) {
+                .select(columns = Columns.list("chat_id", "user_id")) {
                     filter { eq("user_id", currentUserId) }
                 }.decodeList<ChatParticipantDto>()
 
@@ -185,7 +186,7 @@ class SupabaseChatDataSource(private val client: SupabaseClientLib = SupabaseCli
                 val myChatIds = myChats.map { it.chatId }
 
                 val otherInChat = client.postgrest.from("chat_participants")
-                    .select(columns = Columns.list("chat_id")) {
+                    .select(columns = Columns.list("chat_id", "user_id")) {
                         filter {
                             isIn("chat_id", myChatIds)
                             eq("user_id", otherUserId)

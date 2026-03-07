@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#6163f5",
+                        "background-light": "#f6f6f8",
+                        "background-dark": "#101022",
+                    },
+                    fontFamily: {
+                        "display": ["Manrope", "sans-serif"]
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                },
+            },
+        }
+    </script>
+<style>
+        body {
+            font-family: 'Manrope', sans-serif;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glow-accent {
+            box-shadow: 0 0 20px rgba(97, 99, 245, 0.2);
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen overflow-x-hidden">
+<div class="flex h-screen overflow-hidden">
+<!-- Left Side Navigation -->
+<aside class="w-72 flex-shrink-0 border-r border-primary/10 bg-background-light/50 dark:bg-background-dark/50 backdrop-blur-xl hidden lg:flex flex-col p-6">
+<div class="flex items-center gap-3 mb-10 px-2">
+<div class="size-10 rounded-xl bg-gradient-to-tr from-primary to-violet-500 flex items-center justify-center shadow-lg shadow-primary/20">
+<span class="material-symbols-outlined text-white">webhook</span>
+</div>
+<div>
+<h1 class="text-slate-900 dark:text-white text-lg font-bold leading-none">Synapse</h1>
+<p class="text-slate-500 dark:text-primary/60 text-xs font-medium uppercase tracking-widest mt-1">Social Web</p>
+</div>
+</div>
+<nav class="flex-1 space-y-2">
+<a class="flex items-center gap-4 px-4 py-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-all duration-200" href="#">
+<span class="material-symbols-outlined">house</span>
+<span class="font-semibold">Home</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-all duration-200" href="#">
+<span class="material-symbols-outlined">chat_bubble</span>
+<span class="font-semibold">Messages</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-xl bg-primary/10 text-primary transition-all duration-200" href="#">
+<span class="material-symbols-outlined font-fill">person</span>
+<span class="font-semibold">Profile</span>
+</a>
+<a class="flex items-center gap-4 px-4 py-3 rounded-xl text-slate-600 dark:text-slate-400 hover:bg-primary/10 hover:text-primary transition-all duration-200" href="#">
+<span class="material-symbols-outlined">search</span>
+<span class="font-semibold">Search</span>
+</a>
+</nav>
+<div class="mt-auto">
+<div class="glass-panel p-4 rounded-2xl mb-4 bg-gradient-to-br from-primary/20 to-transparent">
+<p class="text-xs font-bold text-primary mb-1">PRO PLAN</p>
+<p class="text-sm dark:text-slate-300 mb-3">Get advanced analytics &amp; custom themes.</p>
+<button class="w-full bg-primary hover:bg-primary/90 text-white text-sm font-bold py-2.5 rounded-lg transition-all">Upgrade Now</button>
+</div>
+<div class="flex items-center gap-3 px-2">
+<div class="size-10 rounded-full bg-slate-200 dark:bg-slate-800 border-2 border-primary/30 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="User profile thumbnail avatar" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCp0fwheIflD3vXdxG7n1byAJIrhv7ZACBq4OW3vg_9eVuJesnRH52CI7l3u-lksmqbzl1R-rBGbdhXJKnfosTRFelON38vY0giwdQIzplthD-9NlKGGSQppA8DmoBPgtt2cvZ4rlULnav5m2XOalgQGg5_MskErvMse0YK7gnFiwg2Dx-7NUgKx_CoW6iTrpKKbdQG1MIetPozopGqR3ZQ7Cl_of-u7RB_P-zehaz7eI0lboT5BLLqAgfknvXljXl_klaI2Zq9iA"/>
+</div>
+<div class="flex-1 overflow-hidden">
+<p class="text-sm font-bold truncate">Alex Rivers</p>
+<p class="text-xs text-slate-500 truncate">alex.design</p>
+</div>
+<span class="material-symbols-outlined text-slate-400">more_vert</span>
+</div>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main class="flex-1 overflow-y-auto bg-background-light dark:bg-background-dark relative">
+<!-- Profile Header -->
+<div class="relative h-80 w-full overflow-hidden">
+<div class="absolute inset-0 bg-gradient-to-b from-transparent to-background-dark/80 z-10"></div>
+<img class="w-full h-full object-cover blur-sm scale-105" data-alt="Abstract purple and blue fluid art background" src="https://lh3.googleusercontent.com/aida-public/AB6AXuClOfA08S0C-ZSZ4uwuC_onjEmV4FLTdI0cRpOT7-OegUzhV5s3sYJbO6EJqBwCdq1VoRcKzX0yoZsk4X2JgyNv7WSGu36FctTDeINN2fauiWhC6N9u-LF8a0f8-6YAGipiXnTzTQAT5uzAhQ_K9VAZwgpdnaXyc6G1WYk3B6rAJX-4hF5BCYC43EAILVoIiDt5qR7F0gXHkyzCHh0vewpNd63lvAIiBA6T-HywABYcseInFQFxZMVccP-7fAwzCnhqnRxUsscFOA"/>
+<!-- Profile Overlay Card -->
+<div class="absolute -bottom-1 z-20 w-full px-8">
+<div class="glass-panel rounded-t-3xl p-8 flex flex-col md:flex-row items-end gap-6 shadow-2xl">
+<div class="relative -mt-24 md:-mt-32">
+<div class="size-32 md:size-40 rounded-full border-4 border-background-dark overflow-hidden shadow-2xl glow-accent">
+<img class="w-full h-full object-cover" data-alt="Portrait of Alex Rivers" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBxfMnhfLYT2O_XG0Wwt19T04wTEzW8-VB5_l4VQ9NmO9T7IM_NLMTIeg3ygs0JWEI5aX2w8vs48UN-VyCt8FrnzsbWdMwHkCuHSkgnBnDaM5MdYk51_mNIyfrx9o54Z3afvwUsZgpjfLtQu6-69P2ErTGs5MZqB81CrfoluolKUiee1u34jAjWGs5g_KqCZqCtL37cJ0R8uCJcWwmILmy4n29NMa-NRsq605oLmvIQy_EPX1fo3jLeTe6CW8UB3B6582TXUarsqA"/>
+</div>
+<div class="absolute bottom-2 right-2 size-6 bg-green-500 border-4 border-background-dark rounded-full"></div>
+</div>
+<div class="flex-1 pb-2 text-center md:text-left">
+<h2 class="text-3xl font-extrabold text-slate-900 dark:text-white flex items-center justify-center md:justify-start gap-2">
+                                Alex Rivers
+                                <span class="material-symbols-outlined text-primary text-xl font-fill">verified</span>
+</h2>
+<p class="text-slate-500 dark:text-slate-400 mt-1 max-w-lg">Digital Architect &amp; Creative Lead | Exploring the intersection of AI and Design. Building the future of social webs.</p>
+<div class="flex items-center justify-center md:justify-start gap-4 mt-4">
+<div class="text-center md:text-left">
+<span class="block text-xl font-bold">12.5k</span>
+<span class="text-xs text-slate-500 uppercase tracking-tighter">Followers</span>
+</div>
+<div class="w-px h-8 bg-slate-700 mx-2 hidden md:block"></div>
+<div class="text-center md:text-left">
+<span class="block text-xl font-bold">842</span>
+<span class="text-xs text-slate-500 uppercase tracking-tighter">Following</span>
+</div>
+<div class="w-px h-8 bg-slate-700 mx-2 hidden md:block"></div>
+<div class="text-center md:text-left">
+<span class="block text-xl font-bold">156</span>
+<span class="text-xs text-slate-500 uppercase tracking-tighter">Posts</span>
+</div>
+</div>
+</div>
+<div class="flex gap-3 pb-2 w-full md:w-auto">
+<button class="flex-1 md:flex-none px-6 py-2.5 bg-primary text-white font-bold rounded-xl hover:bg-primary/90 transition-all flex items-center justify-center gap-2">
+<span class="material-symbols-outlined text-sm">edit</span>
+                                Edit Profile
+                            </button>
+<button class="size-11 flex items-center justify-center glass-panel rounded-xl hover:bg-white/10 transition-all">
+<span class="material-symbols-outlined">settings</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Content Tabs -->
+<div class="px-8 mt-12 mb-20">
+<div class="flex border-b border-primary/10 gap-10 mb-8">
+<button class="pb-4 text-primary border-b-2 border-primary font-bold transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-lg">grid_view</span>
+                        Posts
+                    </button>
+<button class="pb-4 text-slate-500 dark:text-slate-400 hover:text-primary transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-lg">image</span>
+                        Media
+                    </button>
+<button class="pb-4 text-slate-500 dark:text-slate-400 hover:text-primary transition-all flex items-center gap-2">
+<span class="material-symbols-outlined text-lg">favorite</span>
+                        Liked
+                    </button>
+</div>
+<!-- Posts Grid -->
+<div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+<!-- Post 1 -->
+<div class="group relative rounded-2xl overflow-hidden glass-panel">
+<div class="aspect-square">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="React code on a screen with glowing lights" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCiECSShaR20_TpZA1a9dq2zyn5PbqPWJkaQgj3dqZ5-kRD1yx--lml-fYpKT8CchTTS2Dg32XCKpiFJcd8Kj7_5h7vQ-RBLCCIsubKHIpnZmInD4KX3SQ6RgFjBKqPrgD-yl6A8IIyykIeXyph5TCBnxkvS4J62RowYcY0U5iJfTmfydoJfllXOhIU_7DJ_M12DRD4pxVlA-RlbL3y8ovqqkDuMQMJTkErJqzrLMf1rcmCM0ahtFmXCeanecLu0UsSTMe6TtIXTA"/>
+</div>
+<div class="absolute inset-0 bg-gradient-to-t from-background-dark/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
+<div class="flex items-center gap-4 text-white">
+<span class="flex items-center gap-1 font-bold"><span class="material-symbols-outlined text-primary font-fill">favorite</span> 1.2k</span>
+<span class="flex items-center gap-1 font-bold"><span class="material-symbols-outlined text-primary font-fill">chat_bubble</span> 84</span>
+</div>
+</div>
+</div>
+<!-- Post 2 -->
+<div class="group relative rounded-2xl overflow-hidden glass-panel">
+<div class="aspect-square">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="Collaborative workspace with multiple monitors" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBcXSRgt_As1FRCFzNI12_nbjmWYaiM40kfBXRNTImtvPmH79uBR27Vmr2T_btxvEBHaTUZi05S1e_q-D3fZ8H-LE_1sz2cOXKhp6zymfQjYUiHJHR6vw4HHBBpaED8THRSAAr3hoqhnscwg5kf_x3FFM9zad3JwVS5KxQVQn24wvJGLGgUm4WPEdve-5atw9E9ep6kueGzVX7WwF8gC-7AD3869u6te-2haYITzZKnMjXw3SIpoJ2614OdCCMjueo7PjTs-uFHpQ"/>
+</div>
+<div class="absolute inset-0 bg-gradient-to-t from-background-dark/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
+<div class="flex items-center gap-4 text-white">
+<span class="flex items-center gap-1 font-bold"><span class="material-symbols-outlined text-primary font-fill">favorite</span> 890</span>
+<span class="flex items-center gap-1 font-bold"><span class="material-symbols-outlined text-primary font-fill">chat_bubble</span> 32</span>
+</div>
+</div>
+</div>
+<!-- Post 3 -->
+<div class="group relative rounded-2xl overflow-hidden glass-panel">
+<div class="aspect-square">
+<img class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" data-alt="Minimalist desktop setup with neon lights" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAe7xlUPWfAgoEU-DlyhTbErbCUlajTXmpRtW7mCCm8QBtkzEHJF1H-KaU4Rnx9Gyd_Tzse3zvk0dNoeye73s-dPPe7MdVThi5UhEGE4aNwZVbXBdMn1VAImUykaj7lYp9scZpeGUMewhUKYv0pmIVh3kCXvkjljA8i0mFa48CmE7m3X6jDSTs6T0s-dNWEhql7KuYWQhTZCFRLqaeHejCcnJdqFFqG81z9G6SZ6O2l_tZMoHzXOe7sWelyM4W2f2clykfH5ltgYA"/>
+</div>
+<div class="absolute inset-0 bg-gradient-to-t from-background-dark/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex flex-col justify-end p-6">
+<div class="flex items-center gap-4 text-white">
+<span class="flex items-center gap-1 font-bold"><span class="material-symbols-outlined text-primary font-fill">favorite</span> 2.4k</span>
+<span class="flex items-center gap-1 font-bold"><span class="material-symbols-outlined text-primary font-fill">chat_bubble</span> 156</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+<!-- Right Side Sidebar -->
+<aside class="w-80 flex-shrink-0 border-l border-primary/10 bg-background-light/50 dark:bg-background-dark/50 backdrop-blur-xl hidden xl:flex flex-col p-6 overflow-y-auto">
+<h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">groups</span>
+                Mutual Connections
+            </h3>
+<div class="space-y-6">
+<!-- Mutual User 1 -->
+<div class="flex items-center gap-4 group">
+<div class="size-12 rounded-xl bg-slate-800 border border-primary/20 overflow-hidden shrink-0 group-hover:border-primary transition-all">
+<img class="w-full h-full object-cover" data-alt="Portrait of Jordan Smith" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAgUqtb9ME2sXjevcurvOnA_DVtK7KoJg_OIL1WUlCf4EbRkdosJ9kuGuMjWThsHRD7NGuCiBHhPV7uKA3M-QGjORrwGanW95hIzQXFl9jpOXRhSzqBnd6IejRSCfa7XOs5TpkoFpdn_xJkaYRVFZwBSdrUBTTNw7tgW90EUFuSkLnQu3R1UGecPrI2gz9dEd3vnjO_xaqHAs0CssInw4vEQbx3ajnKdPZ6FYJ-sSWuRWcR-yk62rdho9BhwBQEPfGPyhMD9FzTjA"/>
+</div>
+<div class="flex-1 overflow-hidden">
+<p class="text-sm font-bold truncate">Jordan Smith</p>
+<p class="text-xs text-slate-500">Creative Director</p>
+</div>
+<button class="size-8 flex items-center justify-center glass-panel rounded-lg text-primary hover:bg-primary hover:text-white transition-all">
+<span class="material-symbols-outlined text-sm">person_add</span>
+</button>
+</div>
+<!-- Mutual User 2 -->
+<div class="flex items-center gap-4 group">
+<div class="size-12 rounded-xl bg-slate-800 border border-primary/20 overflow-hidden shrink-0 group-hover:border-primary transition-all">
+<img class="w-full h-full object-cover" data-alt="Portrait of Sarah Chen" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDgDj3LSUrwwq0KBBnpUajxkb1vcJkrnqjvHCc_AtxjwDD_CSEJOmNtvUBrV_wlvKsdUy4hdmBeHTT9ZFok2Vw6IgaCNxuA69wdVPHBVcAlOnOKjQffOgYLdJownf1eraP2HI6tP3igzDAp01sp7B8nJQQBK8zZ6KlT_40sQy6t7FHSYWSnsnUlRwt6DbnyAoOxy4zg8z6n6ElCiFAGyEBQceCHAHPS8pRhuE39sy4qfGyALlRywDySdMzYQvN8XfbCnTvN8LsuVQ"/>
+</div>
+<div class="flex-1 overflow-hidden">
+<p class="text-sm font-bold truncate">Sarah Chen</p>
+<p class="text-xs text-slate-500">AI Researcher</p>
+</div>
+<button class="size-8 flex items-center justify-center glass-panel rounded-lg text-primary hover:bg-primary hover:text-white transition-all">
+<span class="material-symbols-outlined text-sm">person_add</span>
+</button>
+</div>
+<!-- Mutual User 3 -->
+<div class="flex items-center gap-4 group">
+<div class="size-12 rounded-xl bg-slate-800 border border-primary/20 overflow-hidden shrink-0 group-hover:border-primary transition-all">
+<img class="w-full h-full object-cover" data-alt="Portrait of Marcus Voe" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBJWK5qtZRI_-Xl6n0Im_Unfq6Qfx6MFmVCaZ26OmkDRoelD-F-mWEr8-EgCkEhPejAlcdohLYdDWvDQX8ihPg7IPG8uCOzMqytgm9POe5o98zoSB-QCWo3LL7p6bO60Slknq6-iFf81EPKCevYzHQwRKeDUaf4YjTYUznbM9-02hCSc5H0Z_7N026xQj1x1gb-IzEcOOLlTrh5QvTcMXQUh4qHUPi3EbWbqnc9-fIdIY3ohCLVl1DEhXLGoFc8O_6XMPNdwvbM3g"/>
+</div>
+<div class="flex-1 overflow-hidden">
+<p class="text-sm font-bold truncate">Marcus Voe</p>
+<p class="text-xs text-slate-500">Product Designer</p>
+</div>
+<button class="size-8 flex items-center justify-center glass-panel rounded-lg text-primary hover:bg-primary hover:text-white transition-all">
+<span class="material-symbols-outlined text-sm">person_add</span>
+</button>
+</div>
+</div>
+<div class="mt-12">
+<h3 class="text-lg font-bold mb-6 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">auto_awesome</span>
+                    Trending Spaces
+                </h3>
+<div class="space-y-4">
+<div class="glass-panel p-4 rounded-xl border-l-4 border-l-primary">
+<p class="text-xs text-slate-500 font-bold uppercase">Design &amp; AI</p>
+<p class="text-sm font-bold mt-1">Generative UI Trends</p>
+<p class="text-xs text-primary mt-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">visibility</span>
+                            2.4k active
+                        </p>
+</div>
+<div class="glass-panel p-4 rounded-xl border-l-4 border-l-violet-500">
+<p class="text-xs text-slate-500 font-bold uppercase">Technology</p>
+<p class="text-sm font-bold mt-1">The Web3 Frontier</p>
+<p class="text-xs text-primary mt-2 flex items-center gap-1">
+<span class="material-symbols-outlined text-xs">visibility</span>
+                            1.1k active
+                        </p>
+</div>
+</div>
+</div>
+</aside>
+</div>
+</body></html>
