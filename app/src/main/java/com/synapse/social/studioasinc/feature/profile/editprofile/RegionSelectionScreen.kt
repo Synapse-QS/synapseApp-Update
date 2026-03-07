@@ -1,12 +1,12 @@
 package com.synapse.social.studioasinc.feature.profile.editprofile
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.LazyListScope
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
@@ -14,8 +14,6 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.ListItem
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBar
 import androidx.compose.material3.Text
@@ -26,7 +24,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.synapse.social.studioasinc.R
+import com.synapse.social.studioasinc.feature.shared.components.RegionItem
+import com.synapse.social.studioasinc.feature.shared.components.getRegionShapeForItem
+import com.synapse.social.studioasinc.feature.shared.theme.Spacing
 import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -59,12 +61,12 @@ fun RegionSelectionScreen(
         topBar = {
             if (!isActive) {
                 TopAppBar(
-                    title = { Text("Select Region") },
+                    title = { Text(stringResource(R.string.select_region)) },
                     navigationIcon = {
                         IconButton(onClick = onBackClick) {
                             Icon(
                                 imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back"
+                                contentDescription = stringResource(R.string.cd_back)
                             )
                         }
                     },
@@ -72,7 +74,7 @@ fun RegionSelectionScreen(
                         IconButton(onClick = { isActive = true }) {
                             Icon(
                                 imageVector = Icons.Default.Search,
-                                contentDescription = "Search"
+                                contentDescription = stringResource(R.string.cd_search)
                             )
                         }
                     }
@@ -92,51 +94,52 @@ fun RegionSelectionScreen(
                     onSearch = { isActive = false },
                     active = isActive,
                     onActiveChange = { isActive = it },
-                    placeholder = { Text("Search region") },
+                    placeholder = { Text(stringResource(R.string.search_region)) },
                     leadingIcon = {
                         Icon(Icons.Default.Search, contentDescription = null)
                     },
                     trailingIcon = {
                         if (searchQuery.isNotEmpty()) {
                             IconButton(onClick = { searchQuery = "" }) {
-                                Icon(Icons.Default.Close, contentDescription = "Clear")
+                                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.clear_all))
                             }
                         } else {
                              IconButton(onClick = { isActive = false }) {
-                                Icon(Icons.Default.Close, contentDescription = "Close search")
+                                Icon(Icons.Default.Close, contentDescription = stringResource(R.string.cd_back))
                             }
                         }
                     }
                 ) {
-                    LazyColumn {
-                        items(filteredCountries) { country ->
-                            ListItem(
-                                headlineContent = { Text(country) },
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .clickable {
-                                        onRegionSelected(country)
-                                    }
-                            )
-                        }
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(horizontal = Spacing.Medium, vertical = Spacing.Small)
+                    ) {
+                        regionListItems(filteredCountries, onRegionSelected)
                     }
                 }
             } else {
                 LazyColumn(
-                    modifier = Modifier.fillMaxSize()
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(horizontal = Spacing.Medium, vertical = Spacing.Small)
                 ) {
-                    items(filteredCountries) { country ->
-                        ListItem(
-                            headlineContent = { Text(country) },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable {
-                                    onRegionSelected(country)
-                                }
-                        )
-                    }
+                    regionListItems(filteredCountries, onRegionSelected)
                 }
             }
         }
+    }
+}
+
+private fun LazyListScope.regionListItems(
+    countries: List<String>,
+    onRegionSelected: (String) -> Unit
+) {
+    itemsIndexed(countries) { index, country ->
+        val shape = getRegionShapeForItem(index, countries.size)
+        RegionItem(
+            region = country,
+            isSelected = false,
+            onRegionSelected = onRegionSelected,
+            shape = shape
+        )
     }
 }
