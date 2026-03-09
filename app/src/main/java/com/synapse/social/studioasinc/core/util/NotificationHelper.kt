@@ -62,9 +62,9 @@ object NotificationHelper {
                 Log.i(TAG, "Sending notification to user $recipientUid via ${NotificationConfig.getNotificationSystemDescription()}")
 
                 if (NotificationConfig.USE_CLIENT_SIDE_NOTIFICATIONS) {
-                    sendPushViaEdgeFunction(recipientUid, message, senderUid, notificationType, data)
+                    sendPushViaOneSignal(recipientUid, message, senderUid, notificationType, data)
                 } else {
-                    Log.i(TAG, "Server-side notifications configured (logic not in helper).")
+                    sendPushViaEdgeFunction(recipientUid, message, senderUid, notificationType, data)
                 }
 
             } catch (e: Exception) {
@@ -141,7 +141,20 @@ object NotificationHelper {
     }
 
     @JvmStatic
-    fun sendPushViaEdgeFunction(
+    private fun sendPushViaOneSignal(
+        recipientUid: String,
+        message: String,
+        senderUid: String?,
+        notificationType: String,
+        data: Map<String, String>? = null
+    ) {
+        // OneSignal client SDK cannot send to other users
+        // Must use REST API via Edge Function
+        sendPushViaEdgeFunction(recipientUid, message, senderUid, notificationType, data)
+    }
+
+    @JvmStatic
+    private fun sendPushViaEdgeFunction(
         recipientUid: String,
         message: String,
         senderUid: String?,

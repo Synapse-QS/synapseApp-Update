@@ -9,7 +9,7 @@ object NotificationConfig {
 
 
 
-    const val USE_CLIENT_SIDE_NOTIFICATIONS = true
+    const val USE_CLIENT_SIDE_NOTIFICATIONS = false
 
 
 
@@ -109,9 +109,9 @@ object NotificationConfig {
 
     fun getNotificationSystemDescription(): String {
         return if (USE_CLIENT_SIDE_NOTIFICATIONS) {
-            "Client-side OneSignal REST API"
+            "Client-side OneSignal via Edge Function"
         } else {
-            "Server-side Cloudflare Worker"
+            "Server-side via Supabase Edge Function"
         }
     }
 

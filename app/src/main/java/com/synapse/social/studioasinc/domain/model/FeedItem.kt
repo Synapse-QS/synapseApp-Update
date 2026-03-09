@@ -9,6 +9,9 @@ sealed class FeedItem {
     abstract val likeCount: Int
     abstract val commentCount: Int
     abstract val isLiked: Boolean
+    
+    val uniqueKey: String
+        get() = "$itemType:$id"
 
     data class PostItem(
         val post: Post

@@ -329,17 +329,7 @@ class ChatViewModel @Inject constructor(
                 _messages.update { current ->
                     current.map { if (it.id == tempId) actualMessage else it }.sortedBy { msg -> msg.createdAt }
                 }
-                
-                // Notify via OneSignal
-                val recipientId = _participantProfile.value?.uid
-                if (recipientId != null && currentUserId != null && recipientId != currentUserId) {
-                    NotificationHelper.sendMessageAndNotifyIfNeeded(
-                        chatId = chatId,
-                        senderId = currentUserId!!,
-                        recipientId = recipientId,
-                        message = text
-                    )
-                }
+                // Notification is sent by the repository
             }.onFailure { e ->
                 _error.value = "Failed to send: ${e.message}"
                 // Remove optimistic message on failure
@@ -404,16 +394,7 @@ class ChatViewModel @Inject constructor(
             }
 
             editMessageUseCase(messageId, newContent).onSuccess {
-                // Notify via OneSignal
-                val recipientId = _participantProfile.value?.uid
-                if (recipientId != null && currentUserId != null && recipientId != currentUserId) {
-                    NotificationHelper.sendMessageAndNotifyIfNeeded(
-                        chatId = message.chatId,
-                        senderId = currentUserId!!,
-                        recipientId = recipientId,
-                        message = "Edited: $newContent"
-                    )
-                }
+                // Notification handled by repository if needed
             }.onFailure { e ->
                 _error.value = "Failed to edit: ${e.message}"
                 // Revert optimistic update
@@ -501,23 +482,7 @@ class ChatViewModel @Inject constructor(
                     _messages.update { current ->
                         current.map { if (it.id == tempId) actualMessage else it }.sortedBy { msg -> msg.createdAt }
                     }
-
-                    // Notify via OneSignal
-                    val recipientId = _participantProfile.value?.uid
-                    if (recipientId != null && currentUserId != null && recipientId != currentUserId) {
-                        val notificationMessage = when(messageType) {
-                            "image" -> "📷 Image"
-                            "video" -> "🎥 Video"
-                            "audio" -> "🎤 Voice Message"
-                            else -> "📎 File Attachment"
-                        }
-                        NotificationHelper.sendMessageAndNotifyIfNeeded(
-                            chatId = chatId,
-                            senderId = currentUserId!!,
-                            recipientId = recipientId,
-                            message = notificationMessage
-                        )
-                    }
+                    // Notification handled by repository
                 }.onFailure { e ->
                     _error.value = "Failed to send: ${e.message}"
                     _messages.update { current -> current.filter { it.id != tempId } }

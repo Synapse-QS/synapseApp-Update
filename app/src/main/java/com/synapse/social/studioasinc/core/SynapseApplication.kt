@@ -58,12 +58,22 @@ class SynapseApplication : Application() {
     }
 
     private fun initializeOneSignal() {
+        if (!NotificationConfig.USE_CLIENT_SIDE_NOTIFICATIONS) {
+            android.util.Log.i("SynapseApplication", "ℹ️ Using Supabase Edge Functions for notifications. OneSignal initialization skipped.")
+            return
+        }
 
         if (com.synapse.social.studioasinc.BuildConfig.DEBUG && NotificationConfig.ENABLE_DEBUG_LOGGING) {
             OneSignal.Debug.logLevel = LogLevel.VERBOSE
         }
 
-        OneSignal.initWithContext(this, NotificationConfig.ONESIGNAL_APP_ID)
+        val appId = NotificationConfig.ONESIGNAL_APP_ID
+        if (appId.isBlank() || appId == "YOUR_ONESIGNAL_APP_ID_HERE") {
+            android.util.Log.w("SynapseApplication", "⚠️ OneSignal App ID not configured. Push notifications will not work.")
+            return
+        }
+
+        OneSignal.initWithContext(this, appId)
 
         // Listen for subscription changes
         OneSignal.User.pushSubscription.addObserver(object : com.onesignal.user.subscriptions.IPushSubscriptionObserver {

@@ -166,10 +166,11 @@ class SupabaseChatRepository(
         var finalContent = content
         var failureReason: String? = null
         
-        Napier.d("E2EE_SEND: SignalProtocolManager is ${if (signalProtocolManager != null) "available" else "NULL"}", tag = "E2EE")
-        
-        if (signalProtocolManager != null) {
-            Napier.d("E2EE_ENCRYPT: Starting encryption for message in chat $chatId", tag = "E2EE")
+        if (signalProtocolManager == null) {
+            failureReason = "E2EE not initialized - SignalProtocolManager is null"
+            Napier.e("E2EE_SEND: $failureReason. Check DI configuration.", tag = "E2EE")
+        } else {
+            Napier.d("E2EE_SEND: SignalProtocolManager is available, attempting encryption", tag = "E2EE")
             try {
                 val otherUserId = dataSource.getOtherParticipantId(chatId, currentUserId)
                 Napier.d("E2EE_ENCRYPT: Other participant ID: $otherUserId", tag = "E2EE")
@@ -211,9 +212,6 @@ class SupabaseChatRepository(
                 }
                 Napier.e("E2EE_ENCRYPT: $failureReason, sending unencrypted", e, tag = "E2EE")
             }
-        } else {
-            failureReason = "E2EE not available"
-            Napier.w("E2EE_ENCRYPT: SignalProtocolManager is null, sending unencrypted", tag = "E2EE")
         }
 
         val message = dataSource.sendMessage(chatId, finalContent, mediaUrl, messageType, isEncrypted, encryptedContentStr, expiresAt, replyToId)

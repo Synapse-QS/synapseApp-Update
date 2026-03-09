@@ -335,7 +335,7 @@ fun ChatScreen(
                         reverseLayout = true
                     ) {
                         val reversedMessages = messages.reversed()
-                        itemsIndexed(reversedMessages, key = { _, it -> it.id ?: it.hashCode() }) { index, message ->
+                        itemsIndexed(reversedMessages, key = { _, it -> it.id }) { index, message ->
                             val newerMessage = if (index > 0) reversedMessages[index - 1] else null
                             val olderMessage = if (index < reversedMessages.size - 1) reversedMessages[index + 1] else null
 
