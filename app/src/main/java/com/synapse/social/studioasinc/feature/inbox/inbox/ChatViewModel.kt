@@ -140,7 +140,7 @@ class ChatViewModel @Inject constructor(
 
             // Fetch initial messages
             getMessagesUseCase(actualChatId).onSuccess { messages ->
-                _messages.value = messages.sortedBy { it.createdAt } // oldest first for UI
+                _messages.value = messages.distinctBy { it.id }.sortedBy { it.createdAt } // oldest first for UI
                 _isLoading.value = false
             }.onFailure { e ->
                 _error.value = e.message
@@ -316,7 +316,9 @@ class ChatViewModel @Inject constructor(
                 expiresAt = expiresAt,
                 replyToId = replyToMessage?.id
             )
-            _messages.update { (it + newMessage).sortedBy { msg -> msg.createdAt } }
+            _messages.update { current ->
+                (current + newMessage).distinctBy { it.id }.sortedBy { msg -> msg.createdAt }
+            }
 
             // Actual send
             sendMessageUseCase(
@@ -464,7 +466,9 @@ class ChatViewModel @Inject constructor(
                 deliveryStatus = DeliveryStatus.SENT,
                 createdAt = Instant.now().toString()
             )
-            _messages.update { (it + newMessage).sortedBy { msg -> msg.createdAt } }
+            _messages.update { current ->
+                (current + newMessage).distinctBy { it.id }.sortedBy { msg -> msg.createdAt }
+            }
 
             uploadMediaUseCase(
                 chatId = chatId,

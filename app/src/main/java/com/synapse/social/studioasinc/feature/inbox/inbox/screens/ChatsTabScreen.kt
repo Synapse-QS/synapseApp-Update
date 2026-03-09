@@ -83,7 +83,7 @@ fun ChatsTabScreen(
                 ),
                 verticalArrangement = Arrangement.spacedBy(InboxTheme.dimens.ChatItemVerticalSpacing)
             ) {
-                items(conversations, key = { it.chatId }) { conversation ->
+                items(conversations, key = { "${it.chatId}_${it.participantId}" }) { conversation ->
                     val dismissState = rememberSwipeToDismissBoxState(
                         confirmValueChange = { value ->
                             if (value != SwipeToDismissBoxValue.Settled) {
