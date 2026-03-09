@@ -31,6 +31,11 @@ kotlin {
                 baseName = "shared"
                 isStatic = true
             }
+            it.compilations.getByName("main").cinterops {
+                val corecrypto by creating {
+                    defFile(project.file("src/nativeInterop/cinterop/corecrypto.def"))
+                }
+            }
         }
     }
 
