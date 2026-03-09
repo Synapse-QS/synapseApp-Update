@@ -58,6 +58,7 @@ fun FeedScreen(
     onPostClick: (String) -> Unit,
     onUserClick: (String) -> Unit,
     onCommentClick: (String) -> Unit,
+    onQuoteClick: (String) -> Unit,
     onMediaClick: (Int) -> Unit,
     onEditPost: (String) -> Unit,
     onStoryClick: (String) -> Unit = { _ -> },
@@ -108,6 +109,7 @@ fun FeedScreen(
             viewModel = viewModel,
             onComment = { post -> currentOnCommentClick(post.id) },
             onShare = viewModel::sharePost,
+            onQuote = { post -> onQuoteClick(post.id) },
             onUserClick = { userId -> currentOnUserClick(userId) },
             onOptionClick = { post -> selectedPost = post },
             onMediaClick = { index -> currentOnMediaClick(index) }

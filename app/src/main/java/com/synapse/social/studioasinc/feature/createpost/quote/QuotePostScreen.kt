@@ -14,14 +14,22 @@ import com.synapse.social.studioasinc.feature.shared.components.post.PostCard
 import com.synapse.social.studioasinc.feature.shared.components.post.PostCardState
 import com.synapse.social.studioasinc.feature.shared.components.post.PostUiMapper
 
+import androidx.compose.ui.Alignment
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun QuotePostScreen(
-    quotedPost: Post,
-    onNavigateBack: () -> Unit,
-    onQuotePost: (String) -> Unit
+    viewModel: QuotePostViewModel,
+    onNavigateBack: () -> Unit
 ) {
+    val state by viewModel.uiState.collectAsState()
     var quoteText by remember { mutableStateOf("") }
+
+    LaunchedEffect(state.isSuccess) {
+        if (state.isSuccess) {
+            onNavigateBack()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -34,8 +42,8 @@ fun QuotePostScreen(
                 },
                 actions = {
                     TextButton(
-                        onClick = { onQuotePost(quoteText) },
-                        enabled = quoteText.isNotBlank()
+                        onClick = { viewModel.quotePost(quoteText) },
+                        enabled = quoteText.isNotBlank() && !state.isLoading
                     ) {
                         Text("Post")
                     }
@@ -68,26 +76,32 @@ fun QuotePostScreen(
                 modifier = Modifier.padding(16.dp)
             )
 
-            Surface(
-                modifier = Modifier.padding(horizontal = 16.dp),
-                tonalElevation = 1.dp,
-                shape = MaterialTheme.shapes.medium
-            ) {
-                PostCard(
-                    state = PostUiMapper.toPostCardState(quotedPost),
-                    onLikeClick = {},
-                    onCommentClick = {},
-                    onShareClick = {},
-                    onRepostClick = {},
-                    onBookmarkClick = {},
-                    onUserClick = {},
-                    onPostClick = {},
-                    onMediaClick = { _ -> },
-                    onOptionsClick = {},
-                    onPollVote = {},
-                    onQuoteClick = {},
-                    modifier = Modifier.padding(8.dp)
-                )
+            if (state.isLoading && state.post == null) {
+                Box(modifier = Modifier.fillMaxWidth().padding(32.dp), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator()
+                }
+            } else if (state.post != null) {
+                Surface(
+                    modifier = Modifier.padding(horizontal = 16.dp),
+                    tonalElevation = 1.dp,
+                    shape = MaterialTheme.shapes.medium
+                ) {
+                    PostCard(
+                        state = PostUiMapper.toPostCardState(state.post!!),
+                        onLikeClick = {},
+                        onCommentClick = {},
+                        onShareClick = {},
+                        onRepostClick = {},
+                        onBookmarkClick = {},
+                        onUserClick = {},
+                        onPostClick = {},
+                        onMediaClick = { _ -> },
+                        onOptionsClick = {},
+                        onPollVote = {},
+                        onQuoteClick = {},
+                        modifier = Modifier.padding(8.dp)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))

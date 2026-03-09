@@ -431,6 +431,9 @@ private fun ProfileContent(
                 }
                 context.startActivity(Intent.createChooser(intent, context.getString(R.string.title_share_post)))
             },
+            onQuote = { post ->
+                // Handled in parent composable if needed or implemented similarly
+            },
             onUserClick = { userId -> currentOnNavigateToUserProfile(userId) },
             onOptionClick = { post -> currentOnShowPostOptions(post) },
             onMediaClick = { index -> }

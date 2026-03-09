@@ -16,6 +16,8 @@ sealed interface AppDestination {
     @Serializable
     data class CreatePost(val postId: String? = null, val type: String = "post") : AppDestination
     @Serializable
+    data class QuotePost(val postId: String) : AppDestination
+    @Serializable
     data object Settings : AppDestination
     @Serializable
     data object EditProfile : AppDestination

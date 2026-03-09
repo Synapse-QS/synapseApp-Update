@@ -14,6 +14,7 @@ import com.synapse.social.studioasinc.domain.model.FeedItem
 import com.synapse.social.studioasinc.domain.usecase.post.BookmarkPostUseCase
 import com.synapse.social.studioasinc.domain.usecase.post.GetFeedPagedUseCase
 import com.synapse.social.studioasinc.domain.usecase.post.ReactToPostUseCase
+import com.synapse.social.studioasinc.domain.usecase.post.RepostPostUseCase
 import com.synapse.social.studioasinc.domain.usecase.post.RevokeVoteUseCase
 import com.synapse.social.studioasinc.domain.usecase.post.VotePollUseCase
 import com.synapse.social.studioasinc.domain.usecase.settings.GetAppearanceSettingsUseCase
@@ -62,6 +63,7 @@ class FeedViewModel @Inject constructor(
     private val togglePostCommentsUseCase: TogglePostCommentsUseCase,
     private val blockUserUseCase: BlockUserUseCase,
     private val postRepository: PostRepository,
+    private val repostPostUseCase: RepostPostUseCase,
     private val reactionRepository: ReactionRepository,
     application: Application
 ) : AndroidViewModel(application) {
@@ -246,7 +248,7 @@ class FeedViewModel @Inject constructor(
             cacheModifiedPost(optimisticPost)
             PostEventBus.emit(PostEvent.Updated(optimisticPost))
             
-            postRepository.resharePost(post.id).onFailure {
+            repostPostUseCase(post.id).onFailure {
                 // Revert on failure
                 cacheModifiedPost(post)
                 PostEventBus.emit(PostEvent.Updated(post))

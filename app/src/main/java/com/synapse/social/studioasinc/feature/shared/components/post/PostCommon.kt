@@ -77,7 +77,8 @@ object PostUiMapper {
             pollOptions = mappedPollOptions,
             userPollVote = post.userPollVote,
             formattedTimestamp = com.synapse.social.studioasinc.core.util.TimeUtils.getTimeAgo(post.publishDate ?: ""),
-            isExpanded = isExpanded
+            isExpanded = isExpanded,
+            repostedBy = if (post.isReshared) "User" else null
         )
     }
 

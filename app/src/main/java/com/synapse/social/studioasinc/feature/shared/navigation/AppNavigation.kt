@@ -162,6 +162,14 @@ fun AppNavigation(
             )
         }
 
+        composable<AppDestination.QuotePost> {
+            val viewModel: com.synapse.social.studioasinc.feature.createpost.quote.QuotePostViewModel = hiltViewModel()
+            com.synapse.social.studioasinc.feature.createpost.quote.QuotePostScreen(
+                viewModel = viewModel,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
         composable<AppDestination.Chat> { backStackEntry ->
             val args = backStackEntry.toRoute<AppDestination.Chat>()
             ChatScreen(

@@ -66,6 +66,7 @@ fun HomeNavGraph(
                 onPostClick = { postId -> navController.navigate(HomeDestinations.PostDetail(postId)) },
                 onUserClick = { userId -> onNavigateToProfile(userId) },
                 onCommentClick = { postId -> navController.navigate(HomeDestinations.PostDetail(postId)) },
+                onQuoteClick = { postId -> navController.navigate(AppDestination.QuotePost(postId)) },
                 onMediaClick = { },
                 onEditPost = onNavigateToEditPost,
                 onStoryClick = { userId ->
