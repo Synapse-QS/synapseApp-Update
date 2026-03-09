@@ -355,19 +355,26 @@ class SupabaseChatRepository(
             it.decryptIfNecessary(userId).toDomain() 
         }
 
-    override suspend fun initializeE2EE(): Result<Unit> = try {
-        if (signalProtocolManager != null) {
-            Napier.d("E2EE_INIT: Checking if local keys exist", tag = "E2EE")
-            try {
+    override suspend fun initializeE2EE(): Result<Unit> {
+        return try {
+            if (signalProtocolManager == null) {
+                val error = "SignalProtocolManager is null, E2EE not available"
+                Napier.e("E2EE_INIT: $error", tag = "E2EE")
+                return Result.failure(Exception(error))
+            }
+
+            Napier.d("E2EE_INIT: Starting E2EE initialization", tag = "E2EE")
+            
+            if (signalProtocolManager.hasIdentity()) {
                 val regId = signalProtocolManager.getLocalRegistrationId()
                 Napier.d("E2EE_INIT: Local keys already exist (regId: $regId)", tag = "E2EE")
                 
-                // Check if key rotation is needed
                 if (signalProtocolManager.checkKeyRotationNeeded()) {
                     Napier.w("E2EE_INIT: Key rotation recommended (keys older than 30 days)", tag = "E2EE")
                 }
-            } catch (e: Exception) {
+            } else {
                 Napier.d("E2EE_INIT: No local keys found, generating new identity and keys", tag = "E2EE")
+                
                 val identity = signalProtocolManager.generateIdentityAndKeys()
                 Napier.d("E2EE_INIT: Generated identity with regId: ${identity.registrationId}", tag = "E2EE")
                 
@@ -390,13 +397,12 @@ class SupabaseChatRepository(
                 dataSource.uploadUserPublicKey(bundleStr)
                 Napier.d("E2EE_INIT: Successfully uploaded public key bundle", tag = "E2EE")
             }
-        } else {
-            Napier.w("E2EE_INIT: SignalProtocolManager is null, E2EE not available", tag = "E2EE")
+            
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Napier.e("E2EE_INIT: Initialization failed: ${e.message}", e, tag = "E2EE")
+            Result.failure(e)
         }
-        Result.success(Unit)
-    } catch (e: Exception) {
-        Napier.e("E2EE_INIT: Initialization failed: ${e.message}", e, tag = "E2EE")
-        Result.failure(e)
     }
 
     override fun getCurrentUserId(): String? = dataSource.getCurrentUserId()

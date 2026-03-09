@@ -31,7 +31,7 @@ fun SettingsHubScreen(
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        containerColor = SettingsColors.screenBackground,
+        containerColor = MaterialTheme.colorScheme.surface,
         topBar = {
             LargeTopAppBar(
                 title = { Text(stringResource(R.string.settings_hub_title)) },
@@ -39,8 +39,7 @@ fun SettingsHubScreen(
                     IconButton(onClick = onBackClick) {
                         Icon(
                             painter = painterResource(R.drawable.ic_arrow_back),
-                            contentDescription = stringResource(R.string.settings_back_description),
-                            tint = MaterialTheme.colorScheme.onSurface
+                            contentDescription = stringResource(R.string.settings_back_description)
                         )
                     }
                 },
@@ -48,16 +47,13 @@ fun SettingsHubScreen(
                     IconButton(onClick = { onNavigateToCategory(SettingsDestination.Search) }) {
                         Icon(
                             painter = painterResource(R.drawable.ic_search),
-                            contentDescription = "Search Settings",
-                            tint = MaterialTheme.colorScheme.onSurface
+                            contentDescription = "Search Settings"
                         )
                     }
                 },
-                colors = TopAppBarDefaults.largeTopAppBarColors(
+                colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
-                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface,
-                    navigationIconContentColor = MaterialTheme.colorScheme.onSurface
+                    scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainer
                 ),
                 scrollBehavior = scrollBehavior
             )

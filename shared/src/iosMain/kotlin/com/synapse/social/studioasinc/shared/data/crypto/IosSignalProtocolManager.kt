@@ -45,4 +45,8 @@ class IosSignalProtocolManager : SignalProtocolManager {
     override suspend fun checkKeyRotationNeeded(thresholdDays: Int): Boolean {
         return false
     }
+
+    override suspend fun hasIdentity(): Boolean {
+        return false
+    }
 }

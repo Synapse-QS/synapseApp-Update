@@ -69,7 +69,6 @@ class SynapseApplication : Application() {
         OneSignal.User.pushSubscription.addObserver(object : com.onesignal.user.subscriptions.IPushSubscriptionObserver {
             override fun onPushSubscriptionChange(state: com.onesignal.user.subscriptions.PushSubscriptionChangedState) {
                 if (state.current.optedIn && state.current.token != null) {
-                    android.widget.Toast.makeText(this@SynapseApplication, "✅ Notifications enabled", android.widget.Toast.LENGTH_SHORT).show()
                     android.util.Log.d("SynapseApplication", "Push subscribed: ${state.current.id}, token: ${state.current.token}")
                 }
             }
@@ -85,12 +84,15 @@ class SynapseApplication : Application() {
             // Then login with user ID
             try {
                 val authService = SupabaseAuthenticationService.getInstance(this@SynapseApplication)
-                authService.getCurrentUserId()?.let { userId ->
+                val userId = authService.getCurrentUserId()
+                if (userId != null) {
                     OneSignal.login(userId)
-                    android.util.Log.d("SynapseApplication", "OneSignal logged in with user: $userId")
+                    android.util.Log.d("OneSignal", "✅ App startup login successful with user: $userId")
+                } else {
+                    android.util.Log.w("OneSignal", "⚠️ No user logged in at app startup")
                 }
             } catch (e: Exception) {
-                android.util.Log.e("SynapseApplication", "Failed to login to OneSignal", e)
+                android.util.Log.e("OneSignal", "❌ App startup login failed", e)
             }
             
             // Start presence tracking

@@ -19,4 +19,5 @@ interface SignalProtocolManager {
     suspend fun getLocalRegistrationId(): Int
     suspend fun getLocalIdentityKey(): String
     suspend fun checkKeyRotationNeeded(thresholdDays: Int = 30): Boolean
+    suspend fun hasIdentity(): Boolean
 }

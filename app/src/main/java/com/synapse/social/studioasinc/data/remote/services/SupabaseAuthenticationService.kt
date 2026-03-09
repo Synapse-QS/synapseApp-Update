@@ -389,9 +389,18 @@ class SupabaseAuthenticationService : com.synapse.social.studioasinc.data.remote
                 debugLog("Sign up request completed successfully")
 
                 val userId = createdUser?.id ?: client.auth.currentUserOrNull()?.id
-                userId?.let {
-                    OneSignal.login(it)
-                    debugLog("Linked OneSignal with External User ID: $it")
+                if (userId != null) {
+                    try {
+                        OneSignal.login(userId)
+                        debugLog("✅ OneSignal login successful with user ID: $userId")
+                        android.util.Log.d("OneSignal", "✅ Logged in with user: $userId")
+                    } catch (e: Exception) {
+                        debugLog("❌ OneSignal login failed: ${e.message}")
+                        android.util.Log.e("OneSignal", "❌ Login failed", e)
+                    }
+                } else {
+                    debugLog("❌ Cannot login to OneSignal: userId is null")
+                    android.util.Log.e("OneSignal", "❌ Cannot login: userId is null")
                 }
 
                 val supabaseUser = createdUser ?: client.auth.currentUserOrNull()
@@ -455,8 +464,14 @@ class SupabaseAuthenticationService : com.synapse.social.studioasinc.data.remote
                     val user = createLocalUser(email, supabaseUser)
                     debugLog("User authenticated successfully: ${user.id}")
 
-                    OneSignal.login(user.id)
-                    debugLog("Linked OneSignal with External User ID: ${user.id}")
+                    try {
+                        OneSignal.login(user.id)
+                        debugLog("✅ OneSignal login successful with user ID: ${user.id}")
+                        android.util.Log.d("OneSignal", "✅ Logged in with user: ${user.id}")
+                    } catch (e: Exception) {
+                        debugLog("❌ OneSignal login failed: ${e.message}")
+                        android.util.Log.e("OneSignal", "❌ Login failed", e)
+                    }
 
                     val emailVerified = supabaseUser.emailConfirmedAt != null || authConfig.shouldBypassEmailVerification()
 

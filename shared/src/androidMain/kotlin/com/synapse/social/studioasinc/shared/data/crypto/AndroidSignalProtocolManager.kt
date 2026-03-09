@@ -133,4 +133,8 @@ class AndroidSignalProtocolManager(context: Context) : SignalProtocolManager {
     override suspend fun checkKeyRotationNeeded(thresholdDays: Int): Boolean {
         return store.checkKeyRotationNeeded(thresholdDays)
     }
+
+    override suspend fun hasIdentity(): Boolean {
+        return store.hasIdentity()
+    }
 }
