@@ -16,7 +16,8 @@ data class Message(
     val readBy: List<String> = emptyList(),
     val isEncrypted: Boolean = false,
     val encryptedContent: String? = null,
-    val expiresAt: String? = null
+    val expiresAt: String? = null,
+    val encryptionFailureReason: String? = null
 ) {
     fun isFromMe(currentUserId: String): Boolean = senderId == currentUserId
 }

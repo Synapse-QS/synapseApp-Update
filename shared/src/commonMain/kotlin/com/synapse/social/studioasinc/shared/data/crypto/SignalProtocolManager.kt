@@ -12,9 +12,11 @@ interface SignalProtocolManager {
     suspend fun processPreKeyBundle(userId: String, bundle: PreKeyBundle)
 
     suspend fun hasSession(userId: String): Boolean
+    suspend fun deleteSession(userId: String)
     suspend fun encryptMessage(recipientId: String, message: ByteArray): EncryptedMessage
     suspend fun decryptMessage(senderId: String, message: EncryptedMessage): ByteArray
 
     suspend fun getLocalRegistrationId(): Int
     suspend fun getLocalIdentityKey(): String
+    suspend fun checkKeyRotationNeeded(thresholdDays: Int = 30): Boolean
 }

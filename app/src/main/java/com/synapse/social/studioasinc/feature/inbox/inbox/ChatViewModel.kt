@@ -83,6 +83,9 @@ class ChatViewModel @Inject constructor(
     private val _chatSummary = MutableStateFlow<String?>(null)
     val chatSummary: StateFlow<String?> = _chatSummary.asStateFlow()
 
+    private val _isE2EEReady = MutableStateFlow(false)
+    val isE2EEReady: StateFlow<Boolean> = _isE2EEReady.asStateFlow()
+
     private var currentChatId: String? = null
     private var messageSubscriptionJob: Job? = null
     private var typingSubscriptionJob: Job? = null
@@ -112,7 +115,13 @@ class ChatViewModel @Inject constructor(
 
         // Initialize E2EE keys if not already (safeguard)
         viewModelScope.launch {
-            initializeE2EUseCase()
+            initializeE2EUseCase().onSuccess {
+                _isE2EEReady.value = true
+                Napier.d("E2EE initialization successful", tag = "E2EE")
+            }.onFailure { e ->
+                _isE2EEReady.value = false
+                Napier.e("E2EE initialization failed: ${e.message}", e, tag = "E2EE")
+            }
         }
 
         viewModelScope.launch {
@@ -259,6 +268,30 @@ class ChatViewModel @Inject constructor(
             return
         }
 
+        // Wait for E2EE initialization if not ready
+        if (!_isE2EEReady.value) {
+            Napier.d("E2EE not ready, waiting for initialization...", tag = "E2EE")
+            viewModelScope.launch {
+                // Wait up to 3 seconds for E2EE to initialize
+                var attempts = 0
+                while (!_isE2EEReady.value && attempts < 30) {
+                    delay(100)
+                    attempts++
+                }
+                if (_isE2EEReady.value) {
+                    Napier.d("E2EE ready after waiting", tag = "E2EE")
+                } else {
+                    Napier.w("E2EE initialization timeout, proceeding anyway", tag = "E2EE")
+                }
+                performSendMessage(chatId, text)
+            }
+            return
+        }
+
+        performSendMessage(chatId, text)
+    }
+
+    private fun performSendMessage(chatId: String, text: String) {
         _inputText.value = ""
 
         val currentMode = _disappearingMode.value

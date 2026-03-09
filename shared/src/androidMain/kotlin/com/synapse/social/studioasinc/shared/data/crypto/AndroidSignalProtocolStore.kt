@@ -60,11 +60,24 @@ class AndroidSignalProtocolStore(context: Context) : SignalProtocolStore {
         prefs.edit()
             .putString("identity_key_pair", Base64.encodeToString(identityKeyPair.serialize(), Base64.DEFAULT))
             .putInt("local_registration_id", registrationId)
+            .putLong("last_key_rotation", System.currentTimeMillis())
             .apply()
     }
     
     fun hasIdentity(): Boolean {
         return prefs.contains("identity_key_pair")
+    }
+
+    fun getLastKeyRotation(): Long {
+        return prefs.getLong("last_key_rotation", 0L)
+    }
+
+    fun checkKeyRotationNeeded(thresholdDays: Int = 30): Boolean {
+        val lastRotation = getLastKeyRotation()
+        if (lastRotation == 0L) return false // Never rotated, use initial keys
+        
+        val daysSinceRotation = (System.currentTimeMillis() - lastRotation) / (1000 * 60 * 60 * 24)
+        return daysSinceRotation >= thresholdDays
     }
 
     // --- PreKeyStore ---

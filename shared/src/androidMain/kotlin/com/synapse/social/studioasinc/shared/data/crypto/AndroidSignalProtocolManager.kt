@@ -6,6 +6,7 @@ import com.synapse.social.studioasinc.shared.data.crypto.models.EncryptedMessage
 import com.synapse.social.studioasinc.shared.data.crypto.models.PreKeyBundle
 import com.synapse.social.studioasinc.shared.data.crypto.models.SignalIdentityKeys
 import com.synapse.social.studioasinc.shared.data.crypto.models.SignalOneTimePreKey
+import io.github.aakira.napier.Napier
 import org.whispersystems.libsignal.IdentityKey
 import org.whispersystems.libsignal.IdentityKeyPair
 import org.whispersystems.libsignal.SessionBuilder
@@ -25,12 +26,14 @@ class AndroidSignalProtocolManager(context: Context) : SignalProtocolManager {
     private val DEVICE_ID = 1
 
     override suspend fun generateIdentityAndKeys(): SignalIdentityKeys {
+        Napier.d("E2EE_INIT: Generating identity key pair", tag = "E2EE")
         val identityKeyPair = KeyHelper.generateIdentityKeyPair()
         val registrationId = KeyHelper.generateRegistrationId(false)
         val signedPreKey = KeyHelper.generateSignedPreKey(identityKeyPair, 1)
 
         store.storeLocalIdentity(identityKeyPair, registrationId)
         store.storeSignedPreKey(signedPreKey.id, signedPreKey)
+        Napier.d("E2EE_INIT: Stored identity and signed pre-key locally", tag = "E2EE")
 
         return SignalIdentityKeys(
             registrationId = registrationId,
@@ -42,6 +45,7 @@ class AndroidSignalProtocolManager(context: Context) : SignalProtocolManager {
     }
 
     override suspend fun generateOneTimePreKeys(startId: Int, count: Int): List<SignalOneTimePreKey> {
+        Napier.d("E2EE_INIT: Generating $count one-time pre-keys starting from ID $startId", tag = "E2EE")
         val preKeys = KeyHelper.generatePreKeys(startId, count)
         val resultList = mutableListOf<SignalOneTimePreKey>()
         for (preKey in preKeys) {
@@ -57,6 +61,7 @@ class AndroidSignalProtocolManager(context: Context) : SignalProtocolManager {
     }
 
     override suspend fun processPreKeyBundle(userId: String, bundle: PreKeyBundle) {
+        Napier.d("E2EE_SESSION: Processing pre-key bundle for user $userId", tag = "E2EE")
         val address = SignalProtocolAddress(userId, DEVICE_ID)
         val sessionBuilder = SessionBuilder(store, address)
 
@@ -72,6 +77,7 @@ class AndroidSignalProtocolManager(context: Context) : SignalProtocolManager {
         )
 
         sessionBuilder.process(nativeBundle)
+        Napier.d("E2EE_SESSION: Successfully processed bundle and established session for $userId", tag = "E2EE")
     }
 
     override suspend fun hasSession(userId: String): Boolean {
@@ -79,10 +85,19 @@ class AndroidSignalProtocolManager(context: Context) : SignalProtocolManager {
         return store.containsSession(address)
     }
 
+    override suspend fun deleteSession(userId: String) {
+        Napier.d("E2EE_SESSION: Deleting session for user $userId", tag = "E2EE")
+        val address = SignalProtocolAddress(userId, DEVICE_ID)
+        store.deleteSession(address)
+        Napier.d("E2EE_SESSION: Session deleted for user $userId", tag = "E2EE")
+    }
+
     override suspend fun encryptMessage(recipientId: String, message: ByteArray): EncryptedMessage {
+        Napier.d("E2EE_ENCRYPT: Encrypting message for recipient $recipientId", tag = "E2EE")
         val address = SignalProtocolAddress(recipientId, DEVICE_ID)
         val sessionCipher = SessionCipher(store, address)
         val ciphertextMessage = sessionCipher.encrypt(message)
+        Napier.d("E2EE_ENCRYPT: Successfully encrypted message (type: ${ciphertextMessage.type})", tag = "E2EE")
 
         return EncryptedMessage(
             type = ciphertextMessage.type,
@@ -92,16 +107,19 @@ class AndroidSignalProtocolManager(context: Context) : SignalProtocolManager {
     }
 
     override suspend fun decryptMessage(senderId: String, message: EncryptedMessage): ByteArray {
+        Napier.d("E2EE_DECRYPT: Decrypting message from sender $senderId (type: ${message.type})", tag = "E2EE")
         val address = SignalProtocolAddress(senderId, DEVICE_ID)
         val sessionCipher = SessionCipher(store, address)
 
         val decodedBody = Base64.decode(message.body, Base64.DEFAULT)
 
-        return if (message.type == CiphertextMessage.PREKEY_TYPE) {
+        val decrypted = if (message.type == CiphertextMessage.PREKEY_TYPE) {
             sessionCipher.decrypt(PreKeySignalMessage(decodedBody))
         } else {
             sessionCipher.decrypt(SignalMessage(decodedBody))
         }
+        Napier.d("E2EE_DECRYPT: Successfully decrypted message from $senderId", tag = "E2EE")
+        return decrypted
     }
 
     override suspend fun getLocalRegistrationId(): Int {
@@ -110,5 +128,9 @@ class AndroidSignalProtocolManager(context: Context) : SignalProtocolManager {
 
     override suspend fun getLocalIdentityKey(): String {
         return Base64.encodeToString(store.identityKeyPair.publicKey.serialize(), Base64.NO_WRAP)
+    }
+
+    override suspend fun checkKeyRotationNeeded(thresholdDays: Int): Boolean {
+        return store.checkKeyRotationNeeded(thresholdDays)
     }
 }

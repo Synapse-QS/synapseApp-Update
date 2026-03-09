@@ -921,6 +921,31 @@ fun MessageBubble(
                             tint = contentColor.copy(alpha = 0.6f)
                         )
                     }
+                    if (!message.isEncrypted && message.encryptionFailureReason != null) {
+                        var showTooltip by remember { mutableStateOf(false) }
+                        Box {
+                            Icon(
+                                imageVector = Icons.Filled.Warning,
+                                contentDescription = "Not Encrypted",
+                                modifier = Modifier
+                                    .size(12.dp)
+                                    .clickable { showTooltip = !showTooltip },
+                                tint = MaterialTheme.colorScheme.error
+                            )
+                            if (showTooltip) {
+                                androidx.compose.material3.DropdownMenu(
+                                    expanded = showTooltip,
+                                    onDismissRequest = { showTooltip = false }
+                                ) {
+                                    Text(
+                                        text = message.encryptionFailureReason ?: "Encryption failed",
+                                        modifier = Modifier.padding(8.dp),
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                            }
+                        }
+                    }
                     if (message.isEdited) {
                         Text(
                             text = "Edited",

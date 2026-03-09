@@ -22,6 +22,10 @@ class IosSignalProtocolManager : SignalProtocolManager {
         return false
     }
 
+    override suspend fun deleteSession(userId: String) {
+        throw NotImplementedError("iOS Signal Protocol not yet implemented")
+    }
+
     override suspend fun encryptMessage(recipientId: String, message: ByteArray): EncryptedMessage {
          throw NotImplementedError("iOS Signal Protocol not yet implemented")
     }
@@ -36,5 +40,9 @@ class IosSignalProtocolManager : SignalProtocolManager {
 
     override suspend fun getLocalIdentityKey(): String {
          throw NotImplementedError("iOS Signal Protocol not yet implemented")
+    }
+
+    override suspend fun checkKeyRotationNeeded(thresholdDays: Int): Boolean {
+        return false
     }
 }

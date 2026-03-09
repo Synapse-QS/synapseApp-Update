@@ -21,7 +21,8 @@ data class MessageDto(
     @SerialName("read_by") val readBy: List<String>? = null,
     @SerialName("is_encrypted") val isEncrypted: Boolean = false,
     @SerialName("encrypted_content") val encryptedContent: String? = null,
-    @SerialName("expires_at") val expiresAt: String? = null
+    @SerialName("expires_at") val expiresAt: String? = null,
+    val encryptionFailureReason: String? = null
 )
 
 @Serializable
