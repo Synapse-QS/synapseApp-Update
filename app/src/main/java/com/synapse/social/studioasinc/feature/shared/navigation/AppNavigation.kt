@@ -53,6 +53,25 @@ fun AppNavigation(
         modifier = modifier
     ) {
 
+        composable<AppDestination.CreateGroup> {
+            com.synapse.social.studioasinc.feature.inbox.inbox.CreateGroupScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onGroupCreated = { chatId ->
+                    navController.popBackStack()
+                    navController.navigate(AppDestination.Chat(chatId = chatId))
+                }
+            )
+        }
+
+        composable<AppDestination.GroupInfo> { backStackEntry ->
+            val args = backStackEntry.toRoute<AppDestination.GroupInfo>()
+            com.synapse.social.studioasinc.feature.inbox.inbox.GroupInfoScreen(
+                chatId = args.chatId,
+                groupName = args.groupName,
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+
         composable<AppDestination.Auth> {
             val viewModel: AuthViewModel = hiltViewModel()
             AuthScreen(
@@ -115,8 +134,8 @@ fun AppNavigation(
                 onNavigateToSettings = {
                     navController.navigate(AppDestination.Settings)
                 },
-                onNavigateToChat = { targetUserId ->
-                    navController.navigate(AppDestination.Chat(chatId = "new", userId = targetUserId))
+                onNavigateToChat = { targetUserId, userName ->
+                    navController.navigate(AppDestination.Chat(chatId = "new", userId = targetUserId, participantName = userName))
                 },
                 onNavigateToFollowers = {
                     navController.navigate(AppDestination.FollowList(userId, "followers"))
@@ -136,9 +155,10 @@ fun AppNavigation(
                 onNavigateToProfile = { userId ->
                     navController.navigate(AppDestination.Profile(userId))
                 },
-                onNavigateToChat = { chatId, userId ->
-                    navController.navigate(AppDestination.Chat(chatId, userId))
-                }
+                onNavigateToChat = { chatId, userId, userName ->
+                    navController.navigate(AppDestination.Chat(chatId, userId, userName))
+                },
+                onNavigateToCreateGroup = { navController.navigate(AppDestination.CreateGroup) }
             )
         }
 
@@ -147,7 +167,11 @@ fun AppNavigation(
             ChatScreen(
                 chatId = args.chatId,
                 participantId = args.userId,
-                onNavigateBack = { navController.popBackStack() }
+                initialParticipantName = args.participantName,
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToGroupInfo = { chatId, groupName ->
+                    navController.navigate(AppDestination.GroupInfo(chatId, groupName))
+                }
             )
         }
 
@@ -294,8 +318,8 @@ fun AppNavigation(
                 onUserClick = { profileUserId ->
                     navController.navigate(AppDestination.Profile(profileUserId))
                 },
-                onMessageClick = { chatId ->
-                    navController.navigate(AppDestination.Chat(chatId))
+                onMessageClick = { userId, userName ->
+                    navController.navigate(AppDestination.Chat(chatId = "new", userId = userId, participantName = userName))
                 }
             )
         }

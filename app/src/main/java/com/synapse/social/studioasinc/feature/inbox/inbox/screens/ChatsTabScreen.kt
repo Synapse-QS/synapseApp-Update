@@ -18,6 +18,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
 import com.synapse.social.studioasinc.feature.inbox.inbox.components.InboxEmptyState
 import com.synapse.social.studioasinc.shared.domain.model.chat.Conversation
 import com.synapse.social.studioasinc.feature.inbox.inbox.models.EmptyStateType
@@ -31,8 +33,9 @@ fun ChatsTabScreen(
     conversations: List<Conversation>,
     isLoading: Boolean,
     error: String?,
-    onConversationClick: (String, String) -> Unit,
+    onConversationClick: (String, String, String?) -> Unit,
     onRetry: () -> Unit,
+    isLocked: (String) -> Boolean = { false },
     modifier: Modifier = Modifier,
     contentPadding: PaddingValues = PaddingValues()
 ) {
@@ -67,7 +70,8 @@ fun ChatsTabScreen(
                 items(conversations, key = { it.chatId }) { conversation ->
                     ConversationItem(
                         conversation = conversation,
-                        onClick = { onConversationClick(conversation.chatId, conversation.participantId) }
+                        isLocked = isLocked(conversation.chatId),
+                        onClick = { onConversationClick(conversation.chatId, conversation.participantId, conversation.participantName) }
                     )
                     HorizontalDivider(
                         modifier = Modifier.padding(start = 88.dp, end = 16.dp),
@@ -83,6 +87,7 @@ fun ChatsTabScreen(
 @Composable
 private fun ConversationItem(
     conversation: Conversation,
+    isLocked: Boolean,
     onClick: () -> Unit
 ) {
     Row(
@@ -123,6 +128,14 @@ private fun ConversationItem(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                if (isLocked) {
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = "Locked",
+                        modifier = Modifier.size(16.dp).padding(end = 4.dp),
+                        tint = MaterialTheme.colorScheme.primary
+                    )
+                }
                 Text(
                     text = conversation.participantName,
                     style = MaterialTheme.typography.titleMedium,

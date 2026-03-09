@@ -132,30 +132,30 @@ class StorageRepositoryImpl(
         }
     }
 
-    override suspend fun updatePhotoProvider(provider: StorageProvider) = withContext(Dispatchers.IO) {
+    override suspend fun updatePhotoProvider(provider: StorageProvider): Unit = withContext(Dispatchers.IO) {
         queries.updatePhotoProvider(provider.name, TimeProvider.nowMillis())
     }
 
-    override suspend fun updateVideoProvider(provider: StorageProvider) = withContext(Dispatchers.IO) {
+    override suspend fun updateVideoProvider(provider: StorageProvider): Unit = withContext(Dispatchers.IO) {
         queries.updateVideoProvider(provider.name, TimeProvider.nowMillis())
     }
 
-    override suspend fun updateOtherProvider(provider: StorageProvider) = withContext(Dispatchers.IO) {
+    override suspend fun updateOtherProvider(provider: StorageProvider): Unit = withContext(Dispatchers.IO) {
         queries.updateOtherProvider(provider.name, TimeProvider.nowMillis())
     }
 
-    override suspend fun updateImgBBConfig(key: String) = withContext(Dispatchers.IO) {
+    override suspend fun updateImgBBConfig(key: String): Unit = withContext(Dispatchers.IO) {
         secureStorage.save(KEY_IMGBB, key)
         queries.updateImgBB("", TimeProvider.nowMillis())
     }
 
-    override suspend fun updateCloudinaryConfig(cloudName: String, apiKey: String, apiSecret: String) = withContext(Dispatchers.IO) {
+    override suspend fun updateCloudinaryConfig(cloudName: String, apiKey: String, apiSecret: String): Unit = withContext(Dispatchers.IO) {
         secureStorage.save(KEY_CLOUDINARY_API_KEY, apiKey)
         secureStorage.save(KEY_CLOUDINARY_API_SECRET, apiSecret)
         queries.updateCloudinary(cloudName, "", "", TimeProvider.nowMillis())
     }
 
-    override suspend fun updateSupabaseConfig(url: String, key: String, bucket: String) = withContext(Dispatchers.IO) {
+    override suspend fun updateSupabaseConfig(url: String, key: String, bucket: String): Unit = withContext(Dispatchers.IO) {
         secureStorage.save(KEY_SUPABASE, key)
         queries.updateSupabase(url, "", bucket, TimeProvider.nowMillis())
     }
@@ -165,14 +165,14 @@ class StorageRepositoryImpl(
         accessKeyId: String,
         secretAccessKey: String,
         bucketName: String
-    ) = withContext(Dispatchers.IO) {
+    ): Unit = withContext(Dispatchers.IO) {
         secureStorage.save(KEY_R2_ACCESS_KEY_ID, accessKeyId)
         secureStorage.save(KEY_R2_SECRET_ACCESS_KEY, secretAccessKey)
         queries.updateR2(accountId, "", "", bucketName, TimeProvider.nowMillis())
     }
 
 
-    override suspend fun updateCompression(enabled: Boolean) = withContext(Dispatchers.IO) {
+    override suspend fun updateCompression(enabled: Boolean): Unit = withContext(Dispatchers.IO) {
         secureStorage.save(KEY_COMPRESS_IMAGES, enabled.toString())
         // Trigger flow update by updating last_updated in DB (dummy update to any field or dedicated field if available, but here we reuse updatePhotoProvider or similar if we want to trigger,
         // OR rely on the fact that flow emits when mapToConfig is called? No, mapToConfig is called when DB changes.

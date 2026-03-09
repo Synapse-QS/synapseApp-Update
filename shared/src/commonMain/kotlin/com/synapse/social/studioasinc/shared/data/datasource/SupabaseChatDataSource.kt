@@ -1,10 +1,17 @@
 package com.synapse.social.studioasinc.shared.data.datasource
 
+import com.synapse.social.studioasinc.shared.util.UUIDUtils
+
 import com.synapse.social.studioasinc.shared.core.network.SupabaseClient
 import com.synapse.social.studioasinc.shared.data.dto.chat.ChatParticipantDto
+import com.synapse.social.studioasinc.shared.data.dto.chat.ChatDto
+import com.synapse.social.studioasinc.shared.data.dto.chat.NewChatDto
+
+
 import com.synapse.social.studioasinc.shared.data.dto.chat.MessageDto
 import com.synapse.social.studioasinc.shared.data.dto.chat.NewMessageDto
 import com.synapse.social.studioasinc.shared.data.dto.chat.UserPublicKeyDto
+import com.synapse.social.studioasinc.shared.data.dto.chat.UserDeletedMessageDto
 import com.synapse.social.studioasinc.shared.domain.model.User
 import io.github.aakira.napier.Napier
 import io.github.jan.supabase.SupabaseClient as SupabaseClientLib
@@ -19,6 +26,7 @@ import io.github.jan.supabase.realtime.postgresChangeFlow
 import io.github.jan.supabase.realtime.PostgresAction
 import io.github.jan.supabase.realtime.RealtimeChannel
 import io.github.jan.supabase.realtime.realtime
+import io.github.jan.supabase.realtime.*
 import io.github.jan.supabase.storage.storage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -30,41 +38,71 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
 import kotlin.coroutines.cancellation.CancellationException
 
 class SupabaseChatDataSource(private val client: SupabaseClientLib = SupabaseClient.client) {
     
     fun getCurrentUserId(): String? = client.auth.currentUserOrNull()?.id
 
-    suspend fun getConversations(): List<Pair<ChatParticipantDto, User?>> = withContext(Dispatchers.IO) {
+    suspend fun getConversations(): List<Triple<ChatParticipantDto, User?, ChatDto?>> = withContext(Dispatchers.IO) {
         val currentUserId = getCurrentUserId() ?: return@withContext emptyList()
         
-        val myParticipations = client.postgrest.from("chat_participants")
-            .select(columns = Columns.list("chat_id", "user_id", "is_archived", "last_read_at")) {
-                filter { eq("user_id", currentUserId) }
-            }.decodeList<ChatParticipantDto>()
+        try {
+            // 1. Get all my participations
+            val myParticipations = client.postgrest.from("chat_participants")
+                .select(columns = Columns.list("chat_id", "user_id", "is_archived", "last_read_at")) {
+                    filter { eq("user_id", currentUserId) }
+                }.decodeList<ChatParticipantDto>()
 
-        myParticipations.filter { !it.isArchived }.mapNotNull { participation ->
-            try {
-                val otherParticipants = client.postgrest.from("chat_participants")
-                    .select(columns = Columns.list("user_id")) {
-                        filter {
-                            eq("chat_id", participation.chatId)
-                            neq("user_id", currentUserId)
-                        }
-                    }.decodeList<ChatParticipantDto>()
+            val activeParticipations = myParticipations.filter { !it.isArchived }
+            if (activeParticipations.isEmpty()) return@withContext emptyList()
 
-                val otherUserId = otherParticipants.firstOrNull()?.userId ?: return@mapNotNull null
-                val otherUser = client.postgrest.from("users").select {
-                    filter { eq("uid", otherUserId) }
-                    limit(1)
-                }.decodeSingleOrNull<User>()
+            val chatIds = activeParticipations.map { it.chatId }
 
-                participation to otherUser
-            } catch (e: Exception) {
-                Napier.e("Error loading conversation ${participation.chatId}", e)
-                null
+            // 2. Get other participants for these chats in one batch
+            val allOtherParticipants = client.postgrest.from("chat_participants")
+                .select(columns = Columns.list("chat_id", "user_id")) {
+                    filter {
+                        isIn("chat_id", chatIds)
+                        neq("user_id", currentUserId)
+                    }
+                }.decodeList<ChatParticipantDto>()
+            
+            val otherParticipantsByChat = allOtherParticipants.groupBy { it.chatId }
+
+            val chats = if (chatIds.isNotEmpty()) {
+                client.postgrest.from("chats")
+                    .select(columns = Columns.list("id", "name", "avatar_url", "is_group", "created_by")) {
+                        filter { isIn("id", chatIds) }
+                    }.decodeList<ChatDto>().associateBy { it.id }
+            } else {
+                emptyMap()
             }
+
+            val otherUserIds = allOtherParticipants.map { it.userId }.distinct()
+
+            // 3. Get other user profiles in one batch
+            val otherUsersByUid = if (otherUserIds.isNotEmpty()) {
+                client.postgrest.from("users")
+                    .select(columns = Columns.list("uid", "username", "display_name", "avatar", "status")) {
+                        filter { isIn("uid", otherUserIds) }
+                    }.decodeList<User>().associateBy { it.uid }
+            } else {
+                emptyMap()
+            }
+
+            // 4. Combine
+            activeParticipations.map { participation ->
+                val otherUserId = otherParticipantsByChat[participation.chatId]?.firstOrNull()?.userId
+                val otherUser = otherUsersByUid[otherUserId ?: ""]
+                Triple(participation, otherUser, chats[participation.chatId])
+            }
+        } catch (e: Exception) {
+            Napier.e("Error loading conversations", e)
+            emptyList()
         }
     }
 
@@ -74,6 +112,10 @@ class SupabaseChatDataSource(private val client: SupabaseClientLib = SupabaseCli
                 filter {
                     eq("chat_id", chatId)
                     eq("is_deleted", false)
+                    or {
+                        filter("expires_at", FilterOperator.IS, "null")
+                        gt("expires_at", kotlinx.datetime.Clock.System.now().toString())
+                    }
                 }
                 order("created_at", Order.DESCENDING)
                 limit(1)
@@ -91,6 +133,10 @@ class SupabaseChatDataSource(private val client: SupabaseClientLib = SupabaseCli
                 filter {
                     eq("chat_id", chatId)
                     eq("is_deleted", false)
+                    or {
+                        filter("expires_at", FilterOperator.IS, "null")
+                        gt("expires_at", kotlinx.datetime.Clock.System.now().toString())
+                    }
                     gt("created_at", lastReadAt)
                 }
             }.decodeList<MessageDto>()
@@ -108,10 +154,14 @@ class SupabaseChatDataSource(private val client: SupabaseClientLib = SupabaseCli
                     filter {
                         eq("chat_id", chatId)
                         eq("is_deleted", false)
-                        if (before != null) {
-                            lt("created_at", before)
-                        }
+                    or {
+                        filter("expires_at", FilterOperator.IS, "null")
+                        gt("expires_at", kotlinx.datetime.Clock.System.now().toString())
                     }
+                    if (before != null) {
+                        lt("created_at", before)
+                    }
+                }
                     order("created_at", Order.DESCENDING)
                     limit(limit.toLong())
                 }.decodeList<MessageDto>().reversed()
@@ -121,10 +171,18 @@ class SupabaseChatDataSource(private val client: SupabaseClientLib = SupabaseCli
             }
         }
 
-    suspend fun sendMessage(chatId: String, content: String, mediaUrl: String? = null, messageType: String = "text", isEncrypted: Boolean = false, encryptedContent: String? = null): MessageDto =
+    suspend fun sendMessage(
+        chatId: String, 
+        content: String, 
+        mediaUrl: String? = null, 
+        messageType: String = "text", 
+        isEncrypted: Boolean = false, 
+        encryptedContent: String? = null,
+        expiresAt: String? = null
+    ): MessageDto =
         withContext(Dispatchers.IO) {
             val senderId = getCurrentUserId() ?: throw Exception("Not authenticated")
-            val newMessage = NewMessageDto(chatId, senderId, content, messageType, mediaUrl, isEncrypted, encryptedContent)
+            val newMessage = NewMessageDto(chatId, senderId, content, messageType, mediaUrl, isEncrypted, encryptedContent, expiresAt)
             client.postgrest.from("messages").insert(newMessage) { select() }.decodeSingle<MessageDto>()
         }
 
@@ -211,6 +269,92 @@ class SupabaseChatDataSource(private val client: SupabaseClientLib = SupabaseCli
         }
     }
 
+
+    suspend fun createGroupChat(name: String, participantIds: List<String>, avatarUrl: String? = null): String? = withContext(Dispatchers.IO) {
+        try {
+            val currentUserId = getCurrentUserId() ?: return@withContext null
+
+            // Create chat entry
+            val newChat = NewChatDto(isGroup = true, name = name, avatarUrl = avatarUrl, createdBy = currentUserId)
+            val chat = client.postgrest.from("chats").insert(newChat) { select() }.decodeSingle<ChatDto>()
+            val chatId = chat.id ?: return@withContext null
+
+            // Create participants
+            val participants = mutableListOf<ChatParticipantDto>()
+            participants.add(ChatParticipantDto(chatId = chatId, userId = currentUserId, isAdmin = true))
+            for (userId in participantIds) {
+                if (userId != currentUserId) {
+                    participants.add(ChatParticipantDto(chatId = chatId, userId = userId))
+                }
+            }
+
+            client.postgrest.from("chat_participants").insert(participants)
+            chatId
+        } catch (e: Exception) {
+            Napier.e("Error creating group chat", e)
+            null
+        }
+    }
+
+    suspend fun getChatInfo(chatId: String): ChatDto? = withContext(Dispatchers.IO) {
+        try {
+            client.postgrest.from("chats").select {
+                filter { eq("id", chatId) }
+                limit(1)
+            }.decodeSingleOrNull<ChatDto>()
+        } catch (e: Exception) {
+            Napier.e("Error fetching chat info $chatId", e)
+            null
+        }
+    }
+
+    suspend fun getGroupMembers(chatId: String): List<Pair<User, Boolean>> = withContext(Dispatchers.IO) {
+        try {
+            val participants = client.postgrest.from("chat_participants").select {
+                filter { eq("chat_id", chatId) }
+            }.decodeList<ChatParticipantDto>()
+
+            val userIds = participants.map { it.userId }
+            if (userIds.isEmpty()) return@withContext emptyList()
+
+            val users = client.postgrest.from("users").select {
+                filter { isIn("uid", userIds) }
+            }.decodeList<User>().associateBy { it.uid }
+
+            participants.mapNotNull { participant ->
+                val user = users[participant.userId]
+                if (user != null) Pair(user, participant.isAdmin) else null
+            }
+        } catch (e: Exception) {
+            Napier.e("Error getting group members", e)
+            emptyList()
+        }
+    }
+
+    suspend fun addGroupMember(chatId: String, userId: String) = withContext(Dispatchers.IO) {
+        try {
+            val participant = ChatParticipantDto(chatId = chatId, userId = userId)
+            client.postgrest.from("chat_participants").insert(participant)
+        } catch (e: Exception) {
+            Napier.e("Error adding group member", e)
+            throw e
+        }
+    }
+
+    suspend fun removeGroupMember(chatId: String, userId: String) = withContext(Dispatchers.IO) {
+        try {
+            client.postgrest.from("chat_participants").delete {
+                filter {
+                    eq("chat_id", chatId)
+                    eq("user_id", userId)
+                }
+            }
+        } catch (e: Exception) {
+            Napier.e("Error removing group member", e)
+            throw e
+        }
+    }
+
     suspend fun markMessagesAsRead(chatId: String) = withContext(Dispatchers.IO) {
         try {
             val currentUserId = getCurrentUserId() ?: return@withContext
@@ -250,11 +394,30 @@ class SupabaseChatDataSource(private val client: SupabaseClientLib = SupabaseCli
         }
     }
 
-    suspend fun editMessage(messageId: String, newContent: String) = withContext(Dispatchers.IO) {
+    suspend fun getMessageById(messageId: String): MessageDto? = withContext(Dispatchers.IO) {
+        try {
+            client.postgrest.from("messages").select {
+                filter { eq("id", messageId) }
+                limit(1)
+            }.decodeSingleOrNull<MessageDto>()
+        } catch (e: Exception) {
+            Napier.e("Error fetching message $messageId", e)
+            null
+        }
+    }
+
+    suspend fun editMessage(
+        messageId: String, 
+        newContent: String, 
+        isEncrypted: Boolean = false, 
+        encryptedContent: String? = null
+    ) = withContext(Dispatchers.IO) {
         try {
             client.postgrest.from("messages").update({
                 set("content", newContent)
                 set("is_edited", true)
+                set("is_encrypted", isEncrypted)
+                set("encrypted_content", encryptedContent)
             }) {
                 filter { eq("id", messageId) }
             }
@@ -264,19 +427,26 @@ class SupabaseChatDataSource(private val client: SupabaseClientLib = SupabaseCli
         }
     }
 
-    suspend fun deleteMessage(messageId: String) = withContext(Dispatchers.IO) {
-        try {
-            client.postgrest.from("messages").update({
-                set("is_deleted", true)
-                set("content", "")
-            }) {
-                filter { eq("id", messageId) }
+    suspend fun deleteMessage(messageId: String): Unit = 
+        withContext(Dispatchers.IO) {
+            try {
+                client.postgrest.from("messages").update({
+                    set("is_deleted", true)
+                }) {
+                    filter { eq("id", messageId) }
+                }
+            } catch (e: Exception) {
+                Napier.e("Error deleting message", e)
+                throw e
             }
-        } catch (e: Exception) {
-            Napier.e("Error deleting message", e)
-            throw e
         }
-    }
+
+    suspend fun deleteMessageForMe(messageId: String): Unit =
+        withContext(Dispatchers.IO) {
+            val userId = getCurrentUserId() ?: throw Exception("Not authenticated")
+            val deletion = UserDeletedMessageDto(messageId = messageId, userId = userId)
+            client.postgrest.from("user_deleted_messages").insert(deletion)
+        }
 
     suspend fun uploadMedia(chatId: String, fileBytes: ByteArray, fileName: String, contentType: String): String =
         withContext(Dispatchers.IO) {
@@ -290,18 +460,24 @@ class SupabaseChatDataSource(private val client: SupabaseClientLib = SupabaseCli
             }
         }
 
-    suspend fun broadcastTypingStatus(chatId: String, isTyping: Boolean, channel: RealtimeChannel) = 
+    suspend fun broadcastTypingStatus(chatId: String, isTyping: Boolean) = 
         withContext(Dispatchers.IO) {
             try {
-                // Typing status via presence - simplified for now
-                // Will be implemented with proper Supabase Presence API
+                val currentUserId = getCurrentUserId() ?: return@withContext
+                val channel = client.realtime.channel("chat-$chatId")
+                
+                // Track typing status
+                channel.track(buildJsonObject {
+                    put("user_id", currentUserId)
+                    put("is_typing", isTyping)
+                })
             } catch (e: Exception) {
                 Napier.e("Error broadcasting typing status", e)
             }
         }
 
     fun subscribeToMessages(chatId: String): Flow<MessageDto> = callbackFlow {
-        val channel = client.realtime.channel("chat-$chatId")
+        val channel = client.realtime.channel("chat-$chatId-${UUIDUtils.randomUUID()}")
         val flow = channel.postgresChangeFlow<PostgresAction.Insert>(schema = "public") {
             table = "messages"
             filter("chat_id", FilterOperator.EQ, chatId)
@@ -337,23 +513,78 @@ class SupabaseChatDataSource(private val client: SupabaseClientLib = SupabaseCli
     }
 
     fun subscribeToInboxUpdates(chatIds: List<String>): Flow<MessageDto> = callbackFlow {
-        if (chatIds.isEmpty()) {
-            close()
-            return@callbackFlow
-        }
-
-        val channel = client.realtime.channel("inbox-updates")
+        val channel = client.realtime.channel("inbox-updates-${UUIDUtils.randomUUID()}")
+        // No filter on chatId here - let Supabase RLS filter it to only messages the user has access to.
+        // This allows us to receive the first message of a NEW chat that wasn't in the 'chatIds' list yet.
         val flow = channel.postgresChangeFlow<PostgresAction.Insert>(schema = "public") {
             table = "messages"
         }
 
         val collector = launch {
-            flow.map { it.decodeRecord<MessageDto>() }
-                .collect { message ->
-                    if (message.chatId in chatIds) {
-                        trySend(message)
+            flow.collect { action ->
+                try {
+                    val message = action.decodeRecord<MessageDto>()
+                    // Even though RLS filters it, we can still filter by chatIds if we want 
+                    // to be very specific, but for Inbox we want to know about ANY chat.
+                    trySend(message)
+                } catch (e: Exception) {
+                    Napier.e("Error decoding real-time message in inbox", e)
+                }
+            }
+        }
+
+        launch {
+            try {
+                channel.subscribe()
+            } catch (e: Exception) {
+                Napier.e("Failed to subscribe to inbox channel", e)
+                close(e)
+            }
+        }
+
+        awaitClose {
+            collector.cancel()
+            launch {
+                try {
+                    channel.unsubscribe()
+                } catch (_: Exception) { }
+            }
+        }
+    }
+
+    fun subscribeToTypingStatus(chatId: String): Flow<Map<String, Any?>> = callbackFlow {
+        val channel = client.realtime.channel("chat-$chatId")
+        
+        val collector = launch {
+            channel.presenceChangeFlow().collect { presenceChange ->
+                presenceChange.joins.values.forEach { presence ->
+                    try {
+                        val state = presence.state
+                        val userId = state["user_id"]?.jsonPrimitive?.contentOrNull
+                        val isTyping = state["is_typing"]?.jsonPrimitive?.booleanOrNull
+                        
+                        if (userId != null && isTyping != null) {
+                            trySend(mapOf("user_id" to userId, "is_typing" to isTyping))
+                        }
+                    } catch (e: Exception) {
+                        Napier.e("Error decoding presence state", e)
                     }
                 }
+                
+                presenceChange.leaves.values.forEach { presence ->
+                    try {
+                        val state = presence.state
+                        val userId = state["user_id"]?.jsonPrimitive?.contentOrNull
+                        
+                        if (userId != null) {
+                            // When user leaves presence, typing status is false
+                            trySend(mapOf("user_id" to userId, "is_typing" to false))
+                        }
+                    } catch (e: Exception) {
+                        Napier.e("Error decoding presence leave state", e)
+                    }
+                }
+            }
         }
 
         launch(Dispatchers.IO) {
@@ -361,13 +592,13 @@ class SupabaseChatDataSource(private val client: SupabaseClientLib = SupabaseCli
                 channel.subscribe()
             } catch (e: Exception) {
                 if (e !is CancellationException) {
-                    Napier.e("Failed to subscribe to inbox", e)
+                    Napier.e("Failed to subscribe to chat presence", e)
                     close(e)
                 }
             }
         }
 
-        awaitClose {
+        awaitClose { 
             collector.cancel()
             launch {
                 try {
@@ -379,13 +610,8 @@ class SupabaseChatDataSource(private val client: SupabaseClientLib = SupabaseCli
         }
     }
 
-    fun subscribeToTypingStatus(chatId: String): Flow<Map<String, Any?>> = callbackFlow {
-        // Simplified - will implement with proper Supabase Presence API
-        awaitClose { }
-    }
-
     fun subscribeToReadReceipts(chatId: String): Flow<MessageDto> = callbackFlow {
-        val channel = client.realtime.channel("read-receipts-$chatId")
+        val channel = client.realtime.channel("read-receipts-$chatId-${UUIDUtils.randomUUID()}")
         val flow = channel.postgresChangeFlow<PostgresAction.Update>(schema = "public") {
             table = "messages"
             filter("chat_id", FilterOperator.EQ, chatId)

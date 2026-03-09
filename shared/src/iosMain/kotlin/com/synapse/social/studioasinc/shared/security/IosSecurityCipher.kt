@@ -6,6 +6,7 @@ import platform.Foundation.*
 import platform.Security.*
 import platform.darwin.OSStatus
 import platform.posix.memcpy
+import platform.CoreFoundation.*
 
 @OptIn(ExperimentalForeignApi::class)
 class IosSecurityCipher : SecurityCipher {
@@ -22,7 +23,7 @@ class IosSecurityCipher : SecurityCipher {
     private val options = kCCOptionPKCS7Padding
 
     private fun getSecretKey(): ByteArray {
-        val query = NSMutableDictionary.create()
+        val query = NSMutableDictionary()
         query.setObject(kSecClassGenericPassword, forKey = kSecClass)
         query.setObject(keyAlias, forKey = kSecAttrAccount)
         query.setObject(kCFBooleanTrue, forKey = kSecReturnData)
@@ -64,7 +65,7 @@ class IosSecurityCipher : SecurityCipher {
         }
 
         val data = key.toNSData()
-        val query = NSMutableDictionary.create()
+        val query = NSMutableDictionary()
         query.setObject(kSecClassGenericPassword, forKey = kSecClass)
         query.setObject(keyAlias, forKey = kSecAttrAccount)
         query.setObject(data, forKey = kSecValueData)
@@ -77,7 +78,7 @@ class IosSecurityCipher : SecurityCipher {
         } else if (status == errSecDuplicateItem) {
              deleteKey()
              // Retry once
-             val retryQuery = NSMutableDictionary.create()
+             val retryQuery = NSMutableDictionary()
              retryQuery.setObject(kSecClassGenericPassword, forKey = kSecClass)
              retryQuery.setObject(keyAlias, forKey = kSecAttrAccount)
              retryQuery.setObject(data, forKey = kSecValueData)
@@ -94,7 +95,7 @@ class IosSecurityCipher : SecurityCipher {
     }
 
     private fun deleteKey() {
-        val query = NSMutableDictionary.create()
+        val query = NSMutableDictionary()
         query.setObject(kSecClassGenericPassword, forKey = kSecClass)
         query.setObject(keyAlias, forKey = kSecAttrAccount)
         SecItemDelete(query as CFDictionaryRef?)

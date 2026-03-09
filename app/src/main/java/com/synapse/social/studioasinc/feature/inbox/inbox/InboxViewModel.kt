@@ -20,7 +20,8 @@ import com.synapse.social.studioasinc.shared.domain.usecase.chat.InitializeE2EUs
 class InboxViewModel @Inject constructor(
     private val getConversationsUseCase: GetConversationsUseCase,
     private val subscribeToInboxUpdatesUseCase: SubscribeToInboxUpdatesUseCase,
-    private val initializeE2EUseCase: InitializeE2EUseCase
+    private val initializeE2EUseCase: InitializeE2EUseCase,
+    private val chatLockManager: com.synapse.social.studioasinc.core.util.ChatLockManager
 ) : ViewModel() {
 
     private val _currentUserProfile = MutableStateFlow<User?>(null)
@@ -61,6 +62,7 @@ class InboxViewModel @Inject constructor(
             getConversationsUseCase().onSuccess { conversationList ->
                 _conversations.value = conversationList
                 _isLoading.value = false
+                subscribeToInboxUpdates()
             }.onFailure { e ->
                 _error.value = "Failed to load conversations: ${e.message}"
                 _isLoading.value = false
@@ -68,15 +70,21 @@ class InboxViewModel @Inject constructor(
         }
     }
 
+    private var inboxSubscriptionJob: kotlinx.coroutines.Job? = null
+
     private fun subscribeToInboxUpdates() {
-        viewModelScope.launch {
-            // Re-load conversations periodically or listen to updates
-            // (A proper inbox flow would map real-time message changes to the conversation list)
-            subscribeToInboxUpdatesUseCase(emptyList()).collect {
+        inboxSubscriptionJob?.cancel()
+        val chatIds = _conversations.value.map { it.chatId }
+        if (chatIds.isEmpty()) return
+
+        inboxSubscriptionJob = viewModelScope.launch {
+            subscribeToInboxUpdatesUseCase(chatIds).collect {
                 loadConversations() // Simple reload on any new message
             }
         }
     }
+
+    fun isChatLocked(chatId: String): Boolean = chatLockManager.isChatLocked(chatId)
 
     fun getFormattedTimestamp(timestamp: String?): String = TimestampFormatter.formatRelative(timestamp)
 }

@@ -23,6 +23,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.res.stringResource
 import coil.compose.AsyncImage
+import com.synapse.social.studioasinc.ui.components.shimmer
 import com.synapse.social.studioasinc.R
 import com.synapse.social.studioasinc.domain.model.StoryWithUser
 import com.synapse.social.studioasinc.domain.model.User
@@ -280,7 +281,7 @@ private fun StoryTrayShimmer(modifier: Modifier = Modifier) {
                     .width(120.dp)
                     .fillMaxHeight()
                     .clip(ShapeDefaults.Large)
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                    .shimmer()
             )
         }
     }

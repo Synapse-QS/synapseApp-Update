@@ -24,6 +24,10 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.flow.filter
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -110,13 +114,21 @@ fun FeedScreen(
         )
     }
 
-    LaunchedEffect(posts.loadState.refresh, storyTrayState.isLoading, isUserRefreshing) {
+    LaunchedEffect(isUserRefreshing) {
         if (isUserRefreshing) {
-            val isPostsDone = posts.loadState.refresh is LoadState.NotLoading || posts.loadState.refresh is LoadState.Error
-            val isStoriesDone = !storyTrayState.isLoading
-            if (isPostsDone && isStoriesDone) {
-                isUserRefreshing = false
+            // Give time for loaders to transition to Loading state
+            kotlinx.coroutines.delay(500)
+            
+            // Wait for both loads to be done, with a safety timeout
+            withTimeoutOrNull(15_000L) {
+                snapshotFlow {
+                    val isPostsDone = posts.loadState.refresh is LoadState.NotLoading || posts.loadState.refresh is LoadState.Error
+                    val isStoriesDone = !storyTrayState.isLoading
+                    isPostsDone && isStoriesDone
+                }.first { it }
             }
+            
+            isUserRefreshing = false
         }
     }
 
@@ -139,7 +151,9 @@ fun FeedScreen(
                 )
             }
         ) {
-        val showLoading = (isRefreshing || posts.loadState.refresh is LoadState.Loading || (posts.itemCount == 0 && !posts.loadState.refresh.endOfPaginationReached)) && posts.itemCount == 0
+        val isInitialLoading = posts.loadState.refresh is LoadState.Loading && posts.itemCount == 0
+        val isPreLoading = posts.loadState.refresh is LoadState.NotLoading && posts.itemCount == 0 && !posts.loadState.refresh.endOfPaginationReached && !posts.loadState.append.endOfPaginationReached
+        val showLoading = (isInitialLoading || isPreLoading) && posts.itemCount == 0 && !isRefreshing
         val showError = posts.loadState.refresh is LoadState.Error && posts.itemCount == 0
         val showEmpty = posts.loadState.refresh is LoadState.NotLoading && 
                         posts.loadState.append.endOfPaginationReached && 

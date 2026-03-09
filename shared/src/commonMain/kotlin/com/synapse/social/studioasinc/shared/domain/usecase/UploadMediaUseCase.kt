@@ -111,7 +111,12 @@ class UploadMediaUseCase(
             if (config.isProviderConfigured(StorageProvider.CLOUDFLARE_R2)) add(StorageProvider.CLOUDFLARE_R2)
             if (config.isProviderConfigured(StorageProvider.CLOUDINARY)) add(StorageProvider.CLOUDINARY)
             if (config.isProviderConfigured(StorageProvider.SUPABASE)) add(StorageProvider.SUPABASE)
-            if (config.isProviderConfigured(StorageProvider.IMGBB)) add(StorageProvider.IMGBB)
+            
+            // ImgBB only supports images
+            if ((mediaType == MediaType.PHOTO || mediaType == MediaType.IMAGE) && 
+                config.isProviderConfigured(StorageProvider.IMGBB)) {
+                add(StorageProvider.IMGBB)
+            }
         }
     }
 

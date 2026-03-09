@@ -36,6 +36,8 @@ class StoryTrayViewModel @Inject constructor(
         loadStories()
     }
 
+    private var loadStoriesJob: kotlinx.coroutines.Job? = null
+
     private fun loadCurrentUser() {
         viewModelScope.launch {
             val userId = currentUserId ?: return@launch
@@ -55,13 +57,17 @@ class StoryTrayViewModel @Inject constructor(
     }
 
     fun loadStories() {
-        val userId = currentUserId ?: return
+        val userId = currentUserId ?: run {
+            _storyTrayState.update { it.copy(isLoading = false) }
+            return
+        }
 
-        viewModelScope.launch {
+        loadStoriesJob?.cancel()
+        loadStoriesJob = viewModelScope.launch {
             _storyTrayState.update { it.copy(isLoading = true, error = null) }
 
             storyRepository.getActiveStories(userId)
-                .flowOn(Dispatchers.IO)
+                .flowOn(kotlinx.coroutines.Dispatchers.IO)
                 .catch { e ->
                     _storyTrayState.update {
                         it.copy(isLoading = false, error = e.message)

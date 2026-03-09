@@ -25,7 +25,7 @@ fun FollowListScreen(
     listType: String,
     onNavigateBack: () -> Unit,
     onUserClick: (String) -> Unit,
-    onMessageClick: (String) -> Unit,
+    onMessageClick: (String, String?) -> Unit,
     viewModel: FollowListViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -104,7 +104,7 @@ fun FollowListScreen(
                             UserListItem(
                                 user = user,
                                 onUserClick = { onUserClick(user.uid) },
-                                onMessageClick = { onMessageClick(user.uid) }
+                                 onMessageClick = { onMessageClick(user.uid, user.displayName ?: user.username) }
                             )
                         }
                     }

@@ -142,7 +142,7 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
-    fun loadProfile(userId: String) {
+    fun loadProfile(userId: String, refresh: Boolean = false) {
         viewModelScope.launch {
             if (!_state.value.isRefreshing) {
                 _state.update { it.copy(profileState = ProfileUiState.Loading) }
@@ -158,7 +158,7 @@ class ProfileViewModel @Inject constructor(
                 )
             }
 
-            getProfileUseCase(userId).collect { result ->
+            getProfileUseCase(userId, refresh).collect { result ->
                 result.onSuccess { profile ->
                     _state.update { it.copy(profileState = ProfileUiState.Success(profile)) }
                     checkStory(userId)
@@ -183,7 +183,7 @@ class ProfileViewModel @Inject constructor(
 
     fun refreshProfile(userId: String) {
         _state.update { it.copy(isRefreshing = true) }
-        loadProfile(userId)
+        loadProfile(userId, refresh = true)
     }
 
     fun followUser(userId: String) {

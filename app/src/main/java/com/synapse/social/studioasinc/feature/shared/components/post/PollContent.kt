@@ -205,7 +205,7 @@ fun AnimatedPollOptionItem(
         if (hasVoted) {
             Box(
                 modifier = Modifier
-                    .fillMaxHeight()
+                    .fillMaxSize()
                     .fillMaxWidth(animatedProgress.coerceIn(0f, 1f))
                     .background(progressGradient)
             )

@@ -13,7 +13,7 @@ import javax.inject.Singleton
 
 @Singleton
 class SettingsPreferences @Inject constructor(
-    context: Context
+    @dagger.hilt.android.qualifiers.ApplicationContext context: Context
 ) {
     private val masterKey = MasterKey.Builder(context)
         .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
@@ -127,5 +127,13 @@ class SettingsPreferences @Inject constructor(
     fun setDataSaver(enabled: Boolean) {
         prefs.edit().putBoolean("data_saver", enabled).apply()
         _dataSaverEnabled.value = enabled
+    }
+
+    fun getLockedChatIds(): Set<String> {
+        return prefs.getStringSet("locked_chat_ids", emptySet()) ?: emptySet()
+    }
+
+    fun setLockedChatIds(chatIds: Set<String>) {
+        prefs.edit().putStringSet("locked_chat_ids", chatIds).apply()
     }
 }

@@ -8,5 +8,7 @@ data class Conversation(
     val lastMessage: String,
     val lastMessageTime: String?,
     val unreadCount: Int = 0,
-    val isOnline: Boolean = false
+    val isOnline: Boolean = false,
+    val isGroup: Boolean = false,
+    val groupMembers: List<String> = emptyList()
 )

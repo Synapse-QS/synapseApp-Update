@@ -5,7 +5,9 @@ import platform.Foundation.*
 import platform.CoreAudioTypes.*
 import kotlinx.cinterop.*
 import platform.posix.memcpy
+import platform.darwin.OSStatus
 
+@OptIn(ExperimentalForeignApi::class, BetaInteropApi::class)
 actual class AudioRecorder {
     private var recorder: AVAudioRecorder? = null
     private var outputUrl: NSURL? = null

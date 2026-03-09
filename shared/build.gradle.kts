@@ -20,14 +20,17 @@ kotlin {
         }
     }
 
-    listOf(
-        iosX64(),
-        iosArm64(),
-        iosSimulatorArm64()
-    ).forEach {
-        it.binaries.framework {
-            baseName = "shared"
-            isStatic = true
+    // Define iOS targets only on Mac OS to avoid build failures on other platforms
+    if (org.gradle.internal.os.OperatingSystem.current().isMacOsX) {
+        listOf(
+            iosX64(),
+            iosArm64(),
+            iosSimulatorArm64()
+        ).forEach {
+            it.binaries.framework {
+                baseName = "shared"
+                isStatic = true
+            }
         }
     }
 
@@ -37,6 +40,9 @@ kotlin {
                 apiVersion = "2.1"
                 languageVersion = "2.1"
                 optIn("kotlin.ExperimentalStdlibApi")
+                optIn("kotlinx.cinterop.ExperimentalForeignApi")
+                optIn("kotlinx.cinterop.BetaInteropApi")
+                optIn("kotlin.experimental.ExperimentalNativeApi")
             }
         }
 
@@ -67,6 +73,7 @@ kotlin {
 
                 // DI
                 implementation("io.insert-koin:koin-core:4.1.1")
+                implementation("javax.inject:javax.inject:1")
 
                 // Settings
                 implementation("com.russhwolf:multiplatform-settings-no-arg:1.3.0")
@@ -102,10 +109,12 @@ kotlin {
             }
         }
 
-        val iosMain by getting {
-            dependencies {
-                implementation("io.ktor:ktor-client-darwin:3.2.2")
-                implementation("app.cash.sqldelight:native-driver:2.2.1")
+        if (org.gradle.internal.os.OperatingSystem.current().isMacOsX) {
+            val iosMain by getting {
+                dependencies {
+                    implementation("io.ktor:ktor-client-darwin:3.2.2")
+                    implementation("app.cash.sqldelight:native-driver:2.2.1")
+                }
             }
         }
     }

@@ -5,7 +5,7 @@ import com.synapse.social.studioasinc.feature.profile.profile.components.MediaIt
 import kotlinx.coroutines.flow.Flow
 
 interface ProfileRepository {
-    fun getProfile(userId: String): Flow<Result<UserProfile>>
+    fun getProfile(userId: String, refresh: Boolean = false): Flow<Result<UserProfile>>
     suspend fun updateProfile(userId: String, profile: UserProfile): Result<UserProfile>
     suspend fun followUser(userId: String, targetUserId: String): Result<Unit>
     suspend fun unfollowUser(userId: String, targetUserId: String): Result<Unit>

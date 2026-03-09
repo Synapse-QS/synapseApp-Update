@@ -30,6 +30,7 @@ object ChatMapper {
         updatedAt = updatedAt,
         readBy = readBy ?: emptyList(),
         isEncrypted = isEncrypted,
-        encryptedContent = encryptedContent
+        encryptedContent = encryptedContent,
+        expiresAt = expiresAt
     )
 }

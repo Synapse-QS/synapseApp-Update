@@ -10,7 +10,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Stable
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
@@ -72,6 +71,7 @@ data class PostCardState(
     val repliesCount: Int = 0,
     val depth: Int = 0,
     val showThreadLine: Boolean = false,
+    val isThreadChild: Boolean = false,
     val isLastReply: Boolean = false
 )
 
@@ -101,16 +101,12 @@ fun PostCard(
         if (state.isComment) 40.dp else 48.dp
     }
 
-    val indentation = remember(state.depth) {
-        if (state.depth > 0) (state.depth * 16).dp else 0.dp
-    }
-
     Column(
         modifier = modifier
             .fillMaxWidth()
             .background(MaterialTheme.colorScheme.background)
             .clickable(onClick = onPostClick)
-            .padding(start = indentation)
+            // No horizontal padding offset: avatars align fully to the left in X style
     ) {
         if (state.repostedBy != null) {
             Row(
@@ -134,20 +130,26 @@ fun PostCard(
             }
         }
  
-        // Main layout Row: Avatar on left, content on right
+        // Outline colors for Canvas
         val lineColor = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+
+        // Main layout Row: Avatar on left, content on right
         Row(
             modifier = Modifier
                 .fillMaxWidth()
                 .drawBehind {
-                    if (state.showThreadLine) {
+                    if (state.showThreadLine || state.isThreadChild) {
                         val strokeWidth = 2.dp.toPx()
-                        val paddingPx = Spacing.SmallMedium.toPx()
-                        val centerX = paddingPx + (avatarSize.toPx() / 2f)
-                        val avatarCenterY = Spacing.Small.toPx() + (avatarSize.toPx() / 2f)
+                        // Calculate center X of the avatar using padding + half avatar width
+                        val paddingX = Spacing.SmallMedium.toPx()
+                        val paddingY = Spacing.Small.toPx()
+                        val avatarRadius = (avatarSize / 2).toPx()
                         
-                        // Line above (only for comments after the root parent)
-                        if (state.isComment && state.depth >= 0) {
+                        val centerX = paddingX + avatarRadius
+                        val avatarCenterY = paddingY + avatarRadius
+
+                        // Line above (only if this is a direct thread child connecting to its parent)
+                        if (state.isComment && state.isThreadChild) {
                             drawLine(
                                 color = lineColor,
                                 start = Offset(centerX, 0f),
@@ -156,8 +158,8 @@ fun PostCard(
                             )
                         }
                         
-                        // Line below (if there are more replies or thread continues)
-                        if (!state.isLastReply) {
+                        // Line below (if the thread continues to a child)
+                        if (state.showThreadLine) {
                             drawLine(
                                 color = lineColor,
                                 start = Offset(centerX, avatarCenterY),
@@ -171,7 +173,8 @@ fun PostCard(
         ) {
             // Left Column: Avatar
             Box(
-                modifier = Modifier.width(avatarSize),
+                modifier = Modifier
+                    .width(avatarSize),
                 contentAlignment = Alignment.TopCenter
             ) {
                 CircularAvatar(
@@ -248,7 +251,7 @@ fun PostCard(
             }
         }
 
-        if (!state.showThreadLine || state.isLastReply) {
+        if (!state.showThreadLine) {
             HorizontalDivider(
                 modifier = Modifier.padding(horizontal = Spacing.SmallMedium),
                 color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f),

@@ -14,6 +14,7 @@ import androidx.compose.material.icons.outlined.Group
 import androidx.compose.material3.*
 import androidx.compose.ui.res.stringResource
 import com.synapse.social.studioasinc.R
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
@@ -28,9 +29,11 @@ import kotlinx.coroutines.launch
 @Composable
 fun InboxScreen(
     onNavigateToProfile: (String) -> Unit,
-    onNavigateToChat: (String, String?) -> Unit,
+    onNavigateToChat: (String, String?, String?) -> Unit,
+    onNavigateToCreateGroup: () -> Unit = {},
     viewModel: InboxViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val currentUserProfile by viewModel.currentUserProfile.collectAsState()
     val conversations by viewModel.conversations.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -44,6 +47,12 @@ fun InboxScreen(
         modifier = Modifier
             .fillMaxSize()
             .nestedScroll(scrollBehavior.nestedScrollConnection),
+
+        floatingActionButton = {
+            FloatingActionButton(onClick = onNavigateToCreateGroup) {
+                Icon(Icons.Filled.Group, contentDescription = "Create Group")
+            }
+        },
         topBar = {
             InboxTopAppBar(
                 title = stringResource(R.string.title_inbox),
@@ -110,9 +119,24 @@ fun InboxScreen(
                     conversations = conversations,
                     isLoading = isLoading,
                     error = error,
-                    onConversationClick = { chatId, userId ->
-                        onNavigateToChat(chatId, userId)
+                    onConversationClick = { chatId, userId, userName ->
+                        if (viewModel.isChatLocked(chatId)) {
+                            val activity = (context as? androidx.fragment.app.FragmentActivity)
+                            if (activity != null) {
+                                val chatLockManager = com.synapse.social.studioasinc.core.util.ChatLockManager(
+                                    com.synapse.social.studioasinc.data.preferences.SettingsPreferences(context)
+                                )
+                                chatLockManager.authenticate(
+                                    activity = activity,
+                                    onSuccess = { onNavigateToChat(chatId, userId, userName) },
+                                    onError = { /* Handle error, maybe show Snackbar */ }
+                                )
+                            }
+                        } else {
+                            onNavigateToChat(chatId, userId, userName)
+                        }
                     },
+                    isLocked = { viewModel.isChatLocked(it) },
                     onRetry = { viewModel.loadConversations() }
                 )
                 1 -> CallsTabScreen()

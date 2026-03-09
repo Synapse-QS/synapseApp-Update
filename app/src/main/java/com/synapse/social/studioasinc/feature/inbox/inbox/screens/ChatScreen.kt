@@ -9,18 +9,25 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.ClickableText
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.automirrored.filled.Send
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.LockOpen
+import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -36,9 +43,27 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
+import android.provider.OpenableColumns
 import coil.compose.AsyncImage
+import androidx.compose.ui.res.stringResource
+import com.synapse.social.studioasinc.R
 import com.synapse.social.studioasinc.feature.inbox.inbox.ChatViewModel
+import com.synapse.social.studioasinc.shared.domain.model.chat.DisappearingMode
 import com.synapse.social.studioasinc.shared.domain.model.chat.Message
+import com.synapse.social.studioasinc.shared.domain.model.chat.MessageType
+import com.synapse.social.studioasinc.shared.domain.service.AudioRecorder
+import kotlinx.coroutines.delay
+import androidx.media3.exoplayer.ExoPlayer
+import androidx.media3.common.MediaItem
+import androidx.media3.common.Player
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.media3.ui.PlayerView
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
+import java.io.File
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -49,7 +74,9 @@ import kotlin.math.abs
 fun ChatScreen(
     chatId: String,
     participantId: String? = null,
+    initialParticipantName: String? = null,
     onNavigateBack: () -> Unit,
+    onNavigateToGroupInfo: (String, String) -> Unit = { _, _ -> },
     viewModel: ChatViewModel = hiltViewModel()
 ) {
     // Initialize the ViewModel with the chat ID
@@ -62,9 +89,58 @@ fun ChatScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val participantProfile by viewModel.participantProfile.collectAsState()
     val error by viewModel.error.collectAsState()
+    val editingMessage by viewModel.editingMessage.collectAsState()
+    val typingStatus by viewModel.typingStatus.collectAsState()
+    val smartReplies by viewModel.smartReplies.collectAsState()
+    val chatSummary by viewModel.chatSummary.collectAsState()
     val currentUserId = viewModel.currentUserId ?: ""
 
+    var selectedMessageForMenu by remember { mutableStateOf<Message?>(null) }
+
     val listState = rememberLazyListState()
+    val context = LocalContext.current
+
+    val handleFileSelection = { uri: Uri?, type: String ->
+        uri?.let {
+            val contentResolver = context.contentResolver
+            val mimeType = contentResolver.getType(it) ?: ""
+            var fileName = "attachment"
+            contentResolver.query(it, null, null, null, null)?.use { cursor ->
+                if (cursor.moveToFirst()) {
+                    val index = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    if (index >= 0) fileName = cursor.getString(index)
+                }
+            }
+
+            val bytes = contentResolver.openInputStream(it)?.readBytes()
+            if (bytes != null) {
+                viewModel.uploadAndSendMedia(
+                    fileBytes = bytes,
+                    fileName = fileName,
+                    contentType = mimeType,
+                    messageType = type
+                )
+            }
+        }
+    }
+
+    val visualMediaLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.PickVisualMedia()
+    ) { uri ->
+        val type = context.contentResolver.getType(uri ?: return@rememberLauncherForActivityResult) ?: ""
+        val messageType = if (type.startsWith("video/")) "video" else "image"
+        handleFileSelection(uri, messageType)
+    }
+
+    val documentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri ->
+        val type = context.contentResolver.getType(uri ?: return@rememberLauncherForActivityResult) ?: ""
+        val messageType = if (type.startsWith("audio/")) "audio" else "file"
+        handleFileSelection(uri, messageType)
+    }
+
+    var showAttachmentMenu by remember { mutableStateOf(false) }
 
     // Auto-scroll to bottom when new messages arrive
     LaunchedEffect(messages.size) {
@@ -93,16 +169,19 @@ fun ChatScreen(
                             Text(
                                 text = participantProfile?.displayName
                                     ?: participantProfile?.username
+                                    ?: initialParticipantName
                                     ?: participantId ?: "Chat",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold
                             )
-                            val statusText = when (participantProfile?.status?.name) {
-                                "ONLINE" -> "Online"
+                            val statusText = when {
+                                typingStatus != null && typingStatus!!.isTyping -> "Typing..."
+                                participantProfile?.status?.name == "ONLINE" -> "Online"
                                 else -> participantProfile?.lastSeen?.let { "Last seen ${formatChatTimestamp(it)}" } ?: "Offline"
                             }
-                            val statusColor = when (participantProfile?.status?.name) {
-                                "ONLINE" -> Color(0xFF4CAF50)
+                            val statusColor = when {
+                                typingStatus != null && typingStatus!!.isTyping -> MaterialTheme.colorScheme.primary
+                                participantProfile?.status?.name == "ONLINE" -> Color(0xFF4CAF50)
                                 else -> MaterialTheme.colorScheme.onSurfaceVariant
                             }
                             Text(
@@ -118,6 +197,53 @@ fun ChatScreen(
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                     }
                 },
+                actions = {
+                    IconButton(onClick = viewModel::summarizeChat) {
+                        Icon(Icons.Default.AutoAwesome, contentDescription = "Summarize Chat")
+                    }
+                    IconButton(onClick = { onNavigateToGroupInfo(chatId, participantProfile?.displayName ?: initialParticipantName ?: "Group") }) {
+                        Icon(Icons.Default.Info, contentDescription = "Group Info")
+                    }
+                    var showMoreMenu by remember { mutableStateOf(false) }
+                    IconButton(onClick = { showMoreMenu = true }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "More options")
+                    }
+                    DropdownMenu(
+                        expanded = showMoreMenu,
+                        onDismissRequest = { showMoreMenu = false }
+                    ) {
+                        val disappearingMode by viewModel.disappearingMode.collectAsState()
+                        DropdownMenuItem(
+                            text = { Text("Disappearing Messages (${disappearingMode.name})") },
+                            leadingIcon = { Icon(Icons.Default.Timer, contentDescription = null) },
+                            onClick = {
+                                // For simplicity, cycle through modes in this exercise
+                                val nextMode = when (disappearingMode) {
+                                    DisappearingMode.OFF -> DisappearingMode.TWENTY_FOUR_HOURS
+                                    DisappearingMode.TWENTY_FOUR_HOURS -> DisappearingMode.SEVEN_DAYS
+                                    DisappearingMode.SEVEN_DAYS -> DisappearingMode.OFF
+                                    else -> DisappearingMode.OFF
+                                }
+                                viewModel.setDisappearingMode(nextMode)
+                                showMoreMenu = false
+                            }
+                        )
+                        val isLocked = viewModel.isChatLocked()
+                        DropdownMenuItem(
+                            text = { Text(if (isLocked) "Unlock Chat" else "Lock Chat") },
+                            leadingIcon = { Icon(if (isLocked) Icons.Default.LockOpen else Icons.Default.Lock, contentDescription = null) },
+                            onClick = {
+                                if (isLocked) viewModel.unlockCurrentChat() else viewModel.lockCurrentChat()
+                                showMoreMenu = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Mute Notifications") },
+                            leadingIcon = { Icon(Icons.Default.NotificationsOff, contentDescription = null) },
+                            onClick = { showMoreMenu = false }
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.surface,
                     titleContentColor = MaterialTheme.colorScheme.onSurface
@@ -129,17 +255,124 @@ fun ChatScreen(
                 tonalElevation = 3.dp,
                 modifier = Modifier.imePadding() // Key for keyboard behavior
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
+                Column {
+                    // Editing Header
+                    // Smart Replies
+                    AnimatedVisibility(
+                        visible = smartReplies.isNotEmpty() && inputText.isEmpty(),
+                        enter = expandVertically() + fadeIn(),
+                        exit = shrinkVertically() + fadeOut()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .horizontalScroll(rememberScrollState())
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            smartReplies.forEach { reply ->
+                                AssistChip(
+                                    onClick = {
+                                        viewModel.onInputTextChange(reply)
+                                        viewModel.sendMessage()
+                                    },
+                                    label = { Text(reply) },
+                                    leadingIcon = {
+                                        Icon(
+                                            Icons.Default.AutoAwesome,
+                                            contentDescription = null,
+                                            modifier = Modifier.size(AssistChipDefaults.IconSize)
+                                        )
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    // Editing Header
+                    AnimatedVisibility(
+                        visible = editingMessage != null,
+                        enter = expandVertically() + fadeIn(),
+                        exit = shrinkVertically() + fadeOut()
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Edit,
+                                contentDescription = null,
+                                modifier = Modifier.size(16.dp),
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "Editing message",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                Text(
+                                    text = editingMessage?.content ?: "",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    maxLines = 1,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                )
+                            }
+                            IconButton(onClick = viewModel::cancelEditing) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Cancel edit",
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                    }
+                    
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                    Box {
+                        IconButton(onClick = { showAttachmentMenu = true }) {
+                            Icon(Icons.Default.Add, contentDescription = "Attach file")
+                        }
+                        DropdownMenu(
+                            expanded = showAttachmentMenu,
+                            onDismissRequest = { showAttachmentMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Gallery (Image/Video)") },
+                                onClick = {
+                                    showAttachmentMenu = false
+                                    visualMediaLauncher.launch(
+                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)
+                                    )
+                                },
+                                leadingIcon = { Icon(Icons.Default.Image, contentDescription = null) }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Document / File") },
+                                onClick = {
+                                    showAttachmentMenu = false
+                                    documentLauncher.launch("*/*")
+                                },
+                                leadingIcon = { Icon(Icons.Default.InsertDriveFile, contentDescription = null) }
+                            )
+                        }
+                    }
+
                     TextField(
                         value = inputText,
                         onValueChange = viewModel::onInputTextChange,
                         modifier = Modifier.weight(1f),
-                        placeholder = { Text("Type a message...") },
+                        placeholder = { Text(stringResource(R.string.chat_type_message)) },
                         colors = TextFieldDefaults.colors(
                             focusedContainerColor = Color.Transparent,
                             unfocusedContainerColor = Color.Transparent,
@@ -163,12 +396,14 @@ fun ChatScreen(
                         contentColor = MaterialTheme.colorScheme.onPrimary
                     ) {
                         Box(contentAlignment = Alignment.Center) {
-                            Icon(Icons.AutoMirrored.Filled.Send, contentDescription = "Send", modifier = Modifier.size(20.dp))
+                            val icon = if (editingMessage != null) Icons.Default.Check else Icons.AutoMirrored.Filled.Send
+                            Icon(icon, contentDescription = if (editingMessage != null) "Save" else "Send", modifier = Modifier.size(20.dp))
                         }
                     }
                 }
             }
         }
+    }
     ) { paddingValues ->
         Box(
             modifier = Modifier
@@ -223,11 +458,82 @@ fun ChatScreen(
                             MessageBubble(
                                 message = message,
                                 isFromMe = message.isFromMe(currentUserId),
-                                position = position
+                                position = position,
+                                onLongClick = {
+                                    if (message.isFromMe(currentUserId)) {
+                                        selectedMessageForMenu = message
+                                    }
+                                }
                             )
                         }
                     }
+
+                    // Context Menu for messages
+                    if (selectedMessageForMenu != null) {
+                        AlertDialog(
+                            onDismissRequest = { selectedMessageForMenu = null },
+                            title = { Text("Message Options") },
+                            text = {
+                                Column {
+                                    ListItem(
+                                        headlineContent = { Text("Edit") },
+                                        leadingContent = { Icon(Icons.Default.Edit, contentDescription = null) },
+                                        modifier = Modifier.clickable {
+                                            selectedMessageForMenu?.let { viewModel.startEditing(it) }
+                                            selectedMessageForMenu = null
+                                        }
+                                    )
+                                    DropdownMenuItem(
+                                        text = { Text("Delete for Me") },
+                                        leadingIcon = { Icon(Icons.Default.Delete, contentDescription = null) },
+                                        onClick = {
+                                            selectedMessageForMenu?.let { viewModel.deleteMessageForMe(it.id!!) }
+                                            selectedMessageForMenu = null
+                                        }
+                                    )
+                                    val isFromMe = selectedMessageForMenu?.senderId == currentUserId
+                                    if (isFromMe) {
+                                        DropdownMenuItem(
+                                            text = { Text("Delete for Everyone", color = MaterialTheme.colorScheme.error) },
+                                            leadingIcon = { Icon(Icons.Default.DeleteForever, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+                                            onClick = {
+                                                selectedMessageForMenu?.let { viewModel.deleteMessage(it.id!!) }
+                                                selectedMessageForMenu = null
+                                            }
+                                        )
+                                    }
+                                }
+                            },
+                            confirmButton = {
+                                TextButton(onClick = { selectedMessageForMenu = null }) {
+                                    Text("Cancel")
+                                }
+                            }
+                        )
+                    }
                 }
+            }
+
+            // Chat Summary Dialog
+            if (chatSummary != null) {
+                AlertDialog(
+                    onDismissRequest = { viewModel.clearSummary() },
+                    title = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Chat Summary")
+                        }
+                    },
+                    text = {
+                        Text(chatSummary ?: "")
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { viewModel.clearSummary() }) {
+                            Text("Close")
+                        }
+                    }
+                )
             }
         }
     }
@@ -248,11 +554,13 @@ private fun isWithinTimeThreshold(timeStr1: String?, timeStr2: String?): Boolean
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MessageBubble(
     message: Message,
     isFromMe: Boolean,
-    position: GroupPosition = GroupPosition.SINGLE
+    position: GroupPosition = GroupPosition.SINGLE,
+    onLongClick: () -> Unit = {}
 ) {
     val alignment = if (isFromMe) Alignment.CenterEnd else Alignment.CenterStart
     val containerColor = if (isFromMe) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.secondaryContainer
@@ -275,7 +583,17 @@ fun MessageBubble(
         }
     }
 
-    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = alignment) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .combinedClickable(
+                onLongClick = onLongClick,
+                onClick = {}, // Required for combinedClickable to work
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null
+            ),
+        contentAlignment = alignment
+    ) {
         Surface(
             color = containerColor,
             contentColor = contentColor,
@@ -285,54 +603,107 @@ fun MessageBubble(
         ) {
             Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
 
-                val annotatedString = buildAnnotatedString {
-                    val urlRegex = Regex("(https?://[a-zA-Z0-9-._~:/?#\\[\\]@!$&'()*+,;=%]+)|(www\\.[a-zA-Z0-9-._~:/?#\\[\\]@!$&'()*+,;=%]+)")
-                    var lastIndex = 0
-
-                    urlRegex.findAll(message.content).forEach { matchResult ->
-                        append(message.content.substring(lastIndex, matchResult.range.first))
-
-                        val url = matchResult.value
-                        val fullUrl = if (!url.startsWith("http://") && !url.startsWith("https://")) {
-                            "https://$url"
-                        } else {
-                            url
-                        }
-
-                        pushStringAnnotation(tag = "URL", annotation = fullUrl)
-                        withStyle(style = SpanStyle(textDecoration = TextDecoration.Underline)) {
-                            append(url)
-                        }
-                        pop()
-
-                        lastIndex = matchResult.range.last + 1
-                    }
-                    append(message.content.substring(lastIndex))
-                }
-
                 val uriHandler = LocalUriHandler.current
                 val context = LocalContext.current
 
-                ClickableText(
-                    text = annotatedString,
-                    style = androidx.compose.ui.text.TextStyle(
-                        color = contentColor,
-                        fontSize = 15.sp,
-                    ),
-                    onClick = { offset ->
-                        annotatedString.getStringAnnotations(tag = "URL", start = offset, end = offset)
-                            .firstOrNull()?.let { annotation ->
-                                try {
-                                    uriHandler.openUri(annotation.item)
-                                } catch (e: Exception) {
-                                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(annotation.item))
-                                    if (intent.resolveActivity(context.packageManager) != null) {
-                                        context.startActivity(intent)
-                                    }
+                when (message.messageType) {
+                    MessageType.IMAGE -> {
+                        AsyncImage(
+                            model = message.mediaUrl,
+                            contentDescription = "Image message",
+                            contentScale = ContentScale.Crop,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(max = 200.dp)
+                                .clip(RoundedCornerShape(8.dp))
+                                .clickable {
+                                    message.mediaUrl?.let { uriHandler.openUri(it) }
                                 }
-                            }
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
                     }
-                )
+                    MessageType.VIDEO -> {
+                        message.mediaUrl?.let {
+                            VideoPlayerBox(mediaUrl = it)
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
+                    MessageType.AUDIO -> {
+                        message.mediaUrl?.let {
+                            AudioPlayer(mediaUrl = it, tintColor = contentColor)
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
+                    MessageType.FILE -> {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(vertical = 4.dp).clickable {
+                                message.mediaUrl?.let { uriHandler.openUri(it) }
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.InsertDriveFile,
+                                contentDescription = stringResource(R.string.chat_cd_file),
+                                tint = contentColor
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                text = message.content.ifEmpty { stringResource(R.string.chat_media_attachment) },
+                                color = contentColor,
+                                maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                    }
+                    else -> {
+                        val annotatedString = buildAnnotatedString {
+                            val urlRegex = Regex("(https?://[a-zA-Z0-9-._~:/?#\\[\\]@!$&'()*+,;=%]+)|(www\\.[a-zA-Z0-9-._~:/?#\\[\\]@!$&'()*+,;=%]+)")
+                            var lastIndex = 0
+
+                            urlRegex.findAll(message.content).forEach { matchResult ->
+                                append(message.content.substring(lastIndex, matchResult.range.first))
+
+                                val url = matchResult.value
+                                val fullUrl = if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                                    "https://$url"
+                                } else {
+                                    url
+                                }
+
+                                pushStringAnnotation(tag = "URL", annotation = fullUrl)
+                                withStyle(style = SpanStyle(textDecoration = TextDecoration.Underline)) {
+                                    append(url)
+                                }
+                                pop()
+
+                                lastIndex = matchResult.range.last + 1
+                            }
+                            append(message.content.substring(lastIndex))
+                        }
+
+                        ClickableText(
+                            text = annotatedString,
+                            style = androidx.compose.ui.text.TextStyle(
+                                color = contentColor,
+                                fontSize = 15.sp,
+                            ),
+                            onClick = { offset ->
+                                annotatedString.getStringAnnotations(tag = "URL", start = offset, end = offset)
+                                    .firstOrNull()?.let { annotation ->
+                                        try {
+                                            uriHandler.openUri(annotation.item)
+                                        } catch (e: Exception) {
+                                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(annotation.item))
+                                            if (intent.resolveActivity(context.packageManager) != null) {
+                                                context.startActivity(intent)
+                                            }
+                                        }
+                                    }
+                            }
+                        )
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(2.dp))
                 Row(
@@ -340,12 +711,28 @@ fun MessageBubble(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
+                    if (message.expiresAt != null) {
+                        Icon(
+                            imageVector = Icons.Default.Timer,
+                            contentDescription = "Disappearing Message",
+                            modifier = Modifier.size(10.dp),
+                            tint = contentColor.copy(alpha = 0.6f)
+                        )
+                    }
                     if (message.isEncrypted) {
                         Icon(
                             imageVector = Icons.Filled.Lock,
                             contentDescription = "End-to-End Encrypted",
                             modifier = Modifier.size(10.dp),
                             tint = contentColor.copy(alpha = 0.6f)
+                        )
+                    }
+                    if (message.isEdited) {
+                        Text(
+                            text = "Edited",
+                            fontSize = 11.sp,
+                            color = contentColor.copy(alpha = 0.6f),
+                            fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
                         )
                     }
                     Text(
@@ -395,5 +782,140 @@ private fun formatChatTimestamp(isoTimestamp: String): String {
         formatter.format(instant)
     } catch (e: Exception) {
         ""
+    }
+}
+
+@Composable
+fun AudioPlayer(mediaUrl: String, tintColor: Color, viewModel: com.synapse.social.studioasinc.feature.shared.reels.VideoPlayerViewModel = hiltViewModel(key = mediaUrl)) {
+    val uiState by viewModel.uiState.collectAsState()
+    val isPlaying = uiState.isPlaying
+    val durationMs = uiState.duration
+    val currentPositionMs = uiState.currentPosition
+
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_PAUSE || event == androidx.lifecycle.Lifecycle.Event.ON_STOP) {
+                viewModel.pause()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    LaunchedEffect(mediaUrl) {
+        viewModel.initializePlayer(mediaUrl)
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.releasePlayer()
+        }
+    }
+
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(48.dp)
+            .padding(horizontal = 8.dp)
+    ) {
+        IconButton(
+            onClick = {
+                if (isPlaying) {
+                    viewModel.pause()
+                } else {
+                    viewModel.play()
+                }
+            }
+        ) {
+            Icon(
+                imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                contentDescription = stringResource(if (isPlaying) R.string.chat_action_pause_audio else R.string.chat_action_play_audio),
+                tint = tintColor
+            )
+        }
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        // Simple progress bar
+        val progress = if (durationMs > 0) currentPositionMs.toFloat() / durationMs.toFloat() else 0f
+        LinearProgressIndicator(
+            progress = { progress },
+            modifier = Modifier
+                .weight(1f)
+                .height(4.dp)
+                .clip(RoundedCornerShape(2.dp)),
+            color = tintColor,
+            trackColor = tintColor.copy(alpha = 0.3f)
+        )
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        // Time display
+        val displayTimeMs = if (isPlaying) currentPositionMs else durationMs
+        val totalSeconds = displayTimeMs / 1000
+        val m = totalSeconds / 60
+        val s = totalSeconds % 60
+        Text(
+            text = String.format("%02d:%02d", m, s),
+            color = tintColor,
+            style = MaterialTheme.typography.bodySmall
+        )
+    }
+}
+
+@Composable
+fun VideoPlayerBox(mediaUrl: String, viewModel: com.synapse.social.studioasinc.feature.shared.reels.VideoPlayerViewModel = hiltViewModel(key = mediaUrl)) {
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_PAUSE || event == androidx.lifecycle.Lifecycle.Event.ON_STOP) {
+                viewModel.pause()
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
+    LaunchedEffect(mediaUrl) {
+        viewModel.initializePlayer(mediaUrl)
+    }
+
+    DisposableEffect(Unit) {
+        onDispose {
+            viewModel.releasePlayer()
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(max = 240.dp)
+            .clip(RoundedCornerShape(8.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+    ) {
+        val player = viewModel.getPlayerInstance()
+        if (player != null) {
+            AndroidView(
+                factory = {
+                    PlayerView(it).apply {
+                        this.player = player
+                        useController = true
+                        resizeMode = androidx.media3.ui.AspectRatioFrameLayout.RESIZE_MODE_FIT
+                    }
+                },
+                update = { view ->
+                    view.player = player
+                },
+                modifier = Modifier.fillMaxSize()
+            )
+        }
     }
 }

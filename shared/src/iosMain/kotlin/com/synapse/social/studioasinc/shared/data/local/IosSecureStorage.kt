@@ -4,6 +4,7 @@ import kotlinx.cinterop.*
 import platform.Foundation.*
 import platform.Security.*
 import platform.darwin.OSStatus
+import platform.CoreFoundation.*
 
 @OptIn(ExperimentalForeignApi::class)
 class IosSecureStorage : SecureStorage {
@@ -14,7 +15,7 @@ class IosSecureStorage : SecureStorage {
         val query = keyChainQuery(key)
         val data = value.toNSData()
 
-        val attributesToUpdate = NSMutableDictionary.create()
+        val attributesToUpdate = NSMutableDictionary()
         attributesToUpdate.setObject(data, forKey = kSecValueData)
 
         val status = SecItemUpdate(query as CFDictionaryRef?, attributesToUpdate as CFDictionaryRef?)
@@ -42,9 +43,9 @@ class IosSecureStorage : SecureStorage {
             if (status == errSecSuccess) {
                 val data = result.value
 
-                val nsData = data?.let { CFBridgingRelease(it) as? NSData }
+                val nsData = data?.let { (it as? NSData) }
                 nsData?.let {
-                    NSString.create(data = it, encoding = NSUTF8StringEncoding)?.toString()
+                    NSString.stringWithData(it, encoding = NSUTF8StringEncoding)?.toString()
                 }
             } else {
                 null
@@ -61,7 +62,7 @@ class IosSecureStorage : SecureStorage {
     }
 
     private fun keyChainQuery(key: String): NSMutableDictionary {
-        val query = NSMutableDictionary.create()
+        val query = NSMutableDictionary()
         query.setObject(kSecClassGenericPassword, forKey = kSecClass)
         query.setObject(serviceName(), forKey = kSecAttrService)
         query.setObject(key, forKey = kSecAttrAccount)
@@ -69,6 +70,6 @@ class IosSecureStorage : SecureStorage {
     }
 
     private fun String.toNSData(): NSData {
-        return NSString.create(string = this).dataUsingEncoding(NSUTF8StringEncoding)!!
+        return (this as NSString).dataUsingEncoding(NSUTF8StringEncoding)!!
     }
 }

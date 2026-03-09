@@ -20,7 +20,7 @@ actual class FileUploader {
     @OptIn(DelicateCoroutinesApi::class)
     actual suspend fun readFile(path: String, offset: Long): ByteReadChannel {
         return GlobalScope.writer(Dispatchers.Default) {
-            val inputStream = NSInputStream(fileAtPath = path)
+            val inputStream = NSInputStream.inputStreamWithFileAtPath(path)
             if (inputStream == null) {
                 channel.close(Exception("Failed to open file at $path"))
                 return@writer
@@ -29,7 +29,7 @@ actual class FileUploader {
             inputStream.open()
 
             if (offset > 0) {
-                inputStream.setProperty(offset, forKey = NSStreamFileCurrentOffsetKey)
+                inputStream.setProperty(NSNumber(longLong = offset), forKey = NSStreamFileCurrentOffsetKey)
             }
 
             try {
@@ -38,7 +38,7 @@ actual class FileUploader {
 
                 while (isActive) {
                     val read = buffer.usePinned { pinned ->
-                        inputStream.read(pinned.addressOf(0).reinterpret(), bufferSize.toULong())
+                        inputStream.read(pinned.addressOf(0).reinterpret<UByteVar>(), bufferSize.toULong())
                     }
                     if (read > 0) {
                         channel.writeFully(buffer, 0, read.toInt())

@@ -13,6 +13,7 @@ import io.github.jan.supabase.realtime.realtime
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.async
 import com.synapse.social.studioasinc.shared.data.crypto.SignalProtocolManager
 import com.synapse.social.studioasinc.shared.data.crypto.models.EncryptedMessage
 import com.synapse.social.studioasinc.shared.data.crypto.models.PreKeyBundle
@@ -60,28 +61,43 @@ class SupabaseChatRepository(
 
     override suspend fun getConversations(): Result<List<Conversation>> = try {
         val currentUserId = getCurrentUserId() ?: throw Exception("Not logged in")
-        val conversations = dataSource.getConversations().map { (participation, user) ->
-            var lastMessageText = "No messages yet"
-            val lastMessage = dataSource.getLastMessage(participation.chatId)
-            
-            if (lastMessage != null) {
-                val decryptedDto = lastMessage.decryptIfNecessary(currentUserId)
-                lastMessageText = decryptedDto.content
-            }
-            
-            val unreadCount = dataSource.getUnreadCount(participation.chatId, participation.lastReadAt)
-            
-            Conversation(
-                chatId = participation.chatId,
-                participantId = user?.uid ?: "",
-                participantName = user?.displayName ?: user?.username ?: "Unknown",
-                participantAvatar = user?.avatar,
-                lastMessage = lastMessageText,
-                lastMessageTime = lastMessage?.createdAt,
-                unreadCount = unreadCount,
-                isOnline = user?.status?.name == "ONLINE"
-            )
-        }.sortedByDescending { it.lastMessageTime }
+        val conversationData = dataSource.getConversations()
+        
+        val conversations = kotlinx.coroutines.coroutineScope {
+            conversationData.map { (participation, user, chatInfo) ->
+                async {
+                    var lastMessageText = "No messages yet"
+                    val lastMessage = dataSource.getLastMessage(participation.chatId)
+                    
+                    if (lastMessage != null) {
+                        try {
+                            val decryptedDto = lastMessage.decryptIfNecessary(currentUserId)
+                            lastMessageText = decryptedDto.content
+                        } catch (e: Exception) {
+                            lastMessageText = "Encrypted message"
+                        }
+                    }
+                    
+                    val unreadCount = dataSource.getUnreadCount(participation.chatId, participation.lastReadAt)
+                    
+                    val isGroup = chatInfo?.isGroup ?: false
+                    val groupName = chatInfo?.name
+                    val groupAvatar = chatInfo?.avatarUrl
+
+                    Conversation(
+                        chatId = participation.chatId,
+                        participantId = user?.uid ?: participation.userId,
+                        participantName = if (isGroup) groupName ?: "Group Chat" else (user?.displayName ?: user?.username ?: "Unknown"),
+                        participantAvatar = if (isGroup) groupAvatar else user?.avatar,
+                        lastMessage = lastMessageText,
+                        lastMessageTime = lastMessage?.createdAt,
+                        unreadCount = unreadCount,
+                        isOnline = if (isGroup) false else (user?.status?.name == "ONLINE"),
+                        isGroup = isGroup
+                    )
+                }
+            }.map { it.await() }
+        }.sortedByDescending { it.lastMessageTime ?: "" } // Use empty string to sort nulls to bottom
         
         Result.success(conversations)
     } catch (e: Exception) {
@@ -103,7 +119,13 @@ class SupabaseChatRepository(
         Result.failure(e)
     }
 
-    override suspend fun sendMessage(chatId: String, content: String, mediaUrl: String?, messageType: String): Result<Message> = try {
+    override suspend fun sendMessage(
+        chatId: String, 
+        content: String, 
+        mediaUrl: String?, 
+        messageType: String,
+        expiresAt: String?
+    ): Result<Message> = try {
         val currentUserId = getCurrentUserId() ?: throw Exception("Not logged in")
         
         var isEncrypted = false
@@ -140,7 +162,7 @@ class SupabaseChatRepository(
             }
         }
 
-        val message = dataSource.sendMessage(chatId, finalContent, mediaUrl, messageType, isEncrypted, encryptedContentStr)
+        val message = dataSource.sendMessage(chatId, finalContent, mediaUrl, messageType, isEncrypted, encryptedContentStr, expiresAt)
         val decryptedDto = message.copy(content = content) // We already know the content! 
         Result.success(decryptedDto.toDomain())
     } catch (e: Exception) {
@@ -164,14 +186,6 @@ class SupabaseChatRepository(
         Result.failure(e)
     }
 
-    override suspend fun editMessage(messageId: String, newContent: String): Result<Unit> = try {
-        dataSource.editMessage(messageId, newContent)
-        Result.success(Unit)
-    } catch (e: Exception) {
-        Napier.e("Error editing message", e)
-        Result.failure(e)
-    }
-
     override suspend fun deleteMessage(messageId: String): Result<Unit> = try {
         dataSource.deleteMessage(messageId)
         Result.success(Unit)
@@ -179,6 +193,56 @@ class SupabaseChatRepository(
         Napier.e("Error deleting message", e)
         Result.failure(e)
     }
+
+    override suspend fun deleteMessageForMe(messageId: String): Result<Unit> = try {
+        dataSource.deleteMessageForMe(messageId)
+        Result.success(Unit)
+    } catch (e: Exception) {
+        Result.failure(e)
+    }
+
+    override suspend fun editMessage(messageId: String, newContent: String): Result<Unit> = try {
+        val currentUserId = getCurrentUserId() ?: throw Exception("Not logged in")
+        val originalMessage = dataSource.getMessageById(messageId) ?: throw Exception("Message not found")
+        
+        var isEncrypted = false
+        var encryptedContentStr: String? = null
+        var finalContent = newContent
+        
+        if (signalProtocolManager != null && originalMessage.isEncrypted) {
+            try {
+                val chatId = originalMessage.chatId
+                val otherUserId = dataSource.getOtherParticipantId(chatId, currentUserId)
+                
+                if (otherUserId != null) {
+                    ensureSession(otherUserId)
+                    val encryptedForReceiver = signalProtocolManager.encryptMessage(otherUserId, newContent.encodeToByteArray())
+                    
+                    ensureSession(currentUserId)
+                    val encryptedForSelf = signalProtocolManager.encryptMessage(currentUserId, newContent.encodeToByteArray())
+
+                    val payloads = mapOf(
+                        otherUserId to encryptedForReceiver,
+                        currentUserId to encryptedForSelf
+                    )
+                    
+                    isEncrypted = true
+                    encryptedContentStr = Json.encodeToString(payloads)
+                    finalContent = "Message is encrypted"
+                }
+            } catch (e: Exception) {
+                Napier.e("E2EE encryption failed for edit, sending unencrypted", e)
+            }
+        }
+
+        dataSource.editMessage(messageId, finalContent, isEncrypted, encryptedContentStr)
+        Result.success(Unit)
+    } catch (e: Exception) {
+        Napier.e("Error editing message", e)
+        Result.failure(e)
+    }
+
+
 
     override suspend fun uploadMedia(chatId: String, fileBytes: ByteArray, fileName: String, contentType: String): Result<String> = try {
         val url = dataSource.uploadMedia(chatId, fileBytes, fileName, contentType)
@@ -189,7 +253,7 @@ class SupabaseChatRepository(
     }
 
     override suspend fun broadcastTypingStatus(chatId: String, isTyping: Boolean): Result<Unit> = try {
-        // Typing status - simplified for now
+        dataSource.broadcastTypingStatus(chatId, isTyping)
         Result.success(Unit)
     } catch (e: Exception) {
         Napier.e("Error broadcasting typing status", e)
@@ -254,4 +318,36 @@ class SupabaseChatRepository(
     }
 
     override fun getCurrentUserId(): String? = dataSource.getCurrentUserId()
+    override suspend fun createGroupChat(name: String, participantIds: List<String>, avatarUrl: String?): Result<String> = try {
+        val chatId = dataSource.createGroupChat(name, participantIds, avatarUrl) ?: throw Exception("Failed to create group chat")
+        Result.success(chatId)
+    } catch (e: Exception) {
+        io.github.aakira.napier.Napier.e("Error creating group chat", e)
+        Result.failure(e)
+    }
+
+    override suspend fun getGroupMembers(chatId: String): Result<List<Pair<com.synapse.social.studioasinc.shared.domain.model.User, Boolean>>> = try {
+        val members = dataSource.getGroupMembers(chatId)
+        Result.success(members)
+    } catch (e: Exception) {
+        io.github.aakira.napier.Napier.e("Error getting group members", e)
+        Result.failure(e)
+    }
+
+    override suspend fun addGroupMember(chatId: String, userId: String): Result<Unit> = try {
+        dataSource.addGroupMember(chatId, userId)
+        Result.success(Unit)
+    } catch (e: Exception) {
+        io.github.aakira.napier.Napier.e("Error adding group member", e)
+        Result.failure(e)
+    }
+
+    override suspend fun removeGroupMember(chatId: String, userId: String): Result<Unit> = try {
+        dataSource.removeGroupMember(chatId, userId)
+        Result.success(Unit)
+    } catch (e: Exception) {
+        io.github.aakira.napier.Napier.e("Error removing group member", e)
+        Result.failure(e)
+    }
+
 }

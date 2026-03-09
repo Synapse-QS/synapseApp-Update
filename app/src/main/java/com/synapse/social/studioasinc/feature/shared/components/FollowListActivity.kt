@@ -49,7 +49,7 @@ class FollowListActivity : ComponentActivity() {
                         intent.setClass(this@FollowListActivity, com.synapse.social.studioasinc.feature.shared.main.MainActivity::class.java)
                         startActivity(intent)
                     },
-                    onMessageClick = { targetUserId ->
+                    onMessageClick = { targetUserId, _ ->
                         startDirectChat(targetUserId)
                     }
                 )

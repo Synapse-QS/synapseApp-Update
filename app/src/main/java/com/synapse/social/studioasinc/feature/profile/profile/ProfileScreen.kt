@@ -59,7 +59,7 @@ fun ProfileScreen(
     onNavigateToSettings: () -> Unit = {},
     onNavigateToActivityLog: () -> Unit = {},
     onNavigateToUserProfile: (String) -> Unit = {},
-    onNavigateToChat: (String) -> Unit = {},
+    onNavigateToChat: (String, String?) -> Unit = { _, _ -> },
     viewModel: ProfileViewModel = hiltViewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
@@ -386,7 +386,7 @@ private fun ProfileContent(
     onNavigateToFollowers: () -> Unit,
     onNavigateToFollowing: () -> Unit,
     onNavigateToUserProfile: (String) -> Unit,
-    onNavigateToChat: (String) -> Unit,
+    onNavigateToChat: (String, String?) -> Unit,
     onCustomizeClick: () -> Unit = {},
     onOpenMediaViewer: (List<String>, Int) -> Unit,
     onShowPostOptions: (Post) -> Unit
@@ -497,7 +497,7 @@ private fun ProfileContent(
                         viewModel.followUser(profile.id)
                     }
                 },
-                onMessageClick = { onNavigateToChat(profile.id) },
+                onMessageClick = { onNavigateToChat(profile.id, profile.name ?: profile.username) },
                 onAddStoryClick = {
                     Toast.makeText(context, "Story creation coming soon", Toast.LENGTH_SHORT).show()
                 },

@@ -641,4 +641,11 @@ object RepositoryModule {
     ): InitializeE2EUseCase {
         return InitializeE2EUseCase(chatRepository)
     }
+    @Provides
+    @Singleton
+    fun provideDeleteMessageForMeUseCase(
+        chatRepository: com.synapse.social.studioasinc.shared.domain.repository.ChatRepository
+    ): com.synapse.social.studioasinc.shared.domain.usecase.chat.DeleteMessageForMeUseCase {
+        return com.synapse.social.studioasinc.shared.domain.usecase.chat.DeleteMessageForMeUseCase(chatRepository)
+    }
 }

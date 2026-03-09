@@ -20,7 +20,8 @@ data class MessageDto(
     @SerialName("updated_at") val updatedAt: String? = null,
     @SerialName("read_by") val readBy: List<String>? = null,
     @SerialName("is_encrypted") val isEncrypted: Boolean = false,
-    @SerialName("encrypted_content") val encryptedContent: String? = null
+    @SerialName("encrypted_content") val encryptedContent: String? = null,
+    @SerialName("expires_at") val expiresAt: String? = null
 )
 
 @Serializable
@@ -43,7 +44,8 @@ data class NewMessageDto(
     @SerialName("message_type") val messageType: String = "text",
     @SerialName("media_url") val mediaUrl: String? = null,
     @SerialName("is_encrypted") val isEncrypted: Boolean = false,
-    @SerialName("encrypted_content") val encryptedContent: String? = null
+    @SerialName("encrypted_content") val encryptedContent: String? = null,
+    @SerialName("expires_at") val expiresAt: String? = null
 )
 
 @Serializable
@@ -53,4 +55,24 @@ data class UserPublicKeyDto(
     @SerialName("created_at") val createdAt: String? = null,
     @SerialName("updated_at") val updatedAt: String? = null,
     @SerialName("key_version") val keyVersion: Int = 1
+)
+
+@Serializable
+data class ChatDto(
+    val id: String? = null,
+    val name: String? = null,
+    val description: String? = null,
+    @SerialName("avatar_url") val avatarUrl: String? = null,
+    @SerialName("is_group") val isGroup: Boolean = false,
+    @SerialName("created_by") val createdBy: String? = null,
+    @SerialName("created_at") val createdAt: String? = null,
+    @SerialName("updated_at") val updatedAt: String? = null
+)
+
+@Serializable
+data class NewChatDto(
+    @SerialName("is_group") val isGroup: Boolean = false,
+    val name: String? = null,
+    @SerialName("avatar_url") val avatarUrl: String? = null,
+    @SerialName("created_by") val createdBy: String? = null
 )

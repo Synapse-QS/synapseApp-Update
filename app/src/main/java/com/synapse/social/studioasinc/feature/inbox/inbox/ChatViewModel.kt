@@ -3,6 +3,7 @@ package com.synapse.social.studioasinc.feature.inbox.inbox
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.synapse.social.studioasinc.shared.domain.model.User
+import com.synapse.social.studioasinc.shared.domain.model.chat.DisappearingMode
 import com.synapse.social.studioasinc.shared.domain.model.chat.DeliveryStatus
 import com.synapse.social.studioasinc.shared.domain.model.chat.Message
 import com.synapse.social.studioasinc.shared.domain.model.chat.MessageType
@@ -11,6 +12,7 @@ import com.synapse.social.studioasinc.shared.domain.repository.ChatRepository
 import com.synapse.social.studioasinc.shared.domain.usecase.chat.*
 import com.synapse.social.studioasinc.shared.domain.usecase.user.GetUserProfileUseCase
 import com.synapse.social.studioasinc.shared.util.TimestampFormatter
+import kotlin.time.Duration.Companion.seconds
 import com.synapse.social.studioasinc.core.util.NotificationHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import io.github.aakira.napier.Napier
@@ -32,10 +34,14 @@ class ChatViewModel @Inject constructor(
     private val subscribeToTypingStatusUseCase: SubscribeToTypingStatusUseCase,
     private val editMessageUseCase: EditMessageUseCase,
     private val deleteMessageUseCase: DeleteMessageUseCase,
+    private val deleteMessageForMeUseCase: DeleteMessageForMeUseCase,
     private val uploadMediaUseCase: UploadMediaUseCase,
     private val getUserProfileUseCase: GetUserProfileUseCase,
     private val initializeE2EUseCase: InitializeE2EUseCase,
-    private val chatRepository: ChatRepository
+    private val chatRepository: ChatRepository,
+    private val chatLockManager: com.synapse.social.studioasinc.core.util.ChatLockManager,
+    private val generateSmartRepliesUseCase: com.synapse.social.studioasinc.domain.usecase.ai.GenerateSmartRepliesUseCase,
+    private val summarizeChatUseCase: com.synapse.social.studioasinc.domain.usecase.ai.SummarizeChatUseCase
 ) : ViewModel() {
 
     private val _messages = MutableStateFlow<List<Message>>(emptyList())
@@ -58,6 +64,18 @@ class ChatViewModel @Inject constructor(
 
     private val _typingStatus = MutableStateFlow<TypingStatus?>(null)
     val typingStatus: StateFlow<TypingStatus?> = _typingStatus.asStateFlow()
+
+    private val _editingMessage = MutableStateFlow<Message?>(null)
+    val editingMessage: StateFlow<Message?> = _editingMessage.asStateFlow()
+
+    private val _disappearingMode = MutableStateFlow<DisappearingMode>(DisappearingMode.OFF)
+    val disappearingMode: StateFlow<DisappearingMode> = _disappearingMode.asStateFlow()
+
+    private val _smartReplies = MutableStateFlow<List<String>>(emptyList())
+    val smartReplies: StateFlow<List<String>> = _smartReplies.asStateFlow()
+
+    private val _chatSummary = MutableStateFlow<String?>(null)
+    val chatSummary: StateFlow<String?> = _chatSummary.asStateFlow()
 
     private var currentChatId: String? = null
     private var messageSubscriptionJob: Job? = null
@@ -126,16 +144,102 @@ class ChatViewModel @Inject constructor(
                         }
                     }
                     markMessagesAsReadUseCase(actualChatId)
+                    generateSmartReplies()
+                }
+            }
+
+            // Subscribe to typing status
+            typingSubscriptionJob = launch {
+                subscribeToTypingStatusUseCase(actualChatId).collect { status ->
+                    if (status.userId != currentUserId) {
+                        _typingStatus.value = if (status.isTyping) status else null
+                    }
                 }
             }
 
             // Mark current messages as read
             markMessagesAsReadUseCase(actualChatId)
+
+            // Generate initial smart replies
+            generateSmartReplies()
         }
+    }
+
+    private fun generateSmartReplies() {
+        viewModelScope.launch {
+            val currentMessages = _messages.value
+            if (currentMessages.isEmpty()) {
+                _smartReplies.value = emptyList()
+                return@launch
+            }
+
+            // Only consider recent messages to avoid prompt limits
+            val recentMessages = currentMessages.takeLast(10).map { msg ->
+                val senderName = if (msg.senderId == currentUserId) "Me" else participantProfile.value?.displayName ?: "Them"
+                "$senderName: ${msg.content}"
+            }
+
+            generateSmartRepliesUseCase(recentMessages)
+                .onSuccess { replies ->
+                    _smartReplies.value = replies
+                }
+                .onFailure {
+                    // Ignore errors for smart replies
+                    _smartReplies.value = emptyList()
+                }
+        }
+    }
+
+    fun summarizeChat() {
+        viewModelScope.launch {
+            val currentMessages = _messages.value
+            if (currentMessages.isEmpty()) {
+                _chatSummary.value = "No messages to summarize."
+                return@launch
+            }
+
+            _isLoading.value = true
+
+            // Consider recent messages to avoid prompt limits
+            val messagesToSummarize = currentMessages.takeLast(50).map { msg ->
+                val senderName = if (msg.senderId == currentUserId) "Me" else participantProfile.value?.displayName ?: "Them"
+                "$senderName: ${msg.content}"
+            }
+
+            summarizeChatUseCase(messagesToSummarize)
+                .onSuccess { summary ->
+                    _chatSummary.value = summary
+                    _isLoading.value = false
+                }
+                .onFailure { e ->
+                    _error.value = "Failed to summarize chat: ${e.message}"
+                    _isLoading.value = false
+                }
+        }
+    }
+
+    fun clearSummary() {
+        _chatSummary.value = null
     }
 
     fun onInputTextChange(newText: String) {
         _inputText.value = newText
+        
+        val chatId = currentChatId ?: return
+        
+        // Cancel previous debounce job
+        typingDebounceJob?.cancel()
+        
+        // Broadcast typing = true
+        viewModelScope.launch {
+            broadcastTypingStatusUseCase(chatId, true)
+        }
+        
+        // Debounce typing = false after 2 seconds
+        typingDebounceJob = viewModelScope.launch {
+            delay(2000)
+            broadcastTypingStatusUseCase(chatId, false)
+        }
     }
 
     fun sendMessage() {
@@ -143,7 +247,18 @@ class ChatViewModel @Inject constructor(
         val chatId = currentChatId ?: return
         if (text.isEmpty()) return
 
+        val editingMsg = _editingMessage.value
+        if (editingMsg != null) {
+            saveEdit(editingMsg, text)
+            return
+        }
+
         _inputText.value = ""
+
+        val currentMode = _disappearingMode.value
+        val expiresAt = currentMode.seconds?.let { seconds ->
+            Instant.now().plusSeconds(seconds).toString()
+        }
 
         viewModelScope.launch {
             // Optimistic update
@@ -155,7 +270,8 @@ class ChatViewModel @Inject constructor(
                 content = text,
                 messageType = MessageType.TEXT,
                 deliveryStatus = DeliveryStatus.SENT,
-                createdAt = Instant.now().toString()
+                createdAt = Instant.now().toString(),
+                expiresAt = expiresAt
             )
             _messages.update { (it + newMessage).sortedBy { msg -> msg.createdAt } }
 
@@ -163,7 +279,8 @@ class ChatViewModel @Inject constructor(
             sendMessageUseCase(
                 chatId = chatId,
                 content = text,
-                messageType = "text"
+                messageType = "text",
+                expiresAt = expiresAt
             ).onSuccess { actualMessage ->
                 _messages.update { current ->
                     current.map { if (it.id == tempId) actualMessage else it }.sortedBy { msg -> msg.createdAt }
@@ -187,6 +304,54 @@ class ChatViewModel @Inject constructor(
         }
     }
 
+    fun startEditing(message: Message) {
+        _editingMessage.value = message
+        _inputText.value = message.content
+    }
+
+    fun cancelEditing() {
+        _editingMessage.value = null
+        _inputText.value = ""
+    }
+
+    private fun saveEdit(message: Message, newContent: String) {
+        val messageId = message.id ?: return
+        _editingMessage.value = null
+        _inputText.value = ""
+
+        viewModelScope.launch {
+            // Optimistic update
+            _messages.update { current ->
+                current.map { 
+                    if (it.id == messageId) it.copy(content = newContent, isEdited = true) 
+                    else it 
+                }
+            }
+
+            editMessageUseCase(messageId, newContent).onSuccess {
+                // Notify via OneSignal
+                val recipientId = _participantProfile.value?.uid
+                if (recipientId != null && currentUserId != null && recipientId != currentUserId) {
+                    NotificationHelper.sendMessageAndNotifyIfNeeded(
+                        chatId = message.chatId,
+                        senderId = currentUserId!!,
+                        recipientId = recipientId,
+                        message = "Edited: $newContent"
+                    )
+                }
+            }.onFailure { e ->
+                _error.value = "Failed to edit: ${e.message}"
+                // Revert optimistic update
+                _messages.update { current ->
+                    current.map { 
+                        if (it.id == messageId) message 
+                        else it 
+                    }
+                }
+            }
+        }
+    }
+
     fun editMessage(messageId: String, newContent: String) {
         viewModelScope.launch {
             editMessageUseCase(messageId, newContent)
@@ -199,8 +364,94 @@ class ChatViewModel @Inject constructor(
         }
     }
 
+    fun deleteMessageForMe(messageId: String) {
+        viewModelScope.launch {
+            deleteMessageForMeUseCase(messageId)
+            _messages.update { current -> current.filter { it.id != messageId } }
+        }
+    }
+
+    fun isChatLocked(): Boolean {
+        return currentChatId?.let { chatLockManager.isChatLocked(it) } ?: false
+    }
+
+    fun lockCurrentChat() {
+        currentChatId?.let { chatLockManager.lockChat(it) }
+    }
+
+    fun unlockCurrentChat() {
+        currentChatId?.let { chatLockManager.unlockChat(it) }
+    }
+
+    fun setDisappearingMode(mode: DisappearingMode) {
+        _disappearingMode.value = mode
+    }
+
     fun uploadAndSendMedia(fileBytes: ByteArray, fileName: String, contentType: String, messageType: String) {
-        // Mock: no-op
+        val chatId = currentChatId ?: return
+
+        viewModelScope.launch {
+            // Optimistic update
+            val tempId = UUID.randomUUID().toString()
+            val type = when(messageType) {
+                "image" -> MessageType.IMAGE
+                "video" -> MessageType.VIDEO
+                "audio" -> MessageType.AUDIO
+                else -> MessageType.FILE
+            }
+            val newMessage = Message(
+                id = tempId,
+                chatId = chatId,
+                senderId = currentUserId ?: "",
+                content = "Uploading...",
+                messageType = type,
+                deliveryStatus = DeliveryStatus.SENT,
+                createdAt = Instant.now().toString()
+            )
+            _messages.update { (it + newMessage).sortedBy { msg -> msg.createdAt } }
+
+            uploadMediaUseCase(
+                chatId = chatId,
+                fileBytes = fileBytes,
+                fileName = fileName,
+                contentType = contentType
+            ).onSuccess { mediaUrl ->
+                val finalContent = if (messageType == "image" || messageType == "video") "Media message" else fileName
+                sendMessageUseCase(
+                    chatId = chatId,
+                    content = finalContent,
+                    mediaUrl = mediaUrl,
+                    messageType = messageType
+                ).onSuccess { actualMessage ->
+                    _messages.update { current ->
+                        current.map { if (it.id == tempId) actualMessage else it }.sortedBy { msg -> msg.createdAt }
+                    }
+
+                    // Notify via OneSignal
+                    val recipientId = _participantProfile.value?.uid
+                    if (recipientId != null && currentUserId != null && recipientId != currentUserId) {
+                        val notificationMessage = when(messageType) {
+                            "image" -> "📷 Image"
+                            "video" -> "🎥 Video"
+                            "audio" -> "🎤 Voice Message"
+                            else -> "📎 File Attachment"
+                        }
+                        NotificationHelper.sendMessageAndNotifyIfNeeded(
+                            chatId = chatId,
+                            senderId = currentUserId!!,
+                            recipientId = recipientId,
+                            message = notificationMessage
+                        )
+                    }
+                }.onFailure { e ->
+                    _error.value = "Failed to send: ${e.message}"
+                    _messages.update { current -> current.filter { it.id != tempId } }
+                }
+            }.onFailure { e ->
+                _error.value = "Upload failed: ${e.message}"
+                _messages.update { current -> current.filter { it.id != tempId } }
+            }
+        }
     }
 
     fun getFormattedTimestamp(timestamp: String?): String = TimestampFormatter.formatRelative(timestamp)

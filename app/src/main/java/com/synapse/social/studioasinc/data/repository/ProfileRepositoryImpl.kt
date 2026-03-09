@@ -173,17 +173,18 @@ class ProfileRepositoryImpl(
         )
     }
 
-    override fun getProfile(userId: String): Flow<Result<UserProfile>> = flow {
-
+    override fun getProfile(userId: String, refresh: Boolean): Flow<Result<UserProfile>> = flow {
         val actualUserId = resolveUserId(userId) ?: run {
             emit(Result.failure(Exception("User not authenticated")))
             return@flow
         }
 
         val cacheKey = "profile_$actualUserId"
-        NetworkOptimizer.getCached<UserProfile>(cacheKey)?.let {
-            emit(Result.success(it))
-            return@flow
+        if (!refresh) {
+            NetworkOptimizer.getCached<UserProfile>(cacheKey)?.let {
+                emit(Result.success(it))
+                return@flow
+            }
         }
 
         try {

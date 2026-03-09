@@ -19,10 +19,11 @@ object S3Signer {
         val dateStamp = amzDate.substring(0, 8)
         val unsignedPayload = "UNSIGNED-PAYLOAD"
 
-        val canonicalHeaders = "content-type:$contentType\n" +
-                "host:$host\n" +
-                "x-amz-content-sha256:$unsignedPayload\n" +
-                "x-amz-date:$amzDate\n"
+        val hostLower = host.lowercase().trim()
+        val canonicalHeaders = "content-type:${contentType.trim()}\n" +
+                "host:$hostLower\n" +
+                "x-amz-content-sha256:${unsignedPayload.trim()}\n" +
+                "x-amz-date:${amzDate.trim()}\n"
         val signedHeaders = "content-type;host;x-amz-content-sha256;x-amz-date"
         val canonicalQuery = ""
         val canonicalRequest = "$method\n$canonicalPath\n$canonicalQuery\n$canonicalHeaders\n$signedHeaders\n$unsignedPayload"
@@ -38,7 +39,7 @@ object S3Signer {
             "x-amz-date" to amzDate,
             "x-amz-content-sha256" to unsignedPayload,
             "Content-Type" to contentType,
-            "Host" to host
+            "Host" to hostLower
         )
     }
 

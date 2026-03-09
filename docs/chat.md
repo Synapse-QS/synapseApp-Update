@@ -43,9 +43,9 @@ This document outlines the current status and future roadmap for the chat messag
 ## 👥 Advanced Collaboration
 
 ### 🏢 Group Chats
-- [ ] **Group Creation:** Multi-user conversation setup.
-- [ ] **Admin Controls:** Promote/demote admins, remove members.
-- [ ] **Group Settings:** Custom icons, descriptions, and invitation links.
+- [x] **Group Creation:** Multi-user conversation setup.
+- [x] **Admin Controls:** Promote/demote admins, remove members.
+- [x] **Group Settings:** Custom icons, descriptions, and invitation links.
 
 ### 📢 Channels (Broadcasting)
 - [ ] **One-to-Many Broadcasting:** Admins post updates to an unlimited audience.
@@ -54,8 +54,8 @@ This document outlines the current status and future roadmap for the chat messag
 - [ ] **Channel Discovery:** Searchable directory for public channels.
 
 ### 🤖 AI-Powered Features
-- [ ] **Smart Replies:** Context-aware quick reply suggestions.
-- [ ] **Chat Summarization:** AI-generated summaries of long conversations or missed group chats.
+- [x] **Smart Replies:** Context-aware quick reply suggestions.
+- [x] **Chat Summarization:** AI-generated summaries of long conversations or missed group chats.
 - [ ] **Language Translation:** Real-time translation of incoming/outgoing messages.
 - [ ] **AI Assistant:** Integration of a chat bot for tasks (reminders, search, generation).
 

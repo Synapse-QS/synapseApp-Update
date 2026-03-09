@@ -10,8 +10,6 @@ import io.ktor.http.Headers
 import io.ktor.http.HttpHeaders
 import io.ktor.utils.io.ByteReadChannel
 import io.ktor.utils.io.InternalAPI
-import io.ktor.utils.io.readRemaining
-import io.ktor.utils.io.core.readBytes
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.jsonObject
@@ -28,22 +26,33 @@ class ImgBBUploadService(private val client: HttpClient) : UploadService {
     ): String {
         val apiKey = config.imgBBKey
 
-        val fileChannel = fileProvider(0)
-        val fileBytes = fileChannel.readRemaining().readBytes()
+        try {
+            val channel = fileProvider(0)
+            val response = client.submitFormWithBinaryData(
+                url = "https://api.imgbb.com/1/upload?key=$apiKey",
+                formData = formData {
+                    append("image", channel, Headers.build {
+                        append(HttpHeaders.ContentType, "image/*")
+                        append(HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
+                    })
+                }
+            )
 
-        val response: JsonObject = client.submitFormWithBinaryData(
-            url = "https://api.imgbb.com/1/upload?key=$apiKey",
-            formData = formData {
-                append("image", fileBytes, Headers.build {
-                    append(HttpHeaders.ContentType, "image/*")
-                    append(HttpHeaders.ContentDisposition, "filename=\"$fileName\"")
-                })
+            onProgress(1.0f)
+
+            val jsonResponse: JsonObject = response.body()
+            val data = jsonResponse["data"]?.jsonObject
+            
+            if (data == null) {
+                val error = jsonResponse["error"]?.jsonObject
+                val message = error?.get("message")?.let { if (it is kotlinx.serialization.json.JsonPrimitive) it.content else "Unknown error" } ?: "ImgBB upload failed"
+                throw UploadError.ImgBBError(message)
             }
-        ).body()
 
-        onProgress(1.0f)
-
-        val data = response["data"]?.jsonObject ?: throw UploadError.ImgBBError("ImgBB upload failed")
-        return data["url"]?.let { if (it is kotlinx.serialization.json.JsonPrimitive) it else null }?.content ?: throw UploadError.ImgBBError("ImgBB URL missing")
+            return data["url"]?.let { if (it is kotlinx.serialization.json.JsonPrimitive) it.content else null } ?: throw UploadError.ImgBBError("ImgBB URL missing")
+        } catch (e: Exception) {
+            if (e is UploadError) throw e
+            throw UploadError.ImgBBError("ImgBB upload failed: ${e.message}")
+        }
     }
 }

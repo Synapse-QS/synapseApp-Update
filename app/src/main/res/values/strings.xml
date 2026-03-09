@@ -1266,4 +1266,17 @@ Please explain the following message from %3$s in detail, considering the contex
     <string name="storage_larger_than">Larger than 5 MB</string>
     <string name="no_replies">No replies yet</string>
     <string name="no_replies_msg">When you reply to posts, they\'ll appear here</string>
+    <string name="chat_media_audio_voice">Voice Message</string>
+    <string name="chat_media_attachment">Attachment</string>
+    <string name="chat_media_image">Image</string>
+    <string name="chat_media_video">Video</string>
+    <string name="chat_media_audio">Audio</string>
+    <string name="chat_media_file">File</string>
+    <string name="chat_action_play_video">Play Video</string>
+    <string name="chat_action_play_audio">Play Audio</string>
+    <string name="chat_action_pause_audio">Pause Audio</string>
+    <string name="chat_action_open_file">Open File</string>
+    <string name="chat_action_open_link">Open Link</string>
+    <string name="chat_cd_file">File</string>
+    <string name="chat_type_message">Type a message...</string>
 </resources>

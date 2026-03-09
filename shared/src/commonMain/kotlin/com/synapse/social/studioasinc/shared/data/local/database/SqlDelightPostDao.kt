@@ -16,7 +16,7 @@ class SqlDelightPostDao(
     private val db: StorageDatabase
 ) : PostDao {
 
-    override suspend fun insert(post: PostEntity) = withContext(Dispatchers.IO) {
+    override suspend fun insert(post: PostEntity): Unit = withContext(Dispatchers.IO) {
         db.postQueries.insertPost(toDbPost(post))
     }
 
@@ -48,7 +48,7 @@ class SqlDelightPostDao(
         db.postQueries.selectIds().executeAsList()
     }
 
-    override suspend fun deleteById(id: String) = withContext(Dispatchers.IO) {
+    override suspend fun deleteById(id: String): Unit = withContext(Dispatchers.IO) {
         db.postQueries.deleteById(id)
     }
 
@@ -60,7 +60,7 @@ class SqlDelightPostDao(
         }
     }
 
-    override suspend fun deleteAll() = withContext(Dispatchers.IO) {
+    override suspend fun deleteAll(): Unit = withContext(Dispatchers.IO) {
         db.postQueries.deleteAll()
     }
 
