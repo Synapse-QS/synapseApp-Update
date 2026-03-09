@@ -35,9 +35,7 @@ object NotificationHelper {
         }
 
         scope.launch {
-            if (notificationType != "chat_message") {
-                persistNotification(recipientUid, senderUid, message, notificationType, data)
-            }
+            persistNotification(recipientUid, senderUid, message, notificationType, data)
 
             try {
                 val userResult = dbService.getSingle("users", "uid", recipientUid)
@@ -48,7 +46,7 @@ object NotificationHelper {
                     return@launch
                 }
 
-                if (shouldSuppressPush(recipientUid)) {
+                if (shouldSuppressPush(recipientUid, notificationType)) {
                     Log.i(TAG, "Notification suppressed: Quiet Hours or DND active for user $recipientUid")
                     return@launch
                 }
@@ -75,13 +73,31 @@ object NotificationHelper {
         }
     }
 
-    private suspend fun shouldSuppressPush(recipientUid: String): Boolean {
+    private suspend fun shouldSuppressPush(recipientUid: String, notificationType: String? = null): Boolean {
         try {
             val result = dbService.getSingle("notification_preferences", "user_id", recipientUid)
             val prefs = result.getOrNull() ?: return false
 
             val dnd = prefs["do_not_disturb"] as? Boolean ?: false
             if (dnd) return true
+
+            if (notificationType != null) {
+                val settings = prefs["settings"]
+                if (settings is Map<*, *>) {
+                    val categoryEnabled = when (notificationType) {
+                        NotificationConfig.NOTIFICATION_TYPE_NEW_MESSAGE -> settings["messages_enabled"] as? Boolean
+                        NotificationConfig.NOTIFICATION_TYPE_NEW_COMMENT -> settings["comments_enabled"] as? Boolean
+                        NotificationConfig.NOTIFICATION_TYPE_NEW_REPLY -> settings["replies_enabled"] as? Boolean
+                        NotificationConfig.NOTIFICATION_TYPE_NEW_LIKE_POST,
+                        NotificationConfig.NOTIFICATION_TYPE_NEW_LIKE_COMMENT -> settings["likes_enabled"] as? Boolean
+                        NotificationConfig.NOTIFICATION_TYPE_MENTION -> settings["mentions_enabled"] as? Boolean
+                        NotificationConfig.NOTIFICATION_TYPE_NEW_FOLLOWER -> settings["follows_enabled"] as? Boolean
+                        NotificationConfig.NOTIFICATION_TYPE_NEW_POST -> settings["new_posts_enabled"] as? Boolean
+                        else -> null
+                    }
+                    if (categoryEnabled == false) return true
+                }
+            }
 
             val quietHours = prefs["quiet_hours"]
             if (quietHours is Map<*, *>) {
@@ -199,6 +215,12 @@ object NotificationHelper {
 
     @JvmStatic
     fun sendMessageAndNotifyIfNeeded(chatId: String, senderId: String, recipientId: String, message: String) {
-        sendNotification(recipientId, senderId, message, "chat_message", mapOf("chat_id" to chatId))
+        sendNotification(
+            recipientId, 
+            senderId, 
+            message, 
+            NotificationConfig.NOTIFICATION_TYPE_NEW_MESSAGE, 
+            mapOf("chat_id" to chatId)
+        )
     }
 }

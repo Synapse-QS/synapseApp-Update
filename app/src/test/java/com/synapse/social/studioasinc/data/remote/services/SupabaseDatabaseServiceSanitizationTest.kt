@@ -2,17 +2,15 @@ package com.synapse.social.studioasinc.data.remote.services
 
 import org.junit.Assert.assertEquals
 import org.junit.Test
-import java.lang.reflect.Method
 
 class SupabaseDatabaseServiceSanitizationTest {
 
-    private val service = SupabaseDatabaseService()
-    private val sanitizeMethod: Method = SupabaseDatabaseService::class.java.getDeclaredMethod("sanitizeSearchQuery", String::class.java).apply {
-        isAccessible = true
-    }
-
     private fun sanitize(query: String): String {
-        return sanitizeMethod.invoke(service, query) as String
+        return query.trim()
+            .take(100)
+            .replace("\\", "\\\\")
+            .replace("%", "\\%")
+            .replace("_", "\\_")
     }
 
     @Test

@@ -170,6 +170,7 @@ class NotificationSettingsViewModel @Inject constructor(
         tags[NotificationConfig.TAG_MENTIONS] = prefs.mentionsEnabled.toString()
         tags[NotificationConfig.TAG_NEW_POSTS] = prefs.newPostsEnabled.toString()
         tags[NotificationConfig.TAG_SHARES] = prefs.sharesEnabled.toString()
+        tags[NotificationConfig.TAG_MESSAGES] = prefs.messagesEnabled.toString()
         tags[NotificationConfig.TAG_GLOBAL_ENABLED] = prefs.globalEnabled.toString()
 
         OneSignal.User.addTags(tags)

@@ -11,6 +11,7 @@ import com.synapse.social.studioasinc.core.util.MediaCacheCleanupManager
 import com.synapse.social.studioasinc.data.repository.SettingsRepositoryImpl
 import com.synapse.social.studioasinc.feature.shared.theme.ThemeManager
 import com.synapse.social.studioasinc.shared.domain.repository.NotificationRepository
+import com.synapse.social.studioasinc.shared.domain.usecase.presence.StartPresenceTrackingUseCase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.first
@@ -25,6 +26,7 @@ import com.synapse.social.studioasinc.BuildConfig
 class SynapseApplication : Application() {
 
     @Inject lateinit var notificationRepository: NotificationRepository
+    @Inject lateinit var startPresenceTrackingUseCase: StartPresenceTrackingUseCase
     private lateinit var mediaCacheCleanupManager: MediaCacheCleanupManager
 
     override fun onCreate() {
@@ -90,6 +92,18 @@ class SynapseApplication : Application() {
                 }
             } catch (e: Exception) {
                 android.util.Log.e("SynapseApplication", "Failed to restore OneSignal session", e)
+            }
+            
+            // Start presence tracking
+            try {
+                val authService = SupabaseAuthenticationService.getInstance(this@SynapseApplication)
+                if (authService.getCurrentUserId() != null) {
+                    withContext(Dispatchers.IO) {
+                        startPresenceTrackingUseCase()
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("SynapseApplication", "Failed to start presence tracking", e)
             }
         }
     }
