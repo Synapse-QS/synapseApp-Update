@@ -124,7 +124,8 @@ class SupabaseChatRepository(
         content: String, 
         mediaUrl: String?, 
         messageType: String,
-        expiresAt: String?
+        expiresAt: String?,
+        replyToId: String?
     ): Result<Message> = try {
         val currentUserId = getCurrentUserId() ?: throw Exception("Not logged in")
         
@@ -162,7 +163,7 @@ class SupabaseChatRepository(
             }
         }
 
-        val message = dataSource.sendMessage(chatId, finalContent, mediaUrl, messageType, isEncrypted, encryptedContentStr, expiresAt)
+        val message = dataSource.sendMessage(chatId, finalContent, mediaUrl, messageType, isEncrypted, encryptedContentStr, expiresAt, replyToId)
         val decryptedDto = message.copy(content = content) // We already know the content! 
         Result.success(decryptedDto.toDomain())
     } catch (e: Exception) {

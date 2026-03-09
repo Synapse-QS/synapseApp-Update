@@ -8,7 +8,8 @@ import androidx.compose.ui.Modifier
 @Composable
 fun ProfileSkeletonScreen() {
     LazyColumn(
-        modifier = Modifier.fillMaxSize()
+        modifier = Modifier.fillMaxSize(),
+        userScrollEnabled = false
     ) {
         item {
             ProfileHeaderSkeleton()

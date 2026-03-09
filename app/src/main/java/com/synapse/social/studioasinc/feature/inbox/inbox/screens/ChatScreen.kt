@@ -6,6 +6,13 @@ import androidx.compose.animation.*
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.Animatable
+import kotlinx.coroutines.launch
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.lazy.LazyColumn
@@ -93,10 +100,13 @@ fun ChatScreen(
     val typingStatus by viewModel.typingStatus.collectAsState()
     val smartReplies by viewModel.smartReplies.collectAsState()
     val chatSummary by viewModel.chatSummary.collectAsState()
+    val selectedMessageIds by viewModel.selectedMessageIds.collectAsState()
+    val replyingToMessage by viewModel.replyingToMessage.collectAsState()
     val currentUserId = viewModel.currentUserId ?: ""
 
     var selectedMessageForMenu by remember { mutableStateOf<Message?>(null) }
 
+    val clipboard = androidx.compose.ui.platform.LocalClipboardManager.current
     val listState = rememberLazyListState()
     val context = LocalContext.current
 
@@ -151,104 +161,131 @@ fun ChatScreen(
 
     Scaffold(
         topBar = {
-            TopAppBar(
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        // Participant avatar
-                        AsyncImage(
-                            model = participantProfile?.avatar,
-                            contentDescription = null,
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape),
-                            contentScale = ContentScale.Crop
-                        )
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(
-                                text = participantProfile?.displayName
-                                    ?: participantProfile?.username
-                                    ?: initialParticipantName
-                                    ?: participantId ?: "Chat",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
+            if (selectedMessageIds.isNotEmpty()) {
+                TopAppBar(
+                    title = { Text("${selectedMessageIds.size} selected") },
+                    navigationIcon = {
+                        IconButton(onClick = { viewModel.clearSelection() }) {
+                            Icon(Icons.Default.Close, contentDescription = "Clear Selection")
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = {
+                            val selectedContent = messages.filter { it.id in selectedMessageIds }.joinToString("\n") { it.content }
+                            clipboard.setText(androidx.compose.ui.text.AnnotatedString(selectedContent))
+                            viewModel.clearSelection()
+                        }) {
+                            Icon(Icons.Default.ContentCopy, contentDescription = "Copy")
+                        }
+                        IconButton(onClick = { viewModel.deleteSelectedMessages() }) {
+                            Icon(Icons.Default.Delete, contentDescription = "Delete")
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.primaryContainer,
+                        titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                    )
+                )
+            } else {
+                TopAppBar(
+                    title = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            // Participant avatar
+                            AsyncImage(
+                                model = participantProfile?.avatar,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape),
+                                contentScale = ContentScale.Crop
                             )
-                            val statusText = when {
-                                typingStatus != null && typingStatus!!.isTyping -> "Typing..."
-                                participantProfile?.status?.name == "ONLINE" -> "Online"
-                                else -> participantProfile?.lastSeen?.let { "Last seen ${formatChatTimestamp(it)}" } ?: "Offline"
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column {
+                                Text(
+                                    text = participantProfile?.displayName
+                                        ?: participantProfile?.username
+                                        ?: initialParticipantName
+                                        ?: participantId ?: "Chat",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                                val statusText = when {
+                                    typingStatus != null && typingStatus!!.isTyping -> "Typing..."
+                                    participantProfile?.status?.name == "ONLINE" -> "Online"
+                                    else -> participantProfile?.lastSeen?.let { "Last seen ${formatChatTimestamp(it)}" } ?: "Offline"
+                                }
+                                val statusColor = when {
+                                    typingStatus != null && typingStatus!!.isTyping -> MaterialTheme.colorScheme.primary
+                                    participantProfile?.status?.name == "ONLINE" -> Color(0xFF4CAF50)
+                                    else -> MaterialTheme.colorScheme.onSurfaceVariant
+                                }
+                                Text(
+                                    text = statusText,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = statusColor
+                                )
                             }
-                            val statusColor = when {
-                                typingStatus != null && typingStatus!!.isTyping -> MaterialTheme.colorScheme.primary
-                                participantProfile?.status?.name == "ONLINE" -> Color(0xFF4CAF50)
-                                else -> MaterialTheme.colorScheme.onSurfaceVariant
-                            }
-                            Text(
-                                text = statusText,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = statusColor
+                        }
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = viewModel::summarizeChat) {
+                            Icon(Icons.Default.AutoAwesome, contentDescription = "Summarize Chat")
+                        }
+                        IconButton(onClick = { onNavigateToGroupInfo(chatId, participantProfile?.displayName ?: initialParticipantName ?: "Group") }) {
+                            Icon(Icons.Default.Info, contentDescription = "Group Info")
+                        }
+                        var showMoreMenu by remember { mutableStateOf(false) }
+                        IconButton(onClick = { showMoreMenu = true }) {
+                            Icon(Icons.Default.MoreVert, contentDescription = "More options")
+                        }
+                        DropdownMenu(
+                            expanded = showMoreMenu,
+                            onDismissRequest = { showMoreMenu = false }
+                        ) {
+                            val disappearingMode by viewModel.disappearingMode.collectAsState()
+                            DropdownMenuItem(
+                                text = { Text("Disappearing Messages (${disappearingMode.name})") },
+                                leadingIcon = { Icon(Icons.Default.Timer, contentDescription = null) },
+                                onClick = {
+                                    // For simplicity, cycle through modes in this exercise
+                                    val nextMode = when (disappearingMode) {
+                                        DisappearingMode.OFF -> DisappearingMode.TWENTY_FOUR_HOURS
+                                        DisappearingMode.TWENTY_FOUR_HOURS -> DisappearingMode.SEVEN_DAYS
+                                        DisappearingMode.SEVEN_DAYS -> DisappearingMode.OFF
+                                        else -> DisappearingMode.OFF
+                                    }
+                                    viewModel.setDisappearingMode(nextMode)
+                                    showMoreMenu = false
+                                }
+                            )
+                            val isLocked = viewModel.isChatLocked()
+                            DropdownMenuItem(
+                                text = { Text(if (isLocked) "Unlock Chat" else "Lock Chat") },
+                                leadingIcon = { Icon(if (isLocked) Icons.Default.LockOpen else Icons.Default.Lock, contentDescription = null) },
+                                onClick = {
+                                    if (isLocked) viewModel.unlockCurrentChat() else viewModel.lockCurrentChat()
+                                    showMoreMenu = false
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Mute Notifications") },
+                                leadingIcon = { Icon(Icons.Default.NotificationsOff, contentDescription = null) },
+                                onClick = { showMoreMenu = false }
                             )
                         }
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = viewModel::summarizeChat) {
-                        Icon(Icons.Default.AutoAwesome, contentDescription = "Summarize Chat")
-                    }
-                    IconButton(onClick = { onNavigateToGroupInfo(chatId, participantProfile?.displayName ?: initialParticipantName ?: "Group") }) {
-                        Icon(Icons.Default.Info, contentDescription = "Group Info")
-                    }
-                    var showMoreMenu by remember { mutableStateOf(false) }
-                    IconButton(onClick = { showMoreMenu = true }) {
-                        Icon(Icons.Default.MoreVert, contentDescription = "More options")
-                    }
-                    DropdownMenu(
-                        expanded = showMoreMenu,
-                        onDismissRequest = { showMoreMenu = false }
-                    ) {
-                        val disappearingMode by viewModel.disappearingMode.collectAsState()
-                        DropdownMenuItem(
-                            text = { Text("Disappearing Messages (${disappearingMode.name})") },
-                            leadingIcon = { Icon(Icons.Default.Timer, contentDescription = null) },
-                            onClick = {
-                                // For simplicity, cycle through modes in this exercise
-                                val nextMode = when (disappearingMode) {
-                                    DisappearingMode.OFF -> DisappearingMode.TWENTY_FOUR_HOURS
-                                    DisappearingMode.TWENTY_FOUR_HOURS -> DisappearingMode.SEVEN_DAYS
-                                    DisappearingMode.SEVEN_DAYS -> DisappearingMode.OFF
-                                    else -> DisappearingMode.OFF
-                                }
-                                viewModel.setDisappearingMode(nextMode)
-                                showMoreMenu = false
-                            }
-                        )
-                        val isLocked = viewModel.isChatLocked()
-                        DropdownMenuItem(
-                            text = { Text(if (isLocked) "Unlock Chat" else "Lock Chat") },
-                            leadingIcon = { Icon(if (isLocked) Icons.Default.LockOpen else Icons.Default.Lock, contentDescription = null) },
-                            onClick = {
-                                if (isLocked) viewModel.unlockCurrentChat() else viewModel.lockCurrentChat()
-                                showMoreMenu = false
-                            }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Mute Notifications") },
-                            leadingIcon = { Icon(Icons.Default.NotificationsOff, contentDescription = null) },
-                            onClick = { showMoreMenu = false }
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    titleContentColor = MaterialTheme.colorScheme.onSurface
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        titleContentColor = MaterialTheme.colorScheme.onSurface
+                    )
                 )
-            )
+            }
         },
         bottomBar = {
             Surface(
@@ -256,7 +293,73 @@ fun ChatScreen(
                 modifier = Modifier.imePadding() // Key for keyboard behavior
             ) {
                 Column {
+                    // Replying Header
+                    AnimatedVisibility(
+                        visible = replyingToMessage != null,
+                        enter = expandVertically() + fadeIn(),
+                        exit = shrinkVertically() + fadeOut()
+                    ) {
+                        Surface(
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                            ) {
+                                Icon(Icons.Default.Reply, contentDescription = null, tint = MaterialTheme.colorScheme.onSecondaryContainer, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = if (replyingToMessage?.senderId == currentUserId) "Replying to yourself" else "Replying to ${participantProfile?.displayName ?: "Them"}",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        color = MaterialTheme.colorScheme.primary
+                                    )
+                                    Text(
+                                        text = replyingToMessage?.content ?: "",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        maxLines = 1,
+                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                    )
+                                }
+                                IconButton(onClick = viewModel::cancelReply, modifier = Modifier.size(24.dp)) {
+                                    Icon(Icons.Default.Close, contentDescription = "Cancel reply", modifier = Modifier.size(16.dp))
+                                }
+                            }
+                        }
+                    }
+
                     // Editing Header
+                    AnimatedVisibility(
+                        visible = editingMessage != null,
+                        enter = expandVertically() + fadeIn(),
+                        exit = shrinkVertically() + fadeOut()
+                    ) {
+                        Surface(
+                            color = MaterialTheme.colorScheme.secondaryContainer,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                            ) {
+                                Icon(Icons.Default.Edit, contentDescription = null, tint = MaterialTheme.colorScheme.onSecondaryContainer, modifier = Modifier.size(16.dp))
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("Editing message", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                                    Text(
+                                        text = editingMessage?.content ?: "",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        maxLines = 1,
+                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                    )
+                                }
+                                IconButton(onClick = viewModel::cancelEditing, modifier = Modifier.size(24.dp)) {
+                                    Icon(Icons.Default.Close, contentDescription = "Cancel edit", modifier = Modifier.size(16.dp))
+                                }
+                            }
+                        }
+                    }
                     // Smart Replies
                     AnimatedVisibility(
                         visible = smartReplies.isNotEmpty() && inputText.isEmpty(),
@@ -431,6 +534,9 @@ fun ChatScreen(
                     }
                 }
                 else -> {
+                    val messagesMap = remember(messages) {
+                        messages.associateBy { it.id }
+                    }
                     LazyColumn(
                         state = listState,
                         modifier = Modifier
@@ -455,13 +561,31 @@ fun ChatScreen(
                                 else -> GroupPosition.MIDDLE
                             }
 
+                            val isSelected = message.id in selectedMessageIds
+
                             MessageBubble(
                                 message = message,
                                 isFromMe = message.isFromMe(currentUserId),
                                 position = position,
+                                isSelected = isSelected,
+                                onToggleSelection = {
+                                    if (selectedMessageIds.isNotEmpty()) {
+                                        message.id?.let { viewModel.toggleMessageSelection(it) }
+                                    }
+                                },
+                                onSwipeToReply = { viewModel.setReplyingToMessage(message) },
+                                replyToMessage = message.replyToId?.let { replyId ->
+                                    messagesMap[replyId]
+                                },
                                 onLongClick = {
-                                    if (message.isFromMe(currentUserId)) {
-                                        selectedMessageForMenu = message
+                                    if (selectedMessageIds.isNotEmpty()) {
+                                        message.id?.let { viewModel.toggleMessageSelection(it) }
+                                    } else {
+                                        if (message.isFromMe(currentUserId)) {
+                                            selectedMessageForMenu = message
+                                        } else {
+                                            message.id?.let { viewModel.toggleMessageSelection(it) }
+                                        }
                                     }
                                 }
                             )
@@ -560,6 +684,10 @@ fun MessageBubble(
     message: Message,
     isFromMe: Boolean,
     position: GroupPosition = GroupPosition.SINGLE,
+    isSelected: Boolean = false,
+    onToggleSelection: () -> Unit = {},
+    onSwipeToReply: () -> Unit = {},
+    replyToMessage: Message? = null,
     onLongClick: () -> Unit = {}
 ) {
     val alignment = if (isFromMe) Alignment.CenterEnd else Alignment.CenterStart
@@ -583,15 +711,56 @@ fun MessageBubble(
         }
     }
 
+    val offsetX = remember { Animatable(0f) }
+    val coroutineScope = rememberCoroutineScope()
+    val density = LocalDensity.current
+    val threshold = with(density) { 50.dp.toPx() }
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
+            .background(if (isSelected) MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f) else Color.Transparent)
             .combinedClickable(
                 onLongClick = onLongClick,
-                onClick = {}, // Required for combinedClickable to work
+                onClick = { onToggleSelection() },
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
-            ),
+            )
+            .padding(vertical = 2.dp)
+            .offset { androidx.compose.ui.unit.IntOffset(offsetX.value.toInt(), 0) }
+            .pointerInput(Unit) {
+                detectHorizontalDragGestures(
+                    onDragEnd = {
+                        coroutineScope.launch {
+                            if (offsetX.value >= threshold) {
+                                onSwipeToReply()
+                            }
+                            offsetX.animateTo(
+                                targetValue = 0f,
+                                animationSpec = spring(
+                                    dampingRatio = Spring.DampingRatioMediumBouncy,
+                                    stiffness = Spring.StiffnessLow
+                                )
+                            )
+                        }
+                    },
+                    onDragCancel = {
+                        coroutineScope.launch {
+                            offsetX.animateTo(0f)
+                        }
+                    },
+                    onHorizontalDrag = { change, dragAmount ->
+                        if (dragAmount > 0 || offsetX.value > 0) { // Only swipe right
+                            change.consume()
+                            coroutineScope.launch {
+                                // Add some resistance
+                                val newOffset = (offsetX.value + dragAmount * 0.5f).coerceIn(0f, threshold * 1.5f)
+                                offsetX.snapTo(newOffset)
+                            }
+                        }
+                    }
+                )
+            },
         contentAlignment = alignment
     ) {
         Surface(
@@ -602,6 +771,30 @@ fun MessageBubble(
             modifier = Modifier.widthIn(max = 280.dp)
         ) {
             Column(modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+
+                if (replyToMessage != null) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 4.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(8.dp)) {
+                            Text(
+                                text = if (replyToMessage.senderId == message.senderId) "You" else "Them",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = replyToMessage.content,
+                                style = MaterialTheme.typography.bodySmall,
+                                maxLines = 1,
+                                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
 
                 val uriHandler = LocalUriHandler.current
                 val context = LocalContext.current

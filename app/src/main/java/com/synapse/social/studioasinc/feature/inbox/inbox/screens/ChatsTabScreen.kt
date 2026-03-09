@@ -5,12 +5,14 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -22,6 +24,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import com.synapse.social.studioasinc.feature.inbox.inbox.components.InboxEmptyState
 import com.synapse.social.studioasinc.shared.domain.model.chat.Conversation
+import com.synapse.social.studioasinc.feature.shared.theme.Spacing
+import com.synapse.social.studioasinc.ui.inbox.theme.InboxTheme
 import com.synapse.social.studioasinc.feature.inbox.inbox.models.EmptyStateType
 import java.time.Instant
 import java.time.ZoneId
@@ -67,17 +71,26 @@ fun ChatsTabScreen(
                 modifier = modifier.fillMaxSize(),
                 contentPadding = contentPadding
             ) {
-                items(conversations, key = { it.chatId }) { conversation ->
+                itemsIndexed(conversations, key = { _, it -> it.chatId }) { index, conversation ->
+                    val shape = when {
+                        conversations.size == 1 -> InboxTheme.shapes.GroupedListSingleShape
+                        index == 0 -> InboxTheme.shapes.GroupedListTopShape
+                        index == conversations.lastIndex -> InboxTheme.shapes.GroupedListBottomShape
+                        else -> InboxTheme.shapes.GroupedListMiddleShape
+                    }
                     ConversationItem(
                         conversation = conversation,
                         isLocked = isLocked(conversation.chatId),
-                        onClick = { onConversationClick(conversation.chatId, conversation.participantId, conversation.participantName) }
+                        onClick = { onConversationClick(conversation.chatId, conversation.participantId, conversation.participantName) },
+                        shape = shape
                     )
-                    HorizontalDivider(
-                        modifier = Modifier.padding(start = 88.dp, end = 16.dp),
-                        thickness = 0.5.dp,
-                        color = MaterialTheme.colorScheme.outlineVariant
-                    )
+                    if (index < conversations.lastIndex) {
+                        HorizontalDivider(
+                            modifier = Modifier.padding(start = InboxTheme.dimens.AvatarSize + Spacing.Medium * 2, end = Spacing.Medium),
+                            thickness = 0.5.dp,
+                            color = MaterialTheme.colorScheme.outlineVariant
+                        )
+                    }
                 }
             }
         }
@@ -88,13 +101,17 @@ fun ChatsTabScreen(
 private fun ConversationItem(
     conversation: Conversation,
     isLocked: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    shape: Shape = InboxTheme.shapes.ChatItemCard
 ) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .padding(horizontal = Spacing.Medium)
+            .clip(shape)
+            .background(MaterialTheme.colorScheme.surfaceContainer, shape)
             .clickable(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 12.dp),
+            .padding(horizontal = Spacing.Medium, vertical = Spacing.SmallMedium),
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Avatar with online indicator
@@ -103,7 +120,7 @@ private fun ConversationItem(
                 model = conversation.participantAvatar,
                 contentDescription = null,
                 modifier = Modifier
-                    .size(56.dp)
+                    .size(InboxTheme.dimens.AvatarSize)
                     .clip(CircleShape)
                     .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape),
                 contentScale = ContentScale.Crop
@@ -111,7 +128,7 @@ private fun ConversationItem(
             if (conversation.isOnline) {
                 Box(
                     modifier = Modifier
-                        .size(14.dp)
+                        .size(InboxTheme.dimens.OnlineIndicatorSize)
                         .clip(CircleShape)
                         .background(Color(0xFF4CAF50), CircleShape)
                         .align(Alignment.BottomEnd)
@@ -119,7 +136,7 @@ private fun ConversationItem(
             }
         }
 
-        Spacer(modifier = Modifier.width(16.dp))
+        Spacer(modifier = Modifier.width(Spacing.Medium))
 
         // Details
         Column(modifier = Modifier.weight(1f)) {
@@ -132,7 +149,7 @@ private fun ConversationItem(
                     Icon(
                         imageVector = Icons.Default.Lock,
                         contentDescription = "Locked",
-                        modifier = Modifier.size(16.dp).padding(end = 4.dp),
+                        modifier = Modifier.size(Spacing.Medium).padding(end = Spacing.ExtraSmall),
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
@@ -152,7 +169,7 @@ private fun ConversationItem(
                 )
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -171,11 +188,11 @@ private fun ConversationItem(
                 )
 
                 if (conversation.unreadCount > 0) {
-                    Spacer(modifier = Modifier.width(8.dp))
+                    Spacer(modifier = Modifier.width(Spacing.Small))
                     Surface(
                         color = MaterialTheme.colorScheme.primary,
                         shape = CircleShape,
-                        modifier = Modifier.size(22.dp)
+                        modifier = Modifier.size(InboxTheme.dimens.UnreadBadgeSize)
                     ) {
                         Box(contentAlignment = Alignment.Center) {
                             Text(

@@ -514,12 +514,6 @@ class SupabaseDatabaseService : IDatabaseService {
             .replace("\\", "\\\\")
             .replace("%", "\\%")
             .replace("_", "\\_")
-            .replace("'", "''")
-            .replace("\"", "\\\"")
-            .replace(";", "")
-            .replace("--", "")
-            .replace("/*", "")
-            .replace("*/", "")
             .trim()
             .take(100)
     }

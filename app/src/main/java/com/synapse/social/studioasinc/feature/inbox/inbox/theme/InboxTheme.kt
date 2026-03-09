@@ -65,6 +65,10 @@ object InboxShapes {
     val SwipeActionShape = RoundedCornerShape(12.dp)
     val TabIndicator = RoundedCornerShape(50)
     val FABShape = RoundedCornerShape(16.dp)
+    val GroupedListTopShape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp, bottomStart = 0.dp, bottomEnd = 0.dp)
+    val GroupedListMiddleShape = RoundedCornerShape(0.dp)
+    val GroupedListBottomShape = RoundedCornerShape(topStart = 0.dp, topEnd = 0.dp, bottomStart = 16.dp, bottomEnd = 16.dp)
+    val GroupedListSingleShape = RoundedCornerShape(16.dp)
 }
 
 

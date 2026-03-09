@@ -43,11 +43,12 @@ class UserRepositoryImpl(
                 }
             }.decodeSingleOrNull<User>()
 
+            val mappedUser = user?.let { it.copy(avatar = it.avatar?.let { avatar -> constructAvatarUrl(avatar) }) }
             // Cache to DB if found
-            if (user != null) {
-                database.userQueries.insertUser(mapDomainUser(user))
+            if (mappedUser != null) {
+                database.userQueries.insertUser(mapDomainUser(mappedUser))
             }
-            user
+            mappedUser
         }
     }
 
@@ -64,7 +65,9 @@ class UserRepositoryImpl(
                     }
                  }
                  limit(20)
-            }.decodeList<User>()
+            }.decodeList<User>().map { user ->
+                user.copy(avatar = user.avatar?.let { constructAvatarUrl(it) })
+            }
         }
     }
 
@@ -77,8 +80,9 @@ class UserRepositoryImpl(
                 select()
             }.decodeSingleOrNull<User>()
 
-            if (user != null) {
-                database.userQueries.insertUser(mapDomainUser(user))
+            val mappedUser = user?.let { it.copy(avatar = it.avatar?.let { avatar -> constructAvatarUrl(avatar) }) }
+            if (mappedUser != null) {
+                database.userQueries.insertUser(mapDomainUser(mappedUser))
             }
             true
         }
@@ -92,7 +96,7 @@ class UserRepositoryImpl(
                 filter {
                     eq("uid", currentUserId)
                 }
-            }.decodeSingleOrNull<User>()?.avatar
+            }.decodeSingleOrNull<User>()?.avatar?.let { constructAvatarUrl(it) }
         }
     }
 
@@ -100,7 +104,7 @@ class UserRepositoryImpl(
         if (path.startsWith("http")) return path
         val baseUrl = SynapseConfig.SUPABASE_URL
         val cleanBaseUrl = if (baseUrl.endsWith("/")) baseUrl.dropLast(1) else baseUrl
-        return "/storage/v1/object/public/avatars/"
+        return "$cleanBaseUrl/storage/v1/object/public/avatars/$path"
     }
 
     private fun mapDbUser(dbUser: com.synapse.social.studioasinc.shared.data.database.User): User {

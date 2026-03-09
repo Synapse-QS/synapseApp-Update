@@ -9,6 +9,7 @@ class SendMessageUseCase(private val repository: ChatRepository) {
         content: String,
         mediaUrl: String? = null,
         messageType: String = "text",
-        expiresAt: String? = null
-    ): Result<Message> = repository.sendMessage(chatId, content, mediaUrl, messageType, expiresAt)
+        expiresAt: String? = null,
+        replyToId: String? = null
+    ): Result<Message> = repository.sendMessage(chatId, content, mediaUrl, messageType, expiresAt, replyToId)
 }

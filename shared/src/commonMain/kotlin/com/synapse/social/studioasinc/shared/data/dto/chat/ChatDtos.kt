@@ -45,7 +45,8 @@ data class NewMessageDto(
     @SerialName("media_url") val mediaUrl: String? = null,
     @SerialName("is_encrypted") val isEncrypted: Boolean = false,
     @SerialName("encrypted_content") val encryptedContent: String? = null,
-    @SerialName("expires_at") val expiresAt: String? = null
+    @SerialName("expires_at") val expiresAt: String? = null,
+    @SerialName("reply_to_id") val replyToId: String? = null
 )
 
 @Serializable

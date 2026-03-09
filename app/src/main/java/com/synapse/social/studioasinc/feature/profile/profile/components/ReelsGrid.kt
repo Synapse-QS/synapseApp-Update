@@ -15,6 +15,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.synapse.social.studioasinc.ui.components.shimmer
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
@@ -178,7 +179,7 @@ private fun ShimmerReelItem(animationDelay: Int = 0) {
             .aspectRatio(9f / 16f)
             .graphicsLayer { this.alpha = alpha }
             .clip(RoundedCornerShape(4.dp))
-            .background(shimmerBrush())
+            .shimmer()
     )
 }
 

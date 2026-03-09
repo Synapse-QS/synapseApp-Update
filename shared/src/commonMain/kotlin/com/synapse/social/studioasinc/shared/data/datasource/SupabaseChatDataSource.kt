@@ -178,11 +178,12 @@ class SupabaseChatDataSource(private val client: SupabaseClientLib = SupabaseCli
         messageType: String = "text", 
         isEncrypted: Boolean = false, 
         encryptedContent: String? = null,
-        expiresAt: String? = null
+        expiresAt: String? = null,
+        replyToId: String? = null
     ): MessageDto =
         withContext(Dispatchers.IO) {
             val senderId = getCurrentUserId() ?: throw Exception("Not authenticated")
-            val newMessage = NewMessageDto(chatId, senderId, content, messageType, mediaUrl, isEncrypted, encryptedContent, expiresAt)
+            val newMessage = NewMessageDto(chatId, senderId, content, messageType, mediaUrl, isEncrypted, encryptedContent, expiresAt, replyToId)
             client.postgrest.from("messages").insert(newMessage) { select() }.decodeSingle<MessageDto>()
         }
 

@@ -68,6 +68,12 @@ class ChatViewModel @Inject constructor(
     private val _editingMessage = MutableStateFlow<Message?>(null)
     val editingMessage: StateFlow<Message?> = _editingMessage.asStateFlow()
 
+    private val _selectedMessageIds = MutableStateFlow<Set<String>>(emptySet())
+    val selectedMessageIds: StateFlow<Set<String>> = _selectedMessageIds.asStateFlow()
+
+    private val _replyingToMessage = MutableStateFlow<Message?>(null)
+    val replyingToMessage: StateFlow<Message?> = _replyingToMessage.asStateFlow()
+
     private val _disappearingMode = MutableStateFlow<DisappearingMode>(DisappearingMode.OFF)
     val disappearingMode: StateFlow<DisappearingMode> = _disappearingMode.asStateFlow()
 
@@ -260,6 +266,9 @@ class ChatViewModel @Inject constructor(
             Instant.now().plusSeconds(seconds).toString()
         }
 
+        val replyToMessage = _replyingToMessage.value
+        _replyingToMessage.value = null
+
         viewModelScope.launch {
             // Optimistic update
             val tempId = UUID.randomUUID().toString()
@@ -271,7 +280,8 @@ class ChatViewModel @Inject constructor(
                 messageType = MessageType.TEXT,
                 deliveryStatus = DeliveryStatus.SENT,
                 createdAt = Instant.now().toString(),
-                expiresAt = expiresAt
+                expiresAt = expiresAt,
+                replyToId = replyToMessage?.id
             )
             _messages.update { (it + newMessage).sortedBy { msg -> msg.createdAt } }
 
@@ -280,7 +290,8 @@ class ChatViewModel @Inject constructor(
                 chatId = chatId,
                 content = text,
                 messageType = "text",
-                expiresAt = expiresAt
+                expiresAt = expiresAt,
+                replyToId = replyToMessage?.id
             ).onSuccess { actualMessage ->
                 _messages.update { current ->
                     current.map { if (it.id == tempId) actualMessage else it }.sortedBy { msg -> msg.createdAt }
@@ -312,6 +323,37 @@ class ChatViewModel @Inject constructor(
     fun cancelEditing() {
         _editingMessage.value = null
         _inputText.value = ""
+    }
+
+    fun toggleMessageSelection(messageId: String) {
+        _selectedMessageIds.update { current ->
+            if (current.contains(messageId)) {
+                current - messageId
+            } else {
+                current + messageId
+            }
+        }
+    }
+
+    fun clearSelection() {
+        _selectedMessageIds.value = emptySet()
+    }
+
+    fun deleteSelectedMessages() {
+        val selectedIds = _selectedMessageIds.value
+        _selectedMessageIds.value = emptySet()
+        selectedIds.forEach { id ->
+            deleteMessageForMe(id) // Or deleteMessage(id) if intended for everyone, but for me is safer default.
+        }
+    }
+
+    fun setReplyingToMessage(message: Message) {
+        _replyingToMessage.value = message
+        // Automatically open keyboard or focus input if possible in UI layer
+    }
+
+    fun cancelReply() {
+        _replyingToMessage.value = null
     }
 
     private fun saveEdit(message: Message, newContent: String) {
