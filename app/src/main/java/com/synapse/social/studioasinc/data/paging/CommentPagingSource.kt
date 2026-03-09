@@ -7,7 +7,8 @@ import com.synapse.social.studioasinc.domain.model.CommentWithUser
 
 class CommentPagingSource(
     private val repository: CommentRepository,
-    private val postId: String
+    private val postId: String,
+    private val parentCommentId: String? = null
 ) : PagingSource<Int, CommentWithUser>() {
 
     override fun getRefreshKey(state: PagingState<Int, CommentWithUser>): Int? {
@@ -20,7 +21,11 @@ class CommentPagingSource(
         val offset = page * pageSize
 
         return try {
-            val response = repository.fetchComments(postId, limit = pageSize, offset = offset)
+            val response = if (parentCommentId != null) {
+                repository.fetchPagedReplies(parentCommentId, limit = pageSize, offset = offset)
+            } else {
+                repository.fetchComments(postId, limit = pageSize, offset = offset)
+            }
             val comments = response.getOrThrow()
 
             val nextKey = if (comments.size < pageSize) null else page + 1

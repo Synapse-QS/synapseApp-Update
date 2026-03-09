@@ -48,18 +48,19 @@ class PostDetailViewModel @Inject constructor(
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val commentsPagingFlow: Flow<PagingData<CommentWithUser>> = _uiState
-        .map { it.post?.post?.id }
+        .map { Pair(it.post?.post?.id, it.rootComment?.id) }
         .distinctUntilChanged()
-        .filterNotNull()
-        .flatMapLatest { postId ->
+        .filter { it.first != null }
+        .flatMapLatest { (postId, rootCommentId) ->
             Pager(
                 config = PagingConfig(pageSize = 20),
-                pagingSourceFactory = { CommentPagingSource(commentRepository, postId) }
+                pagingSourceFactory = { CommentPagingSource(commentRepository, postId!!, rootCommentId) }
             ).flow
         }
         .cachedIn(viewModelScope)
 
     private var currentPostId: String? = null
+    private var rootCommentId: String? = null
 
     init {
         viewModelScope.launch {
@@ -74,15 +75,27 @@ class PostDetailViewModel @Inject constructor(
         }
     }
 
-    fun loadPost(postId: String) {
-        if (currentPostId == postId) return
+    fun loadPost(postId: String, rootCommentId: String? = null) {
+        if (currentPostId == postId && this.rootCommentId == rootCommentId) return
         currentPostId = postId
+        this.rootCommentId = rootCommentId
 
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             postDetailRepository.getPostWithDetails(postId).fold(
                 onSuccess = { post ->
-                    _uiState.update { it.copy(post = post, isLoading = false) }
+                    _uiState.update { it.copy(post = post) }
+
+                    if (rootCommentId != null) {
+                        commentRepository.getComment(rootCommentId).onSuccess { comment ->
+                            _uiState.update { it.copy(rootComment = comment) }
+                        }.onFailure { e ->
+                            _uiState.update { it.copy(error = e.message ?: "Failed to load comment") }
+                        }
+                    } else {
+                        _uiState.update { it.copy(rootComment = null) }
+                    }
+                    _uiState.update { it.copy(isLoading = false) }
                 },
                 onFailure = { error ->
                     _uiState.update { it.copy(isLoading = false, error = error.message ?: "Failed to load post") }

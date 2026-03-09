@@ -29,6 +29,7 @@ fun CommentsList(
     onReplyClick: (CommentWithUser) -> Unit,
     onLikeClick: (String) -> Unit,
     onViewReplies: (String) -> Unit = {},
+    onCommentClick: (String) -> Unit = {},
     onShowReactions: (CommentWithUser) -> Unit,
     onShowOptions: (CommentWithUser) -> Unit,
     onUserClick: (String) -> Unit,
@@ -108,7 +109,7 @@ fun CommentsList(
                         onRepostClick = { /* Not applicable for comments */ },
                         onBookmarkClick = { /* Not applicable for comments */ },
                         onUserClick = { comment.userId?.let { onUserClick(it) } },
-                        onPostClick = { /* Navigate to comment detail if needed */ },
+                        onPostClick = { onCommentClick(comment.id) },
                         onMediaClick = { /* No media in comments */ },
                         onOptionsClick = { onShowOptions(comment) },
                         onPollVote = { /* No polls in comments */ },
@@ -131,7 +132,8 @@ fun CommentsList(
                             onShowOptions = onShowOptions,
                             onUserClick = onUserClick,
                             onShareClick = onShareClick,
-                            onViewReplies = onViewReplies
+                            onViewReplies = onViewReplies,
+                            onCommentClick = onCommentClick
                         )
                     }
                     
@@ -189,7 +191,8 @@ private fun RenderReplies(
     onShowOptions: (CommentWithUser) -> Unit,
     onUserClick: (String) -> Unit,
     onShareClick: ((String) -> Unit)?,
-    onViewReplies: (String) -> Unit
+    onViewReplies: (String) -> Unit,
+    onCommentClick: (String) -> Unit
 ) {
     replies.forEachIndexed { replyIndex, reply ->
         val nestedReplies = repliesState[reply.id] ?: emptyList()
@@ -217,7 +220,7 @@ private fun RenderReplies(
                 onRepostClick = { /* Not applicable for comments */ },
                 onBookmarkClick = { /* Not applicable for comments */ },
                 onUserClick = { reply.userId?.let { onUserClick(it) } },
-                onPostClick = { /* Navigate to comment detail if needed */ },
+                onPostClick = { onCommentClick(reply.id) },
                 onMediaClick = { /* No media in comments */ },
                 onOptionsClick = { onShowOptions(reply) },
                 onPollVote = { /* No polls in comments */ },
@@ -241,7 +244,8 @@ private fun RenderReplies(
                     onShowOptions = onShowOptions,
                     onUserClick = onUserClick,
                     onShareClick = onShareClick,
-                    onViewReplies = onViewReplies
+                    onViewReplies = onViewReplies,
+                    onCommentClick = onCommentClick
                 )
             }
             

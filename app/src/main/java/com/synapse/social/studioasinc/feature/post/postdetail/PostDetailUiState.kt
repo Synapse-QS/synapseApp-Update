@@ -6,6 +6,7 @@ import com.synapse.social.studioasinc.domain.model.PostDetail
 data class PostDetailUiState(
     val isLoading: Boolean = false,
     val post: PostDetail? = null,
+    val rootComment: CommentWithUser? = null,
     val comments: List<CommentWithUser> = emptyList(),
     val isCommentsLoading: Boolean = false,
     val error: String? = null,

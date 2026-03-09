@@ -34,7 +34,7 @@ sealed interface HomeDestinations {
     data object Notifications : HomeDestinations
 
     @Serializable
-    data class PostDetail(val postId: String) : HomeDestinations
+    data class PostDetail(val postId: String, val commentId: String? = null) : HomeDestinations
 
     @Serializable
     data class Profile(val userId: String) : HomeDestinations
@@ -99,9 +99,13 @@ fun HomeNavGraph(
              val args = backStackEntry.toRoute<HomeDestinations.PostDetail>()
              PostDetailScreen(
                  postId = args.postId,
+                 rootCommentId = args.commentId,
                  onNavigateBack = { navController.popBackStack() },
                  onNavigateToProfile = onNavigateToProfile,
-                 onNavigateToEditPost = onNavigateToEditPost
+                 onNavigateToEditPost = onNavigateToEditPost,
+                 onNavigateToCommentDetail = { postId, commentId ->
+                     navController.navigate(HomeDestinations.PostDetail(postId, commentId))
+                 }
              )
         }
 

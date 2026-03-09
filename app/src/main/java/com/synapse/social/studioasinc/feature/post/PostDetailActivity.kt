@@ -17,6 +17,7 @@ class PostDetailActivity : AppCompatActivity() {
     companion object {
         const val EXTRA_POST_ID = "post_id"
         const val EXTRA_AUTHOR_UID = "author_uid"
+        const val EXTRA_COMMENT_ID = "comment_id"
 
         fun start(context: Context, postId: String, authorUid: String? = null) {
             context.startActivity(Intent(context, PostDetailActivity::class.java).apply {
@@ -32,6 +33,7 @@ class PostDetailActivity : AppCompatActivity() {
 
 
         val postId = intent.getStringExtra(EXTRA_POST_ID)
+        val commentId = intent.getStringExtra(EXTRA_COMMENT_ID)
 
         if (postId == null) {
             finish()
@@ -42,9 +44,17 @@ class PostDetailActivity : AppCompatActivity() {
             SynapseTheme {
                 PostDetailScreen(
                     postId = postId,
+                    rootCommentId = commentId,
                     onNavigateBack = { finish() },
                     onNavigateToProfile = { userId -> navigateToProfile(userId) },
-                    onNavigateToEditPost = { editPostId -> navigateToEditPost(editPostId) }
+                    onNavigateToEditPost = { editPostId -> navigateToEditPost(editPostId) },
+                    onNavigateToCommentDetail = { pId, cId ->
+                        val intent = Intent(this, PostDetailActivity::class.java).apply {
+                            putExtra(EXTRA_POST_ID, pId)
+                            putExtra(EXTRA_COMMENT_ID, cId)
+                        }
+                        startActivity(intent)
+                    }
                 )
             }
         }

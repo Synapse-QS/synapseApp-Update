@@ -194,12 +194,16 @@ fun AppNavigation(
             val args = backStackEntry.toRoute<AppDestination.PostDetail>()
             PostDetailScreen(
                 postId = args.postId,
+                rootCommentId = args.commentId,
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToProfile = { userId ->
                     navController.navigate(AppDestination.Profile(userId))
                 },
                 onNavigateToEditPost = { pid ->
                     navController.navigate(AppDestination.CreatePost(pid))
+            },
+            onNavigateToCommentDetail = { postId, commentId ->
+                navController.navigate(AppDestination.PostDetail(postId, commentId))
                 }
             )
         }

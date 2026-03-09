@@ -12,7 +12,7 @@ sealed interface AppDestination {
     @Serializable
     data object Search : AppDestination
     @Serializable
-    data class PostDetail(val postId: String) : AppDestination
+    data class PostDetail(val postId: String, val commentId: String? = null) : AppDestination
     @Serializable
     data class CreatePost(val postId: String? = null, val type: String = "post") : AppDestination
     @Serializable

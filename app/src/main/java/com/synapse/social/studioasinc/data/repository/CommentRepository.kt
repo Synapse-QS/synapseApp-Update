@@ -97,6 +97,75 @@ class CommentRepository constructor(
         return fetchComments(postId, limit, offset).map { Unit }
     }
 
+    suspend fun getComment(commentId: String): Result<CommentWithUser> = withContext(Dispatchers.IO) {
+        try {
+            val response = client.from("comments")
+                .select(
+                    columns = Columns.raw("""
+                        *,
+                        users!comments_user_id_fkey(uid, username, display_name, email, bio, avatar, followers_count, following_count, posts_count, status, account_type, verify, banned)
+                    """.trimIndent())
+                ) {
+                    filter { eq("id", commentId) }
+                }
+                .decodeSingleOrNull<JsonObject>()
+
+            if (response == null) {
+                return@withContext Result.failure(Exception("Comment not found"))
+            }
+
+            val comment = parseCommentFromJson(response)
+                ?: return@withContext Result.failure(Exception("Failed to parse comment"))
+
+            val populatedComments = reactionRepository.populateCommentReactions(listOf(comment))
+
+            Result.success(populatedComments.first())
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to fetch comment: ${e.message}", e)
+            Result.failure(Exception(mapSupabaseError(e)))
+        }
+    }
+
+    suspend fun fetchPagedReplies(parentId: String, limit: Int = 50, offset: Int = 0): Result<List<CommentWithUser>> = withContext(Dispatchers.IO) {
+        try {
+            Log.d(TAG, "Fetching paged replies for comment: $parentId")
+            val response = client.from("comments")
+                .select(
+                    columns = Columns.raw("""
+                        *,
+                        users!comments_user_id_fkey(uid, username, display_name, email, bio, avatar, followers_count, following_count, posts_count, status, account_type, verify, banned)
+                    """.trimIndent())
+                ) {
+                    filter {
+                        eq("parent_comment_id", parentId)
+                        filterNot("is_deleted", io.github.jan.supabase.postgrest.query.filter.FilterOperator.EQ, true)
+                    }
+                    order("created_at", Order.ASCENDING)
+                    range(offset.toLong(), (offset + limit - 1).toLong())
+                }
+                .decodeList<JsonObject>()
+
+            val replies = mutableListOf<CommentWithUser>()
+            for (json in response) {
+                parseCommentFromJson(json)?.let {
+                    replies.add(it)
+                }
+            }
+
+            val populatedReplies = reactionRepository.populateCommentReactions(replies)
+
+            val commentsToCache = populatedReplies.map {
+                CommentMapper.toSharedEntity(it.toComment(), it.user?.username, it.user?.avatar)
+            }
+            commentDao.insertAll(commentsToCache)
+
+            Result.success(populatedReplies)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to fetch paged replies: ${e.message}", e)
+            Result.failure(Exception(mapSupabaseError(e)))
+        }
+    }
+
     suspend fun getReplies(commentId: String): Result<List<CommentWithUser>> = withContext(Dispatchers.IO) {
         try {
             Log.d(TAG, "Fetching replies for comment: $commentId")

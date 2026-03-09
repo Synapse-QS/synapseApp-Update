@@ -32,6 +32,8 @@ import com.synapse.social.studioasinc.feature.shared.components.ReportPostDialog
 import com.synapse.social.studioasinc.feature.shared.components.post.PostActions
 import com.synapse.social.studioasinc.feature.shared.components.post.ReactionPicker
 import com.synapse.social.studioasinc.feature.shared.components.post.SharedPostItem
+import com.synapse.social.studioasinc.feature.shared.components.post.PostUiMapper
+import com.synapse.social.studioasinc.feature.shared.components.post.PostCard
 import com.synapse.social.studioasinc.ui.components.ExpressiveLoadingIndicator
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.CoroutineScope
@@ -42,8 +44,10 @@ import androidx.paging.compose.LazyPagingItems
 @Composable
 fun PostDetailScreen(
     postId: String,
+    rootCommentId: String? = null,
     onNavigateToProfile: (String) -> Unit,
     onNavigateToEditPost: (String) -> Unit,
+    onNavigateToCommentDetail: (String, String) -> Unit,
     onNavigateBack: () -> Unit,
     viewModel: PostDetailViewModel = hiltViewModel()
 ) {
@@ -67,8 +71,8 @@ fun PostDetailScreen(
 
     val currentUserId = uiState.currentUserId
 
-    LaunchedEffect(postId) {
-        viewModel.loadPost(postId)
+    LaunchedEffect(postId, rootCommentId) {
+        viewModel.loadPost(postId, rootCommentId)
     }
 
     LaunchedEffect(uiState.refreshTrigger) {
@@ -208,6 +212,7 @@ fun PostDetailScreen(
             onShowOptions = { showCommentOptions = it },
             onUserClick = onNavigateToProfile,
             onViewReplies = { commentId -> viewModel.loadReplies(commentId) },
+            onCommentClick = { commentId -> onNavigateToCommentDetail(postId, commentId) },
             onPostLike = { _ -> viewModel.toggleReaction(ReactionType.LIKE) },
             onPostComment = { _ ->
                 scope.launch {
@@ -240,6 +245,7 @@ private fun PostDetailContent(
     onShowOptions: (CommentWithUser) -> Unit,
     onUserClick: (String) -> Unit,
     onViewReplies: (String) -> Unit,
+    onCommentClick: (String) -> Unit,
     onPostLike: (com.synapse.social.studioasinc.domain.model.Post) -> Unit,
     onPostComment: (com.synapse.social.studioasinc.domain.model.Post) -> Unit,
     onPostShare: (com.synapse.social.studioasinc.domain.model.Post) -> Unit,
@@ -277,42 +283,72 @@ private fun PostDetailContent(
                     onShowOptions = onShowOptions,
                     onUserClick = onUserClick,
                     onViewReplies = onViewReplies,
+                    onCommentClick = onCommentClick,
                     modifier = Modifier.fillMaxSize(),
                     headerContent = {
-                        val mergedPost = remember(postDetail) {
-                            postDetail.post.copy(
-                                userReaction = postDetail.userReaction,
-                                reactions = postDetail.reactionSummary,
-                                likesCount = postDetail.reactionSummary.values.sum(),
-                                commentsCount = postDetail.post.commentsCount,
-                                username = postDetail.author.username,
-                                avatarUrl = postDetail.author.avatar,
-                                isVerified = postDetail.author.verify
+                        if (uiState.rootComment != null) {
+                            val rootComment = uiState.rootComment
+                            val postCardState = PostUiMapper.toPostCardState(
+                                comment = rootComment,
+                                parentAuthorUsername = null,
+                                depth = 0,
+                                showThreadLine = false,
+                                isThreadChild = false,
+                                isLastReply = false
+                            ).copy(isExpanded = true)
+
+                            PostCard(
+                                state = postCardState,
+                                onLikeClick = { onLikeClick(rootComment.id) },
+                                onCommentClick = { onReplyClick(rootComment) },
+                                onShareClick = { /* Implement share */ },
+                                onRepostClick = { },
+                                onBookmarkClick = { },
+                                onUserClick = { rootComment.userId?.let { onUserClick(it) } },
+                                onPostClick = { },
+                                onMediaClick = { },
+                                onOptionsClick = { onShowOptions(rootComment) },
+                                onPollVote = { },
+                                onReactionSelected = { onShowReactions(rootComment) },
+                                onQuoteClick = { },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        } else {
+                            val mergedPost = remember(postDetail) {
+                                postDetail.post.copy(
+                                    userReaction = postDetail.userReaction,
+                                    reactions = postDetail.reactionSummary,
+                                    likesCount = postDetail.reactionSummary.values.sum(),
+                                    commentsCount = postDetail.post.commentsCount,
+                                    username = postDetail.author.username,
+                                    avatarUrl = postDetail.author.avatar,
+                                    isVerified = postDetail.author.verify
+                                )
+                            }
+
+                            val actions = remember(onPostLike, onPostComment, onPostShare, onPostRepost, onPostBookmark, onPostOptionClick, onPostPollVote, onUserClick, onPostMediaClick, onPostReactionSelected) {
+                                PostActions(
+                                    onLike = onPostLike,
+                                    onComment = onPostComment,
+                                    onShare = onPostShare,
+                                    onRepost = onPostRepost,
+                                    onBookmark = onPostBookmark,
+                                    onOptionClick = onPostOptionClick,
+                                    onPollVote = onPostPollVote,
+                                    onUserClick = onUserClick,
+                                    onMediaClick = onPostMediaClick,
+                                    onReactionSelected = onPostReactionSelected,
+                                    onQuote = onPostRepost
+                                )
+                            }
+
+                            SharedPostItem(
+                                post = mergedPost,
+                                actions = actions,
+                                isExpanded = true,
+                                modifier = Modifier.fillMaxWidth()
                             )
                         }
-
-                        val actions = remember(onPostLike, onPostComment, onPostShare, onPostRepost, onPostBookmark, onPostOptionClick, onPostPollVote, onUserClick, onPostMediaClick, onPostReactionSelected) {
-                            PostActions(
-                                onLike = onPostLike,
-                                onComment = onPostComment,
-                                onShare = onPostShare,
-                                onRepost = onPostRepost,
-                                onBookmark = onPostBookmark,
-                                onOptionClick = onPostOptionClick,
-                                onPollVote = onPostPollVote,
-                                onUserClick = onUserClick,
-                                onMediaClick = onPostMediaClick,
-                                onReactionSelected = onPostReactionSelected,
-                                onQuote = onPostRepost
-                            )
-                        }
-
-                        SharedPostItem(
-                            post = mergedPost,
-                            actions = actions,
-                            isExpanded = true,
-                            modifier = Modifier.fillMaxWidth()
-                        )
                     }
                 )
             }
