@@ -45,7 +45,7 @@ object SettingsColors {
     val cardBackground: Color
         @Composable
         @ReadOnlyComposable
-        get() = MaterialTheme.colorScheme.surface
+        get() = MaterialTheme.colorScheme.surfaceContainerHigh
 
 
 
@@ -59,7 +59,7 @@ object SettingsColors {
     val cardBackgroundElevated: Color
         @Composable
         @ReadOnlyComposable
-        get() = MaterialTheme.colorScheme.surfaceContainerHigh
+        get() = MaterialTheme.colorScheme.surfaceContainerHighest
 
 
 
