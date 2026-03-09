@@ -79,8 +79,8 @@ kotlin {
                 implementation("com.russhwolf:multiplatform-settings-no-arg:1.3.0")
 
                 // SQLDelight
-                implementation("app.cash.sqldelight:runtime:2.2.1")
-                implementation("app.cash.sqldelight:coroutines-extensions:2.2.1")
+                implementation("app.cash.sqldelight:runtime:2.0.2")
+                implementation("app.cash.sqldelight:coroutines-extensions:2.0.2")
             }
         }
 
@@ -97,7 +97,7 @@ kotlin {
                 implementation("org.whispersystems:signal-protocol-android:2.8.1")
                 implementation("androidx.security:security-crypto:1.1.0-alpha06")
                 implementation("androidx.exifinterface:exifinterface:1.3.7")
-                implementation("app.cash.sqldelight:android-driver:2.2.1")
+                implementation("app.cash.sqldelight:android-driver:2.0.2")
                 implementation("io.insert-koin:koin-android:4.1.1")
             }
         }
@@ -113,7 +113,7 @@ kotlin {
             val iosMain by getting {
                 dependencies {
                     implementation("io.ktor:ktor-client-darwin:3.2.2")
-                    implementation("app.cash.sqldelight:native-driver:2.2.1")
+                    implementation("app.cash.sqldelight:native-driver:2.0.2")
                 }
             }
         }

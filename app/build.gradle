@@ -263,8 +263,8 @@ dependencies {
     implementation("com.google.genai:google-genai:1.29.0")
 
     // SQLDelight Driver
-    implementation "app.cash.sqldelight:android-driver:2.2.1"
-    implementation "app.cash.sqldelight:coroutines-extensions:2.2.1"
+    implementation "app.cash.sqldelight:android-driver:2.0.2"
+    implementation "app.cash.sqldelight:coroutines-extensions:2.0.2"
 
 
 

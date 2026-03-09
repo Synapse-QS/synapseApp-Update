@@ -20,5 +20,6 @@ data class PostDetailUiState(
     val currentUserAvatarUrl: String? = null,
     val refreshTrigger: Int = 0,
     val blockSuccess: Boolean = false,
-    val blockError: String? = null
+    val blockError: String? = null,
+    val ancestorComments: List<CommentWithUser> = emptyList()
 )

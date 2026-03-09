@@ -89,11 +89,15 @@ class PostDetailViewModel @Inject constructor(
                     if (rootCommentId != null) {
                         commentRepository.getComment(rootCommentId).onSuccess { comment ->
                             _uiState.update { it.copy(rootComment = comment) }
+                            
+                            commentRepository.getCommentAncestors(rootCommentId).onSuccess { ancestors ->
+                                _uiState.update { it.copy(ancestorComments = ancestors) }
+                            }
                         }.onFailure { e ->
                             _uiState.update { it.copy(error = e.message ?: "Failed to load comment") }
                         }
                     } else {
-                        _uiState.update { it.copy(rootComment = null) }
+                        _uiState.update { it.copy(rootComment = null, ancestorComments = emptyList()) }
                     }
                     _uiState.update { it.copy(isLoading = false) }
                 },

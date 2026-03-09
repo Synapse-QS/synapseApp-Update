@@ -126,6 +126,31 @@ class CommentRepository constructor(
         }
     }
 
+    suspend fun getCommentAncestors(commentId: String): Result<List<CommentWithUser>> = withContext(Dispatchers.IO) {
+        try {
+            val ancestors = mutableListOf<CommentWithUser>()
+            var currentComment = getComment(commentId).getOrNull()
+            var currentParentId = currentComment?.parentCommentId
+            
+            var depth = 0
+            while (currentParentId != null && depth < 10) {
+                val parentComment = getComment(currentParentId).getOrNull()
+                if (parentComment != null) {
+                    ancestors.add(parentComment)
+                    currentParentId = parentComment.parentCommentId
+                    depth++
+                } else {
+                    break
+                }
+            }
+            
+            Result.success(ancestors.reversed())
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to fetch comment ancestors: ${e.message}", e)
+            Result.failure(Exception(mapSupabaseError(e)))
+        }
+    }
+
     suspend fun fetchPagedReplies(parentId: String, limit: Int = 50, offset: Int = 0): Result<List<CommentWithUser>> = withContext(Dispatchers.IO) {
         try {
             Log.d(TAG, "Fetching paged replies for comment: $parentId")

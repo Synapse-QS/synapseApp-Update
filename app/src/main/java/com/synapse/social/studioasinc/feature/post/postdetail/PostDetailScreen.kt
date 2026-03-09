@@ -288,12 +288,41 @@ private fun PostDetailContent(
                     headerContent = {
                         if (uiState.rootComment != null) {
                             val rootComment = uiState.rootComment
+                            
+                            // Render ancestors
+                            uiState.ancestorComments.forEach { ancestor ->
+                                val ancestorState = PostUiMapper.toPostCardState(
+                                    comment = ancestor,
+                                    parentAuthorUsername = null,
+                                    depth = 0,
+                                    showThreadLine = true,
+                                    isThreadChild = false,
+                                    isLastReply = false
+                                )
+                                PostCard(
+                                    state = ancestorState,
+                                    onLikeClick = { onLikeClick(ancestor.id) },
+                                    onCommentClick = { onReplyClick(ancestor) },
+                                    onShareClick = { /* Implement share */ },
+                                    onRepostClick = { },
+                                    onBookmarkClick = { },
+                                    onUserClick = { ancestor.userId?.let { onUserClick(it) } },
+                                    onPostClick = { onCommentClick(ancestor.id) },
+                                    onMediaClick = { },
+                                    onOptionsClick = { onShowOptions(ancestor) },
+                                    onPollVote = { },
+                                    onReactionSelected = { onShowReactions(ancestor) },
+                                    onQuoteClick = { },
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                            }
+
                             val postCardState = PostUiMapper.toPostCardState(
                                 comment = rootComment,
                                 parentAuthorUsername = null,
                                 depth = 0,
                                 showThreadLine = false,
-                                isThreadChild = false,
+                                isThreadChild = uiState.ancestorComments.isNotEmpty(),
                                 isLastReply = false
                             ).copy(isExpanded = true)
 
