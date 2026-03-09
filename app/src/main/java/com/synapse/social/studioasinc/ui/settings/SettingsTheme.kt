@@ -45,7 +45,14 @@ object SettingsColors {
     val cardBackground: Color
         @Composable
         @ReadOnlyComposable
-        get() = MaterialTheme.colorScheme.surfaceContainer
+        get() = MaterialTheme.colorScheme.surface
+
+
+
+    val screenBackground: Color
+        @Composable
+        @ReadOnlyComposable
+        get() = MaterialTheme.colorScheme.surfaceVariant
 
 
 

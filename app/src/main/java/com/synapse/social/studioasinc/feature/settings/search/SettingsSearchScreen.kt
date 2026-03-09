@@ -12,6 +12,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.synapse.social.studioasinc.R
 import com.synapse.social.studioasinc.ui.settings.SettingsDataProvider
+import com.synapse.social.studioasinc.ui.settings.SettingsColors
+import com.synapse.social.studioasinc.ui.settings.SettingsShapes
 
 data class SettingsSearchItem(
     val title: String,
@@ -46,6 +48,7 @@ fun SettingsSearchScreen(
     }
 
     Scaffold(
+        containerColor = SettingsColors.screenBackground,
         topBar = {
             TopAppBar(
                 title = { Text("Search Settings") },
@@ -104,7 +107,11 @@ private fun SettingsSearchResultItem(
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 4.dp)
+            .padding(vertical = 4.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = SettingsColors.cardBackground
+        ),
+        shape = SettingsShapes.itemShape
     ) {
         Column(
             modifier = Modifier.padding(16.dp)

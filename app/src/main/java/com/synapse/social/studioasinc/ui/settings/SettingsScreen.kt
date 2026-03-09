@@ -48,6 +48,7 @@ fun SettingsScreen(
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
+        containerColor = SettingsColors.screenBackground,
         topBar = {
             LargeTopAppBar(
                 title = { Text("Settings") },
@@ -192,7 +193,7 @@ private fun SettingRow(
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = position.getShape(),
-        color = MaterialTheme.colorScheme.surfaceContainer
+        color = SettingsColors.cardBackground
     ) {
         Row(
             modifier = Modifier
