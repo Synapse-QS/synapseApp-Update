@@ -63,42 +63,41 @@ class SynapseApplication : Application() {
             OneSignal.Debug.logLevel = LogLevel.VERBOSE
         }
 
-
         OneSignal.initWithContext(this, NotificationConfig.ONESIGNAL_APP_ID)
 
+        // Listen for subscription changes
+        OneSignal.User.pushSubscription.addObserver(object : com.onesignal.user.subscriptions.IPushSubscriptionObserver {
+            override fun onPushSubscriptionChange(state: com.onesignal.user.subscriptions.PushSubscriptionChangedState) {
+                if (state.current.optedIn && state.current.token != null) {
+                    android.widget.Toast.makeText(this@SynapseApplication, "✅ Notifications enabled", android.widget.Toast.LENGTH_SHORT).show()
+                    android.util.Log.d("SynapseApplication", "Push subscribed: ${state.current.id}, token: ${state.current.token}")
+                }
+            }
+        })
 
         CoroutineScope(Dispatchers.Main).launch {
+            // Request permission first
             OneSignal.Notifications.requestPermission(true)
-
-
+            
+            // Wait a bit for permission to be granted
+            kotlinx.coroutines.delay(1000)
+            
+            // Then login with user ID
             try {
                 val authService = SupabaseAuthenticationService.getInstance(this@SynapseApplication)
                 authService.getCurrentUserId()?.let { userId ->
                     OneSignal.login(userId)
-                    android.util.Log.d("SynapseApplication", "Restored OneSignal session for user: $userId")
-
-
-                    val subscriptionId = OneSignal.User.pushSubscription.id
-                    if (!subscriptionId.isNullOrEmpty()) {
-                        withContext(Dispatchers.IO) {
-                            try {
-                                notificationRepository.updateOneSignalPlayerId(userId, subscriptionId)
-                                android.util.Log.d("SynapseApplication", "Synced OneSignal ID: $subscriptionId")
-                            } catch (e: Exception) {
-                                android.util.Log.e("SynapseApplication", "Failed to sync OneSignal ID", e)
-                            }
-                        }
-                    }
+                    android.util.Log.d("SynapseApplication", "OneSignal logged in with user: $userId")
                 }
             } catch (e: Exception) {
-                android.util.Log.e("SynapseApplication", "Failed to restore OneSignal session", e)
+                android.util.Log.e("SynapseApplication", "Failed to login to OneSignal", e)
             }
             
             // Start presence tracking
             try {
                 val authService = SupabaseAuthenticationService.getInstance(this@SynapseApplication)
                 if (authService.getCurrentUserId() != null) {
-                    withContext(Dispatchers.IO) {
+                    kotlinx.coroutines.withContext(Dispatchers.IO) {
                         startPresenceTrackingUseCase()
                     }
                 }

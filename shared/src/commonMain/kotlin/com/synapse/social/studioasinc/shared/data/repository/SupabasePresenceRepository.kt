@@ -39,7 +39,7 @@ class SupabasePresenceRepository(
     override suspend fun startPresenceTracking() {
         val userId = client.auth.currentUserOrNull()?.id ?: return
         
-        presenceChannel.subscribe()
+        presenceChannel.subscribe(blockUntilSubscribed = true)
         presenceChannel.track(buildJsonObject {
             put("user_id", userId)
             put("online", true)

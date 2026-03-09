@@ -29,7 +29,8 @@ sealed class AuthUiState {
         val isEmailValid: Boolean = false,
         val passwordStrength: PasswordStrength = PasswordStrength.Weak,
         val isCheckingUsername: Boolean = false,
-        val isLoading: Boolean = false // Added isLoading field
+        val isLoading: Boolean = false,
+        val showSuccessDialog: Boolean = false
     ) : AuthUiState()
 
     data class EmailVerification(

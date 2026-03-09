@@ -184,9 +184,7 @@ class AuthViewModel @Inject constructor(
             _uiState.value = state.copy(isLoading = true, generalError = null)
             signUpUseCase(state.email, state.password, state.username).fold(
                 onSuccess = {
-                    _uiState.value = AuthUiState.EmailVerification(email = state.email)
-                    startResendCooldown()
-                    checkEmailVerification(state.email)
+                    _uiState.value = state.copy(isLoading = false, showSuccessDialog = true)
                 },
                 onFailure = { error ->
                     _uiState.value = state.copy(isLoading = false, generalError = error.message ?: "Registration failed")
@@ -431,6 +429,15 @@ class AuthViewModel @Inject constructor(
     private inline fun updateSignUpState(block: AuthUiState.SignUp.() -> AuthUiState.SignUp) {
         val state = _uiState.value as? AuthUiState.SignUp ?: return
         _uiState.value = state.block()
+    }
+
+    fun onDismissSuccessDialog() {
+        val state = _uiState.value as? AuthUiState.SignUp ?: return
+        viewModelScope.launch {
+            _uiState.value = AuthUiState.EmailVerification(email = state.email)
+            startResendCooldown()
+            checkEmailVerification(state.email)
+        }
     }
 
     override fun onCleared() {

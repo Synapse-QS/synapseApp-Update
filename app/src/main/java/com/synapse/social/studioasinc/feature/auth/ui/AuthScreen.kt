@@ -112,7 +112,8 @@ fun AuthScreen(
                              viewModel.onSignUpClick()
                         },
                         onToggleModeClick = viewModel::onToggleModeClick,
-                        onOAuthClick = viewModel::onOAuthClick
+                        onOAuthClick = viewModel::onOAuthClick,
+                        onDismissSuccessDialog = viewModel::onDismissSuccessDialog
                     )
             }
 

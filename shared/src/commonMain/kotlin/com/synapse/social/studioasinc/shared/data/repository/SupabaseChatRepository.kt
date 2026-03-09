@@ -166,10 +166,13 @@ class SupabaseChatRepository(
         var finalContent = content
         var failureReason: String? = null
         
+        Napier.d("E2EE_SEND: SignalProtocolManager is ${if (signalProtocolManager != null) "available" else "NULL"}", tag = "E2EE")
+        
         if (signalProtocolManager != null) {
             Napier.d("E2EE_ENCRYPT: Starting encryption for message in chat $chatId", tag = "E2EE")
             try {
                 val otherUserId = dataSource.getOtherParticipantId(chatId, currentUserId)
+                Napier.d("E2EE_ENCRYPT: Other participant ID: $otherUserId", tag = "E2EE")
                 if (otherUserId != null) {
                     Napier.d("E2EE_ENCRYPT: Found recipient $otherUserId", tag = "E2EE")
                     
@@ -214,6 +217,17 @@ class SupabaseChatRepository(
         }
 
         val message = dataSource.sendMessage(chatId, finalContent, mediaUrl, messageType, isEncrypted, encryptedContentStr, expiresAt, replyToId)
+        
+        // Send notification to recipient
+        try {
+            val recipientId = dataSource.getOtherParticipantId(chatId, currentUserId)
+            if (recipientId != null) {
+                dataSource.sendMessageNotification(recipientId, currentUserId, if (isEncrypted) "🔒 Encrypted message" else content, chatId)
+            }
+        } catch (e: Exception) {
+            Napier.w("Failed to send notification: ${e.message}", tag = "NOTIFICATION")
+        }
+        
         val decryptedDto = message.copy(
             content = content,
             encryptionFailureReason = if (!isEncrypted) failureReason else null

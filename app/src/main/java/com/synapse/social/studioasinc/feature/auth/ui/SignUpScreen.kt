@@ -24,6 +24,7 @@ import com.synapse.social.studioasinc.feature.auth.ui.components.AuthTextField
 import com.synapse.social.studioasinc.feature.auth.ui.components.ErrorCard
 import com.synapse.social.studioasinc.feature.auth.ui.components.OAuthSection
 import com.synapse.social.studioasinc.feature.auth.ui.components.PasswordStrengthIndicator
+import com.synapse.social.studioasinc.feature.auth.ui.components.UserCreatedDialog
 import com.synapse.social.studioasinc.feature.auth.ui.models.AuthUiState
 
 @Composable
@@ -34,8 +35,13 @@ fun SignUpScreen(
     onUsernameChanged: (String) -> Unit,
     onSignUpClick: () -> Unit,
     onToggleModeClick: () -> Unit,
-    onOAuthClick: (String) -> Unit
+    onOAuthClick: (String) -> Unit,
+    onDismissSuccessDialog: () -> Unit
 ) {
+    if (state.showSuccessDialog) {
+        UserCreatedDialog(onDismiss = onDismissSuccessDialog)
+    }
+
     AuthScreenLayout(
         header = { SignUpHeader() },
         form = {

@@ -16,6 +16,7 @@ import com.synapse.social.studioasinc.shared.domain.model.User
 import io.github.aakira.napier.Napier
 import io.github.jan.supabase.SupabaseClient as SupabaseClientLib
 import io.github.jan.supabase.auth.auth
+import io.github.jan.supabase.functions.functions
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
@@ -187,6 +188,20 @@ class SupabaseChatDataSource(private val client: SupabaseClientLib = SupabaseCli
             client.postgrest.from("messages").insert(newMessage) { select() }.decodeSingle<MessageDto>()
         }
 
+    suspend fun sendMessageNotification(recipientId: String, senderId: String, message: String, chatId: String) = withContext(Dispatchers.IO) {
+        try {
+            client.functions.invoke("send-push-notification", mapOf(
+                "recipient_id" to recipientId,
+                "sender_id" to senderId,
+                "message" to message,
+                "type" to "NEW_MESSAGE",
+                "data" to mapOf("chat_id" to chatId)
+            ))
+        } catch (e: Exception) {
+            Napier.e("Failed to send notification", e)
+        }
+    }
+
     /**
      * Looks up the other participant in a chat from the chat_participants table.
      * This is more reliable than parsing chatId strings.
@@ -210,12 +225,20 @@ class SupabaseChatDataSource(private val client: SupabaseClientLib = SupabaseCli
 
     suspend fun getUserPublicKey(userId: String): UserPublicKeyDto? = withContext(Dispatchers.IO) {
         try {
-            client.postgrest.from("user_public_keys").select {
+            Napier.d("E2EE_KEY_FETCH: Fetching public key for user $userId", tag = "E2EE")
+            val result = client.postgrest.from("user_public_keys").select {
                 filter { eq("user_id", userId) }
                 limit(1)
             }.decodeSingleOrNull<UserPublicKeyDto>()
+            
+            if (result != null) {
+                Napier.d("E2EE_KEY_FETCH: Successfully fetched key for $userId", tag = "E2EE")
+            } else {
+                Napier.w("E2EE_KEY_FETCH: No key found for user $userId", tag = "E2EE")
+            }
+            result
         } catch (e: Exception) {
-            Napier.e("Error fetching public key for $userId", e)
+            Napier.e("E2EE_KEY_FETCH: Error fetching public key for $userId: ${e.message}", e, tag = "E2EE")
             null
         }
     }

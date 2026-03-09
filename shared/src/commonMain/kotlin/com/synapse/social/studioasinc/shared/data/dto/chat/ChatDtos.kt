@@ -52,7 +52,7 @@ data class NewMessageDto(
 
 @Serializable
 data class UserPublicKeyDto(
-    @SerialName("user_id") val userId: String,
+    @SerialName("user_id") val userId: String, // Note: DB is UUID but Supabase serializes as String
     @SerialName("public_key") val publicKey: String,
     @SerialName("created_at") val createdAt: String? = null,
     @SerialName("updated_at") val updatedAt: String? = null,
