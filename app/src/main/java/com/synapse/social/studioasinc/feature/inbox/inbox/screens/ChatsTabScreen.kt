@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.ui.platform.LocalLayoutDirection
 import com.synapse.social.studioasinc.feature.inbox.inbox.components.InboxEmptyState
 import com.synapse.social.studioasinc.shared.domain.model.chat.Conversation
 import com.synapse.social.studioasinc.feature.shared.theme.Spacing
@@ -69,28 +70,20 @@ fun ChatsTabScreen(
         else -> {
             LazyColumn(
                 modifier = modifier.fillMaxSize(),
-                contentPadding = contentPadding
+                contentPadding = PaddingValues(
+                    top = Spacing.Small,
+                    bottom = Spacing.Small,
+                    start = contentPadding.calculateStartPadding(androidx.compose.ui.platform.LocalLayoutDirection.current),
+                    end = contentPadding.calculateEndPadding(androidx.compose.ui.platform.LocalLayoutDirection.current)
+                ),
+                verticalArrangement = Arrangement.spacedBy(InboxTheme.dimens.ChatItemVerticalSpacing)
             ) {
-                itemsIndexed(conversations, key = { _, it -> it.chatId }) { index, conversation ->
-                    val shape = when {
-                        conversations.size == 1 -> InboxTheme.shapes.GroupedListSingleShape
-                        index == 0 -> InboxTheme.shapes.GroupedListTopShape
-                        index == conversations.lastIndex -> InboxTheme.shapes.GroupedListBottomShape
-                        else -> InboxTheme.shapes.GroupedListMiddleShape
-                    }
+                items(conversations, key = { it.chatId }) { conversation ->
                     ConversationItem(
                         conversation = conversation,
                         isLocked = isLocked(conversation.chatId),
-                        onClick = { onConversationClick(conversation.chatId, conversation.participantId, conversation.participantName) },
-                        shape = shape
+                        onClick = { onConversationClick(conversation.chatId, conversation.participantId, conversation.participantName) }
                     )
-                    if (index < conversations.lastIndex) {
-                        HorizontalDivider(
-                            modifier = Modifier.padding(start = InboxTheme.dimens.AvatarSize + Spacing.Medium * 2, end = Spacing.Medium),
-                            thickness = 0.5.dp,
-                            color = MaterialTheme.colorScheme.outlineVariant
-                        )
-                    }
                 }
             }
         }

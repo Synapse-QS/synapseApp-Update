@@ -142,7 +142,7 @@ object InboxDimens {
     val UnreadBadgeSizeSmall = 18.dp
     val StoryRingWidth = 3.dp
     val ChatItemPadding = 16.dp
-    val ChatItemVerticalSpacing = 4.dp
+    val ChatItemVerticalSpacing = 8.dp
     val SectionHeaderHeight = 36.dp
     val SwipeActionIconSize = 28.dp
     val FABSize = 56.dp
