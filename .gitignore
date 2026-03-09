@@ -50,6 +50,8 @@ jacoco*.exec
 # I see 'app/release_key.jks' in your file listing, this MUST be excluded.
 *.jks
 *.keystore
+# Firebase Configuration (CRITICAL for security)
+google-services.json
 # Generated Room Database Schemas (often kept for migration, but excluded by default)
 # Remove the following lines if you explicitly track schemas for Room migrations:
 /app/schemas/

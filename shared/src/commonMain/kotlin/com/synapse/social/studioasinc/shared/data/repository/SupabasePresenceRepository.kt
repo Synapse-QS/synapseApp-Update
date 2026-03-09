@@ -7,7 +7,6 @@ import io.github.jan.supabase.SupabaseClient as SupabaseClientLib
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.realtime.channel
-import io.github.jan.supabase.realtime.presenceChangeFlow
 import io.github.jan.supabase.realtime.realtime
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.Flow
@@ -61,8 +60,23 @@ class SupabasePresenceRepository(
     }
     
     override fun observeUserPresence(userId: String): Flow<Boolean> {
-        return presenceChannel.presenceChangeFlow().map { change ->
-            change.joins.any { it.value["user_id"]?.toString() == userId }
+        // TODO: Implement with Supabase 3.x Realtime Presence API
+        // For now, poll the database
+        return kotlinx.coroutines.flow.flow {
+            while (true) {
+                val isOnline = runCatching {
+                    val response = client.postgrest.from("user_presence")
+                        .select {
+                            filter {
+                                eq("user_id", userId)
+                                eq("is_online", true)
+                            }
+                        }
+                    response.data.isNotEmpty()
+                }.getOrDefault(false)
+                emit(isOnline)
+                delay(5000) // Poll every 5 seconds
+            }
         }
     }
 }

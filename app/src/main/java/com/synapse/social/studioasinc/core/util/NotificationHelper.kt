@@ -158,15 +158,17 @@ object NotificationHelper {
                 "data" to data
             )
 
+            Log.d(TAG, "Sending notification: recipient=$recipientUid, type=$notificationType")
+
             scope.launch {
                 try {
                     val response = SupabaseClient.client.functions.invoke(
                         function = NotificationConfig.EDGE_FUNCTION_SEND_PUSH,
                         body = request
                     )
-                    Log.i(TAG, "Push notification sent via Edge Function.")
+                    Log.i(TAG, "Push notification sent successfully")
                 } catch (e: Exception) {
-                    Log.e(TAG, "Failed to invoke Edge Function", e)
+                    Log.e(TAG, "Failed to invoke Edge Function: ${e.message}", e)
                 }
             }
         } catch (e: Exception) {
