@@ -58,6 +58,7 @@ import coil.compose.AsyncImage
 import androidx.compose.ui.res.stringResource
 import com.synapse.social.studioasinc.R
 import com.synapse.social.studioasinc.feature.inbox.inbox.ChatViewModel
+import com.synapse.social.studioasinc.feature.shared.theme.Spacing
 import com.synapse.social.studioasinc.shared.domain.model.chat.DisappearingMode
 import com.synapse.social.studioasinc.shared.domain.model.chat.Message
 import com.synapse.social.studioasinc.shared.domain.model.chat.MessageType
@@ -542,8 +543,8 @@ fun ChatScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .background(MaterialTheme.colorScheme.surface),
-                        contentPadding = PaddingValues(16.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                        contentPadding = PaddingValues(Spacing.Medium),
+                        verticalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall),
                         reverseLayout = true
                     ) {
                         val reversedMessages = messages.reversed()
@@ -726,7 +727,10 @@ fun MessageBubble(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null
             )
-            .padding(vertical = 2.dp)
+            .padding(
+                top = if (position == GroupPosition.FIRST || position == GroupPosition.SINGLE) Spacing.Small else 0.dp,
+                bottom = 0.dp
+            )
             .offset { androidx.compose.ui.unit.IntOffset(offsetX.value.toInt(), 0) }
             .pointerInput(Unit) {
                 detectHorizontalDragGestures(
