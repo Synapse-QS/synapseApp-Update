@@ -287,232 +287,13 @@ fun ChatScreen(
                     )
                 )
             }
-        },
-        bottomBar = {
-            Surface(
-                tonalElevation = 3.dp,
-                modifier = Modifier.imePadding() // Key for keyboard behavior
-            ) {
-                Column {
-                    // Replying Header
-                    AnimatedVisibility(
-                        visible = replyingToMessage != null,
-                        enter = expandVertically() + fadeIn(),
-                        exit = shrinkVertically() + fadeOut()
-                    ) {
-                        Surface(
-                            color = MaterialTheme.colorScheme.secondaryContainer,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                            ) {
-                                Icon(Icons.Default.Reply, contentDescription = null, tint = MaterialTheme.colorScheme.onSecondaryContainer, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = if (replyingToMessage?.senderId == currentUserId) "Replying to yourself" else "Replying to ${participantProfile?.displayName ?: "Them"}",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        color = MaterialTheme.colorScheme.primary
-                                    )
-                                    Text(
-                                        text = replyingToMessage?.content ?: "",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        maxLines = 1,
-                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                                    )
-                                }
-                                IconButton(onClick = viewModel::cancelReply, modifier = Modifier.size(24.dp)) {
-                                    Icon(Icons.Default.Close, contentDescription = "Cancel reply", modifier = Modifier.size(16.dp))
-                                }
-                            }
-                        }
-                    }
-
-                    // Editing Header
-                    AnimatedVisibility(
-                        visible = editingMessage != null,
-                        enter = expandVertically() + fadeIn(),
-                        exit = shrinkVertically() + fadeOut()
-                    ) {
-                        Surface(
-                            color = MaterialTheme.colorScheme.secondaryContainer,
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
-                            ) {
-                                Icon(Icons.Default.Edit, contentDescription = null, tint = MaterialTheme.colorScheme.onSecondaryContainer, modifier = Modifier.size(16.dp))
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text("Editing message", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
-                                    Text(
-                                        text = editingMessage?.content ?: "",
-                                        style = MaterialTheme.typography.bodySmall,
-                                        maxLines = 1,
-                                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                                    )
-                                }
-                                IconButton(onClick = viewModel::cancelEditing, modifier = Modifier.size(24.dp)) {
-                                    Icon(Icons.Default.Close, contentDescription = "Cancel edit", modifier = Modifier.size(16.dp))
-                                }
-                            }
-                        }
-                    }
-                    // Smart Replies
-                    AnimatedVisibility(
-                        visible = smartReplies.isNotEmpty() && inputText.isEmpty(),
-                        enter = expandVertically() + fadeIn(),
-                        exit = shrinkVertically() + fadeOut()
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .horizontalScroll(rememberScrollState())
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            smartReplies.forEach { reply ->
-                                AssistChip(
-                                    onClick = {
-                                        viewModel.onInputTextChange(reply)
-                                        viewModel.sendMessage()
-                                    },
-                                    label = { Text(reply) },
-                                    leadingIcon = {
-                                        Icon(
-                                            Icons.Default.AutoAwesome,
-                                            contentDescription = null,
-                                            modifier = Modifier.size(AssistChipDefaults.IconSize)
-                                        )
-                                    }
-                                )
-                            }
-                        }
-                    }
-
-                    // Editing Header
-                    AnimatedVisibility(
-                        visible = editingMessage != null,
-                        enter = expandVertically() + fadeIn(),
-                        exit = shrinkVertically() + fadeOut()
-                    ) {
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = null,
-                                modifier = Modifier.size(16.dp),
-                                tint = MaterialTheme.colorScheme.primary
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "Editing message",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    color = MaterialTheme.colorScheme.primary,
-                                    fontWeight = FontWeight.Bold
-                                )
-                                Text(
-                                    text = editingMessage?.content ?: "",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    maxLines = 1,
-                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
-                                )
-                            }
-                            IconButton(onClick = viewModel::cancelEditing) {
-                                Icon(
-                                    imageVector = Icons.Default.Close,
-                                    contentDescription = "Cancel edit",
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-                    }
-                    
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                    Box {
-                        IconButton(onClick = { showAttachmentMenu = true }) {
-                            Icon(Icons.Default.Add, contentDescription = "Attach file")
-                        }
-                        DropdownMenu(
-                            expanded = showAttachmentMenu,
-                            onDismissRequest = { showAttachmentMenu = false }
-                        ) {
-                            DropdownMenuItem(
-                                text = { Text("Gallery (Image/Video)") },
-                                onClick = {
-                                    showAttachmentMenu = false
-                                    visualMediaLauncher.launch(
-                                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)
-                                    )
-                                },
-                                leadingIcon = { Icon(Icons.Default.Image, contentDescription = null) }
-                            )
-                            DropdownMenuItem(
-                                text = { Text("Document / File") },
-                                onClick = {
-                                    showAttachmentMenu = false
-                                    documentLauncher.launch("*/*")
-                                },
-                                leadingIcon = { Icon(Icons.Default.InsertDriveFile, contentDescription = null) }
-                            )
-                        }
-                    }
-
-                    TextField(
-                        value = inputText,
-                        onValueChange = viewModel::onInputTextChange,
-                        modifier = Modifier.weight(1f),
-                        placeholder = { Text(stringResource(R.string.chat_type_message)) },
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent,
-                            disabledContainerColor = Color.Transparent,
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent
-                        ),
-                        maxLines = 4
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    @OptIn(ExperimentalFoundationApi::class)
-                    Surface(
-                        modifier = Modifier
-                            .size(48.dp)
-                            .combinedClickable(
-                                onClick = viewModel::sendMessage
-                            ),
-                        shape = RoundedCornerShape(16.dp),
-                        color = MaterialTheme.colorScheme.primary,
-                        contentColor = MaterialTheme.colorScheme.onPrimary
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            val icon = if (editingMessage != null) Icons.Default.Check else Icons.AutoMirrored.Filled.Send
-                            Icon(icon, contentDescription = if (editingMessage != null) "Save" else "Send", modifier = Modifier.size(20.dp))
-                        }
-                    }
-                }
-            }
         }
-    }
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
+                .padding(top = paddingValues.calculateTopPadding())
+                .imePadding()
         ) {
             when {
                 isLoading && messages.isEmpty() -> {
@@ -543,7 +324,13 @@ fun ChatScreen(
                         modifier = Modifier
                             .fillMaxSize()
                             .background(MaterialTheme.colorScheme.surface),
-                        contentPadding = PaddingValues(Spacing.Medium),
+                        // Extra bottom padding so last messages aren't hidden behind the floating input
+                        contentPadding = PaddingValues(
+                            start = Spacing.Medium,
+                            end = Spacing.Medium,
+                            top = Spacing.Medium,
+                            bottom = 80.dp
+                        ),
                         verticalArrangement = Arrangement.spacedBy(Spacing.ExtraSmall),
                         reverseLayout = true
                     ) {
@@ -635,6 +422,216 @@ fun ChatScreen(
                                 }
                             }
                         )
+                    }
+                }
+            }
+
+            // ── Bottom fade gradient so messages appear to fade behind the floating input ──
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .height(40.dp)
+                    .background(
+                        brush = androidx.compose.ui.graphics.Brush.verticalGradient(
+                            colors = listOf(
+                                Color.Transparent,
+                                MaterialTheme.colorScheme.surface
+                            )
+                        )
+                    )
+            )
+
+            // ── Floating Input Bar ──
+            Column(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .padding(horizontal = 8.dp, vertical = 6.dp)
+            ) {
+                // Replying Header
+                AnimatedVisibility(
+                    visible = replyingToMessage != null,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
+                ) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        ) {
+                            Icon(Icons.Default.Reply, contentDescription = null, tint = MaterialTheme.colorScheme.onSecondaryContainer, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = if (replyingToMessage?.senderId == currentUserId) "Replying to yourself" else "Replying to ${participantProfile?.displayName ?: "Them"}",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Text(
+                                    text = replyingToMessage?.content ?: "",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    maxLines = 1,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                )
+                            }
+                            IconButton(onClick = viewModel::cancelReply, modifier = Modifier.size(24.dp)) {
+                                Icon(Icons.Default.Close, contentDescription = "Cancel reply", modifier = Modifier.size(16.dp))
+                            }
+                        }
+                    }
+                }
+
+                // Editing Header
+                AnimatedVisibility(
+                    visible = editingMessage != null,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
+                ) {
+                    Surface(
+                        color = MaterialTheme.colorScheme.secondaryContainer,
+                        shape = if (replyingToMessage == null) RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp) else RoundedCornerShape(0.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                        ) {
+                            Icon(Icons.Default.Edit, contentDescription = null, tint = MaterialTheme.colorScheme.onSecondaryContainer, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text("Editing message", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.primary)
+                                Text(
+                                    text = editingMessage?.content ?: "",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    maxLines = 1,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
+                                )
+                            }
+                            IconButton(onClick = viewModel::cancelEditing, modifier = Modifier.size(24.dp)) {
+                                Icon(Icons.Default.Close, contentDescription = "Cancel edit", modifier = Modifier.size(16.dp))
+                            }
+                        }
+                    }
+                }
+
+                // Smart Replies
+                AnimatedVisibility(
+                    visible = smartReplies.isNotEmpty() && inputText.isEmpty(),
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
+                            .padding(horizontal = 8.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        smartReplies.forEach { reply ->
+                            AssistChip(
+                                onClick = {
+                                    viewModel.onInputTextChange(reply)
+                                    viewModel.sendMessage()
+                                },
+                                label = { Text(reply) },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.AutoAwesome,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(AssistChipDefaults.IconSize)
+                                    )
+                                }
+                            )
+                        }
+                    }
+                }
+
+                // Floating input row
+                Surface(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(28.dp),
+                    color = MaterialTheme.colorScheme.surfaceContainerHigh,
+                    tonalElevation = 2.dp,
+                    shadowElevation = 4.dp
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 4.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        // Emoji / Attachment button
+                        Box {
+                            IconButton(onClick = { showAttachmentMenu = true }) {
+                                Icon(
+                                    Icons.Default.Add,
+                                    contentDescription = "Attach file",
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            DropdownMenu(
+                                expanded = showAttachmentMenu,
+                                onDismissRequest = { showAttachmentMenu = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Gallery (Image/Video)") },
+                                    onClick = {
+                                        showAttachmentMenu = false
+                                        visualMediaLauncher.launch(
+                                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageAndVideo)
+                                        )
+                                    },
+                                    leadingIcon = { Icon(Icons.Default.Image, contentDescription = null) }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Document / File") },
+                                    onClick = {
+                                        showAttachmentMenu = false
+                                        documentLauncher.launch("*/*")
+                                    },
+                                    leadingIcon = { Icon(Icons.Default.InsertDriveFile, contentDescription = null) }
+                                )
+                            }
+                        }
+
+                        TextField(
+                            value = inputText,
+                            onValueChange = viewModel::onInputTextChange,
+                            modifier = Modifier.weight(1f),
+                            placeholder = { Text(stringResource(R.string.chat_type_message)) },
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                                disabledContainerColor = Color.Transparent,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent
+                            ),
+                            maxLines = 4
+                        )
+
+                        @OptIn(ExperimentalFoundationApi::class)
+                        Surface(
+                            modifier = Modifier
+                                .size(44.dp)
+                                .combinedClickable(
+                                    onClick = viewModel::sendMessage
+                                ),
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primary,
+                            contentColor = MaterialTheme.colorScheme.onPrimary
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                val icon = if (editingMessage != null) Icons.Default.Check else Icons.AutoMirrored.Filled.Send
+                                Icon(icon, contentDescription = if (editingMessage != null) "Save" else "Send", modifier = Modifier.size(20.dp))
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.width(4.dp))
                     }
                 }
             }
