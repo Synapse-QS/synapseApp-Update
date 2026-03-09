@@ -140,7 +140,47 @@ class SettingsRepositoryImpl private constructor(
         settingsDataStore.setReadReceiptsEnabled(enabled)
     }
 
+    override val chatFontScale: Flow<Float> = settingsDataStore.chatFontScale
 
+    override suspend fun setChatFontScale(scale: Float) {
+        settingsDataStore.setChatFontScale(scale)
+    }
+
+    override val chatThemePreset: Flow<com.synapse.social.studioasinc.domain.model.ChatThemePreset> = settingsDataStore.chatThemePreset
+
+    override suspend fun setChatThemePreset(preset: com.synapse.social.studioasinc.domain.model.ChatThemePreset) {
+        settingsDataStore.setChatThemePreset(preset)
+    }
+
+    override val chatWallpaperType: Flow<com.synapse.social.studioasinc.domain.model.WallpaperType> = settingsDataStore.chatWallpaperType
+
+    override suspend fun setChatWallpaperType(type: com.synapse.social.studioasinc.domain.model.WallpaperType) {
+        settingsDataStore.setChatWallpaperType(type)
+    }
+
+    override val chatMessageCornerRadius: Flow<Int> = settingsDataStore.chatMessageCornerRadius
+
+    override suspend fun setChatMessageCornerRadius(radius: Int) {
+        settingsDataStore.setChatMessageCornerRadius(radius)
+    }
+
+    override val chatListLayout: Flow<com.synapse.social.studioasinc.domain.model.ChatListLayout> = settingsDataStore.chatListLayout
+
+    override suspend fun setChatListLayout(layout: com.synapse.social.studioasinc.domain.model.ChatListLayout) {
+        settingsDataStore.setChatListLayout(layout)
+    }
+
+    override val chatSwipeGesture: Flow<com.synapse.social.studioasinc.domain.model.ChatSwipeGesture> = settingsDataStore.chatSwipeGesture
+
+    override suspend fun setChatSwipeGesture(gesture: com.synapse.social.studioasinc.domain.model.ChatSwipeGesture) {
+        settingsDataStore.setChatSwipeGesture(gesture)
+    }
+
+    override val chatFoldersJson: Flow<String?> = settingsDataStore.chatFoldersJson
+
+    override suspend fun setChatFoldersJson(json: String) {
+        settingsDataStore.setChatFoldersJson(json)
+    }
 
     override val mediaUploadQuality: Flow<com.synapse.social.studioasinc.ui.settings.MediaUploadQuality> = settingsDataStore.mediaUploadQuality
 

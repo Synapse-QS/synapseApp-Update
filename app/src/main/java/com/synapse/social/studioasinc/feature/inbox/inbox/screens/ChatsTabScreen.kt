@@ -28,11 +28,14 @@ import com.synapse.social.studioasinc.shared.domain.model.chat.Conversation
 import com.synapse.social.studioasinc.feature.shared.theme.Spacing
 import com.synapse.social.studioasinc.ui.inbox.theme.InboxTheme
 import com.synapse.social.studioasinc.feature.inbox.inbox.models.EmptyStateType
+import com.synapse.social.studioasinc.domain.model.ChatListLayout
+import com.synapse.social.studioasinc.domain.model.ChatSwipeGesture
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatsTabScreen(
     conversations: List<Conversation>,
@@ -42,7 +45,9 @@ fun ChatsTabScreen(
     onRetry: () -> Unit,
     isLocked: (String) -> Boolean = { false },
     modifier: Modifier = Modifier,
-    contentPadding: PaddingValues = PaddingValues()
+    contentPadding: PaddingValues = PaddingValues(),
+    chatListLayout: ChatListLayout = ChatListLayout.DOUBLE_LINE,
+    chatSwipeGesture: ChatSwipeGesture = ChatSwipeGesture.ARCHIVE
 ) {
     when {
         isLoading && conversations.isEmpty() -> {
@@ -79,10 +84,46 @@ fun ChatsTabScreen(
                 verticalArrangement = Arrangement.spacedBy(InboxTheme.dimens.ChatItemVerticalSpacing)
             ) {
                 items(conversations, key = { it.chatId }) { conversation ->
-                    ConversationItem(
-                        conversation = conversation,
-                        isLocked = isLocked(conversation.chatId),
-                        onClick = { onConversationClick(conversation.chatId, conversation.participantId, conversation.participantName) }
+                    val dismissState = rememberSwipeToDismissBoxState(
+                        confirmValueChange = { value ->
+                            if (value != SwipeToDismissBoxValue.Settled) {
+                                android.util.Log.d("ChatsTabScreen", "Swipe executed: ${chatSwipeGesture.name} on ${conversation.participantName}")
+                                true
+                            } else false
+                        }
+                    )
+
+                    SwipeToDismissBox(
+                        state = dismissState,
+                        backgroundContent = {
+                            val color = when (dismissState.dismissDirection) {
+                                SwipeToDismissBoxValue.StartToEnd -> MaterialTheme.colorScheme.primaryContainer
+                                SwipeToDismissBoxValue.EndToStart -> MaterialTheme.colorScheme.errorContainer
+                                else -> Color.Transparent
+                            }
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .padding(horizontal = Spacing.Medium)
+                                    .clip(InboxTheme.shapes.ChatItemCard)
+                                    .background(color),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = chatSwipeGesture.name,
+                                    color = if (dismissState.dismissDirection == SwipeToDismissBoxValue.EndToStart) MaterialTheme.colorScheme.onErrorContainer else MaterialTheme.colorScheme.onPrimaryContainer,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        },
+                        content = {
+                            ConversationItem(
+                                conversation = conversation,
+                                isLocked = isLocked(conversation.chatId),
+                                onClick = { onConversationClick(conversation.chatId, conversation.participantId, conversation.participantName) },
+                                layout = chatListLayout
+                            )
+                        }
                     )
                 }
             }
@@ -95,7 +136,8 @@ private fun ConversationItem(
     conversation: Conversation,
     isLocked: Boolean,
     onClick: () -> Unit,
-    shape: Shape = InboxTheme.shapes.ChatItemCard
+    shape: Shape = InboxTheme.shapes.ChatItemCard,
+    layout: ChatListLayout = ChatListLayout.DOUBLE_LINE
 ) {
     Row(
         modifier = Modifier
@@ -162,38 +204,72 @@ private fun ConversationItem(
                 )
             }
 
-            Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
+            if (layout == ChatListLayout.DOUBLE_LINE) {
+                Spacer(modifier = Modifier.height(Spacing.ExtraSmall))
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = conversation.lastMessage,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (conversation.unreadCount > 0) MaterialTheme.colorScheme.onSurface
-                            else MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = if (conversation.unreadCount > 0) FontWeight.Medium else FontWeight.Normal,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
-                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = conversation.lastMessage,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (conversation.unreadCount > 0) MaterialTheme.colorScheme.onSurface
+                                else MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontWeight = if (conversation.unreadCount > 0) FontWeight.Medium else FontWeight.Normal,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
 
-                if (conversation.unreadCount > 0) {
-                    Spacer(modifier = Modifier.width(Spacing.Small))
-                    Surface(
-                        color = MaterialTheme.colorScheme.primary,
-                        shape = CircleShape,
-                        modifier = Modifier.size(InboxTheme.dimens.UnreadBadgeSize)
-                    ) {
-                        Box(contentAlignment = Alignment.Center) {
-                            Text(
-                                text = if (conversation.unreadCount > 99) "99+" else conversation.unreadCount.toString(),
-                                color = MaterialTheme.colorScheme.onPrimary,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
-                            )
+                    if (conversation.unreadCount > 0) {
+                        Spacer(modifier = Modifier.width(Spacing.Small))
+                        Surface(
+                            color = MaterialTheme.colorScheme.primary,
+                            shape = CircleShape,
+                            modifier = Modifier.size(InboxTheme.dimens.UnreadBadgeSize)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = if (conversation.unreadCount > 99) "99+" else conversation.unreadCount.toString(),
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = conversation.lastMessage,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f).padding(end = Spacing.Small)
+                    )
+
+                    if (conversation.unreadCount > 0) {
+                        Surface(
+                            color = MaterialTheme.colorScheme.primary,
+                            shape = CircleShape,
+                            modifier = Modifier.size(InboxTheme.dimens.UnreadBadgeSize)
+                        ) {
+                            Box(contentAlignment = Alignment.Center) {
+                                Text(
+                                    text = if (conversation.unreadCount > 99) "99+" else conversation.unreadCount.toString(),
+                                    color = MaterialTheme.colorScheme.onPrimary,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
                 }

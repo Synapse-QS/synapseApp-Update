@@ -87,6 +87,10 @@ class SettingsDataStore private constructor(private val context: Context) {
         private val KEY_CHAT_THEME_PRESET = stringPreferencesKey("chat_theme_preset")
         private val KEY_CHAT_WALLPAPER_TYPE = stringPreferencesKey("chat_wallpaper_type")
         private val KEY_CHAT_WALLPAPER_VALUE = stringPreferencesKey("chat_wallpaper_value")
+        private val KEY_CHAT_MESSAGE_CORNER_RADIUS = androidx.datastore.preferences.core.intPreferencesKey("chat_message_corner_radius")
+        private val KEY_CHAT_LIST_LAYOUT = stringPreferencesKey("chat_list_layout")
+        private val KEY_CHAT_SWIPE_GESTURE = stringPreferencesKey("chat_swipe_gesture")
+        private val KEY_CHAT_FOLDERS = stringPreferencesKey("chat_folders")
 
 
         private val KEY_DATA_SAVER_ENABLED = booleanPreferencesKey("data_saver_enabled")
@@ -138,6 +142,9 @@ class SettingsDataStore private constructor(private val context: Context) {
         val DEFAULT_CHAT_FONT_SCALE = 1.0f
         val DEFAULT_CHAT_THEME_PRESET = ChatThemePreset.DEFAULT
         val DEFAULT_CHAT_WALLPAPER_TYPE = WallpaperType.DEFAULT
+        val DEFAULT_CHAT_MESSAGE_CORNER_RADIUS = 16
+        val DEFAULT_CHAT_LIST_LAYOUT = com.synapse.social.studioasinc.domain.model.ChatListLayout.DOUBLE_LINE
+        val DEFAULT_CHAT_SWIPE_GESTURE = com.synapse.social.studioasinc.domain.model.ChatSwipeGesture.ARCHIVE
         val DEFAULT_DATA_SAVER_ENABLED = false
         val DEFAULT_ENTER_IS_SEND_ENABLED = false
         val DEFAULT_MEDIA_VISIBILITY_ENABLED = true
@@ -452,6 +459,84 @@ class SettingsDataStore private constructor(private val context: Context) {
 
 
 
+    val chatFontScale: Flow<Float> = safePreferencesFlow().map { preferences ->
+        preferences[KEY_CHAT_FONT_SCALE] ?: DEFAULT_CHAT_FONT_SCALE
+    }
+
+    suspend fun setChatFontScale(scale: Float) {
+        dataStore.edit { preferences ->
+            preferences[KEY_CHAT_FONT_SCALE] = scale
+        }
+    }
+
+    val chatThemePreset: Flow<ChatThemePreset> = safePreferencesFlow().map { preferences ->
+        preferences[KEY_CHAT_THEME_PRESET]?.let { value ->
+            runCatching { ChatThemePreset.valueOf(value) }.getOrDefault(DEFAULT_CHAT_THEME_PRESET)
+        } ?: DEFAULT_CHAT_THEME_PRESET
+    }
+
+    suspend fun setChatThemePreset(preset: ChatThemePreset) {
+        dataStore.edit { preferences ->
+            preferences[KEY_CHAT_THEME_PRESET] = preset.name
+        }
+    }
+
+    val chatWallpaperType: Flow<WallpaperType> = safePreferencesFlow().map { preferences ->
+        preferences[KEY_CHAT_WALLPAPER_TYPE]?.let { value ->
+            runCatching { WallpaperType.valueOf(value) }.getOrDefault(DEFAULT_CHAT_WALLPAPER_TYPE)
+        } ?: DEFAULT_CHAT_WALLPAPER_TYPE
+    }
+
+    suspend fun setChatWallpaperType(type: WallpaperType) {
+        dataStore.edit { preferences ->
+            preferences[KEY_CHAT_WALLPAPER_TYPE] = type.name
+        }
+    }
+
+    val chatMessageCornerRadius: Flow<Int> = safePreferencesFlow().map { preferences ->
+        preferences[KEY_CHAT_MESSAGE_CORNER_RADIUS] ?: DEFAULT_CHAT_MESSAGE_CORNER_RADIUS
+    }
+
+    suspend fun setChatMessageCornerRadius(radius: Int) {
+        dataStore.edit { preferences ->
+            preferences[KEY_CHAT_MESSAGE_CORNER_RADIUS] = radius
+        }
+    }
+
+    val chatListLayout: Flow<com.synapse.social.studioasinc.domain.model.ChatListLayout> = safePreferencesFlow().map { preferences ->
+        preferences[KEY_CHAT_LIST_LAYOUT]?.let { value ->
+            runCatching { com.synapse.social.studioasinc.domain.model.ChatListLayout.valueOf(value) }.getOrDefault(DEFAULT_CHAT_LIST_LAYOUT)
+        } ?: DEFAULT_CHAT_LIST_LAYOUT
+    }
+
+    suspend fun setChatListLayout(layout: com.synapse.social.studioasinc.domain.model.ChatListLayout) {
+        dataStore.edit { preferences ->
+            preferences[KEY_CHAT_LIST_LAYOUT] = layout.name
+        }
+    }
+
+    val chatSwipeGesture: Flow<com.synapse.social.studioasinc.domain.model.ChatSwipeGesture> = safePreferencesFlow().map { preferences ->
+        preferences[KEY_CHAT_SWIPE_GESTURE]?.let { value ->
+            runCatching { com.synapse.social.studioasinc.domain.model.ChatSwipeGesture.valueOf(value) }.getOrDefault(DEFAULT_CHAT_SWIPE_GESTURE)
+        } ?: DEFAULT_CHAT_SWIPE_GESTURE
+    }
+
+    suspend fun setChatSwipeGesture(gesture: com.synapse.social.studioasinc.domain.model.ChatSwipeGesture) {
+        dataStore.edit { preferences ->
+            preferences[KEY_CHAT_SWIPE_GESTURE] = gesture.name
+        }
+    }
+
+    val chatFoldersJson: Flow<String?> = safePreferencesFlow().map { preferences ->
+        preferences[KEY_CHAT_FOLDERS]
+    }
+
+    suspend fun setChatFoldersJson(json: String) {
+        dataStore.edit { preferences ->
+            preferences[KEY_CHAT_FOLDERS] = json
+        }
+    }
+
     val autoDownloadRules: Flow<com.synapse.social.studioasinc.ui.settings.AutoDownloadRules> = safePreferencesFlow().map { preferences ->
         com.synapse.social.studioasinc.ui.settings.AutoDownloadRules(
             mobileData = preferences[KEY_AUTO_DOWNLOAD_MOBILE]?.mapNotNull {
@@ -639,6 +724,10 @@ class SettingsDataStore private constructor(private val context: Context) {
             preferences.remove(KEY_CHAT_THEME_PRESET)
             preferences.remove(KEY_CHAT_WALLPAPER_TYPE)
             preferences.remove(KEY_CHAT_WALLPAPER_VALUE)
+            preferences.remove(KEY_CHAT_MESSAGE_CORNER_RADIUS)
+            preferences.remove(KEY_CHAT_LIST_LAYOUT)
+            preferences.remove(KEY_CHAT_SWIPE_GESTURE)
+            preferences.remove(KEY_CHAT_FOLDERS)
 
 
             preferences.remove(KEY_DATA_SAVER_ENABLED)
@@ -697,6 +786,10 @@ class SettingsDataStore private constructor(private val context: Context) {
             preferences[KEY_CHAT_THEME_PRESET] = DEFAULT_CHAT_THEME_PRESET.name
             preferences[KEY_CHAT_WALLPAPER_TYPE] = DEFAULT_CHAT_WALLPAPER_TYPE.name
             preferences.remove(KEY_CHAT_WALLPAPER_VALUE)
+            preferences[KEY_CHAT_MESSAGE_CORNER_RADIUS] = DEFAULT_CHAT_MESSAGE_CORNER_RADIUS
+            preferences[KEY_CHAT_LIST_LAYOUT] = DEFAULT_CHAT_LIST_LAYOUT.name
+            preferences[KEY_CHAT_SWIPE_GESTURE] = DEFAULT_CHAT_SWIPE_GESTURE.name
+            preferences.remove(KEY_CHAT_FOLDERS)
 
 
             preferences[KEY_DATA_SAVER_ENABLED] = DEFAULT_DATA_SAVER_ENABLED

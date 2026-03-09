@@ -128,7 +128,26 @@ interface SettingsRepository {
 
     suspend fun setReadReceiptsEnabled(enabled: Boolean)
 
+    val chatFontScale: Flow<Float>
+    suspend fun setChatFontScale(scale: Float)
 
+    val chatThemePreset: Flow<com.synapse.social.studioasinc.domain.model.ChatThemePreset>
+    suspend fun setChatThemePreset(preset: com.synapse.social.studioasinc.domain.model.ChatThemePreset)
+
+    val chatWallpaperType: Flow<com.synapse.social.studioasinc.domain.model.WallpaperType>
+    suspend fun setChatWallpaperType(type: com.synapse.social.studioasinc.domain.model.WallpaperType)
+
+    val chatMessageCornerRadius: Flow<Int>
+    suspend fun setChatMessageCornerRadius(radius: Int)
+
+    val chatListLayout: Flow<com.synapse.social.studioasinc.domain.model.ChatListLayout>
+    suspend fun setChatListLayout(layout: com.synapse.social.studioasinc.domain.model.ChatListLayout)
+
+    val chatSwipeGesture: Flow<com.synapse.social.studioasinc.domain.model.ChatSwipeGesture>
+    suspend fun setChatSwipeGesture(gesture: com.synapse.social.studioasinc.domain.model.ChatSwipeGesture)
+
+    val chatFoldersJson: Flow<String?>
+    suspend fun setChatFoldersJson(json: String)
 
     val mediaUploadQuality: Flow<com.synapse.social.studioasinc.ui.settings.MediaUploadQuality>
 

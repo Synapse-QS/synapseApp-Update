@@ -38,6 +38,8 @@ fun InboxScreen(
     val conversations by viewModel.conversations.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
+    val chatListLayout by viewModel.chatListLayout.collectAsState()
+    val chatSwipeGesture by viewModel.chatSwipeGesture.collectAsState()
     val scrollBehavior = TopAppBarDefaults.enterAlwaysScrollBehavior()
 
     val pagerState = rememberPagerState(pageCount = { 3 })
@@ -137,7 +139,9 @@ fun InboxScreen(
                         }
                     },
                     isLocked = { viewModel.isChatLocked(it) },
-                    onRetry = { viewModel.loadConversations() }
+                    onRetry = { viewModel.loadConversations() },
+                    chatListLayout = chatListLayout,
+                    chatSwipeGesture = chatSwipeGesture
                 )
                 1 -> CallsTabScreen()
                 2 -> ContactsTabScreen()

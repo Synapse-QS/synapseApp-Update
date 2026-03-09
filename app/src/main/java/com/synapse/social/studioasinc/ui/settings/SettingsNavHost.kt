@@ -55,6 +55,26 @@ fun SettingsNavHost(
             )
         }
 
+        composable(route = SettingsDestination.ROUTE_CHAT_SETTINGS) {
+            val viewModel: ChatSettingsViewModel = hiltViewModel()
+            ChatSettingsScreen(
+                viewModel = viewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
+        composable(route = SettingsDestination.ROUTE_CHAT_FOLDERS) {
+            val viewModel: ChatFoldersViewModel = hiltViewModel()
+            ChatFoldersScreen(
+                viewModel = viewModel,
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+
 
         composable(route = SettingsDestination.ROUTE_ACCOUNT) {
             val viewModel: AccountSettingsViewModel = hiltViewModel()

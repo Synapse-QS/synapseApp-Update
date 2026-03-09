@@ -62,6 +62,22 @@ object SettingsDataProvider {
                     icon = R.drawable.ic_palette,
                     destination = SettingsDestination.Appearance,
                     keywords = listOf("theme", "dark mode", "light mode", "wallpaper", "font", "size", "colors")
+                ),
+                SettingsCategory(
+                    id = "chat_settings",
+                    title = "Chat Settings",
+                    subtitle = "Chat theme, wallpaper, list layout, corner radius",
+                    icon = R.drawable.ic_message,
+                    destination = SettingsDestination.ChatSettings,
+                    keywords = listOf("chat", "message", "theme", "wallpaper", "bubble", "swipe", "layout")
+                ),
+                SettingsCategory(
+                    id = "chat_folders",
+                    title = "Chat Folders",
+                    subtitle = "Create and manage chat folders",
+                    icon = R.drawable.ic_message,
+                    destination = SettingsDestination.ChatFolders,
+                    keywords = listOf("chat", "folder", "organize", "tabs")
                 )
             )
         )

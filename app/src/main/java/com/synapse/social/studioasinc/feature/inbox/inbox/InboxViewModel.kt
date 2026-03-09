@@ -15,13 +15,17 @@ import javax.inject.Inject
 import com.synapse.social.studioasinc.shared.domain.usecase.chat.GetConversationsUseCase
 import com.synapse.social.studioasinc.shared.domain.usecase.chat.SubscribeToInboxUpdatesUseCase
 import com.synapse.social.studioasinc.shared.domain.usecase.chat.InitializeE2EUseCase
+import com.synapse.social.studioasinc.data.repository.SettingsRepository
+import com.synapse.social.studioasinc.domain.model.ChatListLayout
+import com.synapse.social.studioasinc.domain.model.ChatSwipeGesture
 
 @HiltViewModel
 class InboxViewModel @Inject constructor(
     private val getConversationsUseCase: GetConversationsUseCase,
     private val subscribeToInboxUpdatesUseCase: SubscribeToInboxUpdatesUseCase,
     private val initializeE2EUseCase: InitializeE2EUseCase,
-    private val chatLockManager: com.synapse.social.studioasinc.core.util.ChatLockManager
+    private val chatLockManager: com.synapse.social.studioasinc.core.util.ChatLockManager,
+    private val settingsRepository: SettingsRepository
 ) : ViewModel() {
 
     private val _currentUserProfile = MutableStateFlow<User?>(null)
@@ -35,6 +39,20 @@ class InboxViewModel @Inject constructor(
 
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
+
+    val chatListLayout: StateFlow<ChatListLayout> = settingsRepository.chatListLayout
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = ChatListLayout.DOUBLE_LINE
+        )
+
+    val chatSwipeGesture: StateFlow<ChatSwipeGesture> = settingsRepository.chatSwipeGesture
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = ChatSwipeGesture.ARCHIVE
+        )
 
     init {
         viewModelScope.launch {

@@ -90,6 +90,10 @@ sealed class SettingsDestination(val route: String) {
 
     object BlockedContacts : SettingsDestination(ROUTE_BLOCKED_CONTACTS)
 
+    object ChatSettings : SettingsDestination(ROUTE_CHAT_SETTINGS)
+
+    object ChatFolders : SettingsDestination(ROUTE_CHAT_FOLDERS)
+
     companion object {
 
         const val ROUTE_HUB = "settings_hub"
@@ -115,6 +119,8 @@ sealed class SettingsDestination(val route: String) {
         const val ROUTE_CHANGE_NUMBER = "settings_change_number"
         const val ROUTE_BRAND_PARTNERSHIPS = "settings_brand_partnerships"
         const val ROUTE_BLOCKED_CONTACTS = "settings_blocked_contacts"
+        const val ROUTE_CHAT_SETTINGS = "settings_chat_settings"
+        const val ROUTE_CHAT_FOLDERS = "settings_chat_folders"
 
 
 
@@ -140,7 +146,9 @@ sealed class SettingsDestination(val route: String) {
             BusinessPlatform,
             ChangeNumber,
             BrandPartnerships,
-            BlockedContacts
+            BlockedContacts,
+            ChatSettings,
+            ChatFolders
         )
 
 
@@ -168,6 +176,8 @@ sealed class SettingsDestination(val route: String) {
             ROUTE_CHANGE_NUMBER -> ChangeNumber
             ROUTE_BRAND_PARTNERSHIPS -> BrandPartnerships
             ROUTE_BLOCKED_CONTACTS -> BlockedContacts
+            ROUTE_CHAT_SETTINGS -> ChatSettings
+            ROUTE_CHAT_FOLDERS -> ChatFolders
             else -> null
         }
     }
