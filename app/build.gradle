@@ -79,7 +79,7 @@ android {
             } else {
                 signingConfig = signingConfigs.debug
             }
-            buildConfigField "String", "DEVELOPER_EMAIL", "\"mashikahamed0@gmail.com\""
+            buildConfigField "String", "DEVELOPER_EMAIL", "\"suppsynapse@gmail.com\""
             buildConfigField "String", "SUPABASE_URL", "\"${System.getenv('SUPABASE_URL') ?: project.findProperty('SUPABASE_URL') ?: ''}\""
             buildConfigField "String", "SUPABASE_ANON_KEY", "\"${System.getenv('SUPABASE_ANON_KEY') ?: project.findProperty('SUPABASE_ANON_KEY') ?: ''}\""
             buildConfigField "String", "SUPABASE_SYNAPSE_S3_ENDPOINT_URL", "\"${System.getenv('SUPABASE_SYNAPSE_S3_ENDPOINT_URL') ?: project.findProperty('SUPABASE_SYNAPSE_S3_ENDPOINT_URL') ?: ''}\""
@@ -116,7 +116,7 @@ android {
         debug {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
-            buildConfigField "String", "DEVELOPER_EMAIL", "\"mashikahamed0@gmail.com\""
+            buildConfigField "String", "DEVELOPER_EMAIL", "\"suppsynapse@gmail.com\""
             buildConfigField "String", "SUPABASE_URL", "\"${System.getenv('SUPABASE_URL') ?: project.findProperty('SUPABASE_URL') ?: ''}\""
             buildConfigField "String", "SUPABASE_ANON_KEY", "\"${System.getenv('SUPABASE_ANON_KEY') ?: project.findProperty('SUPABASE_ANON_KEY') ?: ''}\""
             buildConfigField "String", "SUPABASE_SYNAPSE_S3_ENDPOINT_URL", "\"${System.getenv('SUPABASE_SYNAPSE_S3_ENDPOINT_URL') ?: project.findProperty('SUPABASE_SYNAPSE_S3_ENDPOINT_URL') ?: ''}\""
